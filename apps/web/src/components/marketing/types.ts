@@ -12,7 +12,7 @@ export interface ISuiteCard {
   id: string;
   title: string;
   description: string;
-  price: number | string;
+  price: number;
   imageUrl: string;
 }
 
