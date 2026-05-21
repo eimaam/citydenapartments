@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { SectionReveal } from './motionSection';
 import { locations } from './data';
 
@@ -18,7 +19,8 @@ export const LocationsSection = () => {
         <div className="mt-16 grid grid-cols-1 gap-6 md:gap-8 lg:grid-cols-3 lg:gap-10">
           {locations.map((location, index) => (
             <SectionReveal key={location.id} delay={index * 0.08}>
-              <article className="group relative h-[min(88vw,520px)] w-full overflow-hidden rounded-sm bg-inverse-surface shadow-none transition-[transform,box-shadow] duration-500 ease-out hover:shadow-ambient hover:border-primary hover:border-2 md:h-[540px]">
+              <Link to={`/cities/${location.id}`}>
+                <article className="group relative h-[min(88vw,520px)] w-full overflow-hidden rounded-sm bg-inverse-surface shadow-none transition-[transform,box-shadow] duration-500 ease-out hover:shadow-ambient hover:border-primary hover:border-2 md:h-[540px]">
                 <img
                   src={location.imageUrl}
                   alt={location?.city}
@@ -34,6 +36,7 @@ export const LocationsSection = () => {
                   <p className="type-label-caps mt-5 text-[11px] text-primary-container">{location.tagline}</p>
                 </div>
               </article>
+              </Link>
             </SectionReveal>
           ))}
         </div>

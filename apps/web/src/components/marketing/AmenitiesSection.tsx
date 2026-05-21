@@ -1,7 +1,14 @@
 import { SectionReveal } from './motionSection';
 import { amenities } from './data';
+import type { IAmenityItem } from './types';
 
-export const AmenitiesSection = () => {
+interface AmenitiesSectionProps {
+  amenities?: IAmenityItem[];
+}
+
+export const AmenitiesSection = ({
+  amenities: amenitiesProp = amenities,
+}: AmenitiesSectionProps) => {
   return (
     <section
       id="facilities"
@@ -13,7 +20,7 @@ export const AmenitiesSection = () => {
         </SectionReveal>
 
         <div className="mt-16 grid grid-cols-2 gap-12 md:grid-cols-4 md:gap-8 lg:gap-12">
-          {amenities?.map((amenity, index) => {
+          {amenitiesProp?.map((amenity, index) => {
             const Icon = amenity.icon;
 
             return (

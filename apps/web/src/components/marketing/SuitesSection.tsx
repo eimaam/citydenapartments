@@ -2,8 +2,17 @@ import { ArrowUpRight } from 'lucide-react';
 import { SectionReveal } from './motionSection';
 import { suites } from './data';
 import { formatNGN } from '@citydenapartments/shared';
+import type { ISuiteCard } from './types';
 
-export const SuitesSection = () => {
+interface SuitesSectionProps {
+  suites?: ISuiteCard[];
+  title?: string;
+}
+
+export const SuitesSection = ({
+  suites: suitesProp = suites,
+  title = "Signature Suites",
+}: SuitesSectionProps) => {
   return (
     <section
       id="rooms"
@@ -12,7 +21,7 @@ export const SuitesSection = () => {
       <div className="mx-auto w-full max-w-[1240px]">
         <SectionReveal className="flex flex-col items-start gap-8 sm:flex-row sm:items-end sm:justify-between">
           <h2 className="font-serif text-4xl font-normal leading-[1.12] tracking-[-0.02em] text-on-surface md:text-5xl lg:text-[3rem]">
-            Signature Suites
+            {title}
           </h2>
           <a
             href="#rooms"
@@ -24,7 +33,7 @@ export const SuitesSection = () => {
         </SectionReveal>
 
         <div className="mt-16 grid grid-cols-1 gap-14 lg:grid-cols-3 lg:gap-12 xl:gap-16">
-          {suites.map((suite, index) => (
+          {suitesProp.map((suite, index) => (
             <SectionReveal key={suite.id} delay={index * 0.06}>
               <article className="group flex flex-col">
                 <div className="overflow-hidden rounded-sm">

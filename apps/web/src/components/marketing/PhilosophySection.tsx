@@ -1,6 +1,19 @@
 import { SectionReveal } from './motionSection';
 
-export const PhilosophySection = () => {
+interface PhilosophySectionProps {
+  quote?: React.ReactNode;
+  description?: string;
+}
+
+export const PhilosophySection = ({
+  quote = (
+    <>
+      <span className="italic">Designed</span> for comfort.&nbsp;<span className="italic">Built</span> for modern
+      living.
+    </>
+  ),
+  description = "Merging curated architecture with discreet five-star essentials, City Den reshapes urban living - where every space hums softly with comfort, purpose and light.",
+}: PhilosophySectionProps) => {
   return (
     <section className="relative overflow-hidden bg-surface-container px-[var(--spacing-margin-mobile)] py-24 lg:px-[var(--spacing-margin-desktop)] lg:py-32">
       <div
@@ -10,12 +23,10 @@ export const PhilosophySection = () => {
       <div className="relative mx-auto w-full max-w-[820px] text-center">
         <SectionReveal>
           <blockquote className="font-serif text-3xl font-normal leading-snug tracking-[-0.02em] text-on-surface not-italic md:text-5xl lg:text-[3.125rem]">
-            <span className="italic">Designed</span> for comfort.&nbsp;<span className="italic">Built</span> for modern
-            living.
+            {quote}
           </blockquote>
           <p className="mx-auto mt-10 max-w-2xl type-body-lg text-secondary">
-            Merging curated architecture with discreet five-star essentials, City Den reshapes urban living - where every
-            space hums softly with comfort, purpose and light.
+            {description}
           </p>
         </SectionReveal>
       </div>

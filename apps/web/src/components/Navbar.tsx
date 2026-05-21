@@ -50,20 +50,23 @@ export const Navbar = () => {
           aria-label="Primary"
           className="absolute left-1/2 hidden -translate-x-1/2 xl:flex xl:gap-11"
         >
-          {navLinks.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'type-label-caps text-[11px] transition-colors duration-300',
-                overHero
-                  ? 'text-inverse-on-surface/88 hover:text-primary-container'
-                  : 'text-on-surface-variant hover:text-primary',
-              )}
-            >
-              {item.label}
-            </a>
-          ))}
+          {navLinks.map((item) => {
+            const href = !isHome && item.href === '#locations' ? '/#locations' : item.href;
+            return (
+              <a
+                key={item.href}
+                href={href}
+                className={cn(
+                  'type-label-caps text-[11px] transition-colors duration-300',
+                  overHero
+                    ? 'text-inverse-on-surface/88 hover:text-primary-container'
+                    : 'text-on-surface-variant hover:text-primary',
+                )}
+              >
+                {item.label}
+              </a>
+            );
+          })}
         </nav>
 
         <div className="relative z-[60] flex items-center gap-3">
@@ -103,19 +106,22 @@ export const Navbar = () => {
         )}
       >
         <div className="flex flex-col gap-1 px-[var(--spacing-margin-mobile)] py-4">
-          {navLinks.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'type-label-caps py-3 text-[11px]',
-                overHero ? 'text-inverse-on-surface/90' : 'text-on-surface-variant',
-              )}
-              onClick={() => setMenuOpen(false)}
-            >
-              {item.label}
-            </a>
-          ))}
+          {navLinks.map((item) => {
+            const href = !isHome && item.href === '#locations' ? '/#locations' : item.href;
+            return (
+              <a
+                key={item.href}
+                href={href}
+                className={cn(
+                  'type-label-caps py-3 text-[11px]',
+                  overHero ? 'text-inverse-on-surface/90' : 'text-on-surface-variant',
+                )}
+                onClick={() => setMenuOpen(false)}
+              >
+                {item.label}
+              </a>
+            );
+          })}
         </div>
       </div>
     </header>

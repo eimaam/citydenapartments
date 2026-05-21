@@ -21,3 +21,14 @@ export interface IAmenityItem {
   label: string;
   icon: LucideIcon;
 }
+
+export interface ICityPageData {
+  id: string;
+  name: string;
+  tagline: string;
+  description: string;
+  heroImage: string;
+  suites: ISuiteCard[];
+  amenities: IAmenityItem[];
+  galleryImages: string[];
+}

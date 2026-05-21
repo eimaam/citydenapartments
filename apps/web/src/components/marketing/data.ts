@@ -10,7 +10,7 @@ import {
   Clock, 
   Shirt 
 } from 'lucide-react';
-import type { IAmenityItem, ILocationCard, ISuiteCard } from './types';
+import type { IAmenityItem, ILocationCard, ISuiteCard, ICityPageData } from './types';
 
 export const locations: ILocationCard[] = [
   {
@@ -154,4 +154,36 @@ export const amenities: IAmenityItem[] = [
     icon: Shirt 
   },
 ];
+
+export const cityData: Record<string, ICityPageData> = {
+  abuja: {
+    id: 'abuja',
+    name: 'Abuja',
+    tagline: 'FEDERAL CAPITAL TERRITORY',
+    description: 'Experience the pinnacle of urban comfort in the heart of Nigeria\'s capital. Our Abuja suites offer a blend of modern luxury and serene comfort.',
+    heroImage: 'https://images.unsplash.com/photo-1486325212027-8081e485255e?auto=format&fit=crop&w=2400&q=80',
+    suites: suites,
+    amenities: amenities,
+    galleryImages: [
+      'https://images.unsplash.com/photo-1616594039964-3f59a4a3f6f9?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
+    ],
+  },
+  kaduna: {
+    id: 'kaduna',
+    name: 'Kaduna',
+    tagline: 'HERITAGE CITY',
+    description: 'Discover historical elegance combined with contemporary living. Our Kaduna location provides a unique heritage experience with all modern amenities.',
+    heroImage: 'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&w=2400&q=80',
+    suites: suites.slice(0, 4),
+    amenities: amenities.slice(0, 6),
+    galleryImages: [
+      'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1200&q=80',
+    ],
+  },
+};
 
