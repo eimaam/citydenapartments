@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Waves, Dumbbell, Coffee } from 'lucide-react';
 import { Button } from '@citydenapartments/shared';
 import { SectionReveal } from '../../components/marketing/motionSection';
+import { BookingBar } from '../../components/marketing/BookingBar';
 
 export const MaiduguriPage = () => {
   const [email, setEmail] = useState('');
@@ -35,7 +36,7 @@ export const MaiduguriPage = () => {
   return (
     <div className="flex flex-col bg-[#FAF8F6]">
       {/* Hero Section */}
-      <section className="relative flex min-h-[80vh] w-full flex-col items-center justify-center overflow-hidden bg-inverse-surface pt-24">
+      <section className="relative flex min-h-[90vh] w-full flex-col items-center justify-center overflow-hidden bg-inverse-surface pt-24 pb-20 md:min-h-[95vh]">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
@@ -55,7 +56,13 @@ export const MaiduguriPage = () => {
             <span className="italic text-primary-container font-light">Maiduguri</span>
           </h1>
         </div>
+
+        {/* Booking Bar */}
+        <BookingBar currentCity="maiduguri" />
       </section>
+
+      {/* Spacing for Booking Bar overlay */}
+      <div className="h-16 md:h-20" />
 
       {/* The Brand Promise Section */}
       <section className="px-[var(--spacing-margin-mobile)] py-20 lg:px-[var(--spacing-margin-desktop)] lg:py-28">

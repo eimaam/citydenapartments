@@ -1,13 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Waves, Award, Dumbbell } from 'lucide-react';
 import { Button } from '@citydenapartments/shared';
 import { HeroEntrance, SectionReveal } from '../../components/marketing/motionSection';
+import { BookingBar } from '../../components/marketing/BookingBar';
 
 export const AbujaPage = () => {
-  const [checkIn, setCheckIn] = useState('');
-  const [checkOut, setCheckOut] = useState('');
-  const [guests, setGuests] = useState('Abuja');
-
   const suites = [
     {
       id: 'executive-studio',
@@ -88,57 +85,7 @@ export const AbujaPage = () => {
         </div>
 
         {/* Booking Bar */}
-        <div className="absolute bottom-0 left-1/2 z-20 w-[90%] max-w-[1040px] -translate-x-1/2 translate-y-1/2 rounded-sm border border-outline-variant bg-white p-4 shadow-ambient md:p-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4 items-center">
-            {/* Check In */}
-            <div className="flex flex-col border-b border-outline-variant/30 pb-2 md:border-b-0 md:border-r md:pb-0 md:pr-4">
-              <span className="text-[10px] font-bold tracking-widest text-[#7F7663] uppercase">CHECK IN</span>
-              <input
-                type="text"
-                placeholder="DD/MM/YYYY"
-                value={checkIn}
-                onChange={(e) => setCheckIn(e.target.value)}
-                className="mt-1 font-sans text-sm font-medium text-on-surface outline-none placeholder-on-surface-variant/40"
-              />
-            </div>
-
-            {/* Check Out */}
-            <div className="flex flex-col border-b border-outline-variant/30 pb-2 md:border-b-0 md:border-r md:pb-0 md:pr-4">
-              <span className="text-[10px] font-bold tracking-widest text-[#7F7663] uppercase">CHECK OUT</span>
-              <input
-                type="text"
-                placeholder="DD/MM/YYYY"
-                value={checkOut}
-                onChange={(e) => setCheckOut(e.target.value)}
-                className="mt-1 font-sans text-sm font-medium text-on-surface outline-none placeholder-on-surface-variant/40"
-              />
-            </div>
-
-            {/* Guests */}
-            <div className="flex flex-col border-b border-outline-variant/30 pb-2 md:border-b-0 md:border-r md:pb-0 md:pr-4">
-              <span className="text-[10px] font-bold tracking-widest text-[#7F7663] uppercase">GUESTS</span>
-              <select
-                value={guests}
-                onChange={(e) => setGuests(e.target.value)}
-                className="mt-1 font-sans text-sm font-medium text-on-surface bg-transparent outline-none cursor-pointer"
-              >
-                <option value="Abuja">Abuja</option>
-                <option value="Kaduna">Kaduna</option>
-                <option value="Maiduguri">Maiduguri</option>
-              </select>
-            </div>
-
-            {/* Check Availability Button */}
-            <div className="w-full">
-              <Button
-                size="lg"
-                className="w-full !bg-[#735c00] hover:!bg-[#554300] !text-white !rounded-none !py-4 font-bold tracking-widest text-xs"
-              >
-                CHECK AVAILABILITY
-              </Button>
-            </div>
-          </div>
-        </div>
+        <BookingBar currentCity="abuja" />
       </section>
 
       {/* Spacing for Booking Bar overlay */}

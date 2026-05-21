@@ -6,3 +6,5 @@ export * from './LocationsSection';
 export * from './PhilosophySection';
 export * from './SuitesSection';
 export * from './motionSection';
+export * from './BookingBar';
+

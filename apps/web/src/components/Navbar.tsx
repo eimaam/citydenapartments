@@ -84,16 +84,18 @@ export const Navbar = () => {
           >
             <Menu className="size-5" strokeWidth={1.5} />
           </button>
-          <Button
-            size="md"
-            variant="outline"
-            className={cn(
-              '',
-              overHero && '!bg-primary-container !text-on-primary-container hover:!brightness-95',
-            )}
-          >
-            BOOK NOW
-          </Button>
+          <Link to="/book">
+            <Button
+              size="md"
+              variant="outline"
+              className={cn(
+                '',
+                overHero && '!bg-primary-container !text-on-primary-container hover:!brightness-95',
+              )}
+            >
+              BOOK NOW
+            </Button>
+          </Link>
         </div>
       </div>
 

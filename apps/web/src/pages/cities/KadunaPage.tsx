@@ -1,6 +1,7 @@
 import React from 'react';
 import { Wifi, ArrowUpRight } from 'lucide-react';
 import { SectionReveal } from '../../components/marketing/motionSection';
+import { BookingBar } from '../../components/marketing/BookingBar';
 
 export const KadunaPage = () => {
   const suites = [
@@ -45,7 +46,7 @@ export const KadunaPage = () => {
   return (
     <div className="flex flex-col bg-[#FAF8F6]">
       {/* Hero Section */}
-      <section className="relative flex min-h-[80vh] w-full flex-col items-center justify-center overflow-hidden bg-inverse-surface pt-24">
+      <section className="relative flex min-h-[90vh] w-full flex-col items-center justify-center overflow-hidden bg-inverse-surface pt-24 pb-20 md:min-h-[95vh]">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
@@ -60,7 +61,13 @@ export const KadunaPage = () => {
             City Den Apartments — Kaduna
           </h1>
         </div>
+
+        {/* Booking Bar */}
+        <BookingBar currentCity="kaduna" />
       </section>
+
+      {/* Spacing for Booking Bar overlay */}
+      <div className="h-16 md:h-20" />
 
       {/* The Retreat Section */}
       <section className="px-[var(--spacing-margin-mobile)] py-20 lg:px-[var(--spacing-margin-desktop)] lg:py-28">
