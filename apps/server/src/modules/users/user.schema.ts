@@ -1,0 +1,43 @@
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document, Schema as MongooseSchema } from 'mongoose';
+
+export enum UserRoleEnum {
+  SUPER_ADMIN =  'SuperAdmin',
+  RECEPTION = 'Reception',
+  KITCHEN_STAFF = 'KitchenStaff',
+  SOCIAL_MEDIA_MANAGER = 'SocialMediaManager',
+};
+
+
+export type UserRole = 'SuperAdmin' | 'Reception' | 'KitchenStaff' | 'SocialMediaManager';
+
+
+@Schema({ timestamps: true })
+export class User extends Document {
+  @Prop({ required: true, unique: true, lowercase: true })
+  email: string;
+
+  @Prop({ required: true, select: false })
+  password: string;
+
+  @Prop({ required: true, trim: true })
+  name: string;
+
+  @Prop({
+    type: String,
+    enum: UserRoleEnum,
+    required: true,
+  })
+  role: UserRole;
+
+  @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'Branch' }], default: [] })
+  allowedBranches: MongooseSchema.Types.ObjectId[];
+
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Branch' })
+  activeBranchId: MongooseSchema.Types.ObjectId;
+
+  @Prop({ default: true })
+  isActive: boolean;
+}
+
+export const UserSchema = SchemaFactory.createForClass(User);
