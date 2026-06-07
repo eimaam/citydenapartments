@@ -1,3 +1,4 @@
+export * from './src/components/ui/Badge';
 export * from './src/components/ui/Button';
 export * from './src/components/ui/Card';
 export * from './src/components/ui/Checkbox';
