@@ -21,6 +21,8 @@ export const CACHE_TTL = {
     // static Keys (things that don't change per user)..
     BRANCHES: 'branches:all',
     GLOBAL_SETTINGS: 'settings:global',
+    DASHBOARD_SUMMARY: 'dashboard:summary',
+    USERS_LIST: 'users:list',
   } as const;
   
 
