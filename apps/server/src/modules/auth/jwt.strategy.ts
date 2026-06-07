@@ -52,6 +52,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       email: user.email,
       name: user.name,
       role: user.role,
+      isActive: user.isActive,
       allowedBranches: user.allowedBranches.map((b) => b.toString()),
       activeBranchId: payload.activeBranchId || null,
     };

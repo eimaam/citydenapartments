@@ -45,19 +45,27 @@ export class AuthService {
     return { accessToken: token, user: this.sanitize(user) };
   }
 
-  async getProfileById(userId){
-    const user = await this.userModel.findById(userId).lean()
-    if (!user){
-      throw new NotFoundException("User not found")
-    }
-    return user;
+  async getProfileById(userId: string) {
+    const user = await this.userModel.findById(userId, { password: 0 }).lean();
+    if (!user) throw new NotFoundException('User not found');
+    return {
+      id: user._id.toString(),
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      isActive: user.isActive,
+      allowedBranches: user.allowedBranches.map((b: any) => b.toString()),
+      activeBranchId: user.activeBranchId?.toString() || null,
+    };
   }
 
   async login({ email, password}: LoginDto) {
     const user = await this.userModel.findOne({ email: email.toLowerCase() }).select('+password');
-    if (!user || !user.isActive) {
+    if (!user) {
       throw new UnauthorizedException('Invalid email or password.');
     }
+
+    if (!user.isActive) throw new UnauthorizedException("Account Deactivated. Contact Admin.")
 
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {

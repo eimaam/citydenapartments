@@ -10,6 +10,8 @@ import { Booking } from './booking.schema';
 import { Room } from '../rooms/room.schema';
 import { RoomType } from '../room-types/room-type.schema';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { RedisService } from '../redis/redis.service';
+import { CACHE_KEYS } from '../../config/cache.constants';
 
 @Injectable()
 export class BookingsService {
@@ -18,6 +20,7 @@ export class BookingsService {
     @InjectModel(Room.name) private roomModel: Model<Room>,
     @InjectModel(RoomType.name) private roomTypeModel: Model<RoomType>,
     @InjectConnection() private readonly connection: Connection,
+    private readonly redis: RedisService,
   ) {}
 
   async findAll(branchId: string) {
@@ -105,6 +108,7 @@ export class BookingsService {
       }
 
       await session.commitTransaction();
+      await this.redis.del(CACHE_KEYS.DASHBOARD_SUMMARY);
       return newBooking;
     } catch (error) {
       await session.abortTransaction();
@@ -136,6 +140,7 @@ export class BookingsService {
       );
 
       await session.commitTransaction();
+      await this.redis.del(CACHE_KEYS.DASHBOARD_SUMMARY);
       return booking;
     } catch (error) {
       await session.abortTransaction();
@@ -167,6 +172,7 @@ export class BookingsService {
       );
 
       await session.commitTransaction();
+      await this.redis.del(CACHE_KEYS.DASHBOARD_SUMMARY);
       return booking;
     } catch (error) {
       await session.abortTransaction();
@@ -202,6 +208,7 @@ export class BookingsService {
       }
 
       await session.commitTransaction();
+      await this.redis.del(CACHE_KEYS.DASHBOARD_SUMMARY);
       return booking;
     } catch (error) {
       await session.abortTransaction();
