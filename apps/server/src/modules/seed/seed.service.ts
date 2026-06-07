@@ -1,0 +1,237 @@
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import * as bcrypt from 'bcryptjs';
+import { User } from '../users/user.schema';
+import { Branch } from '../branches/branch.schema';
+import { RoomType } from '../room-types/room-type.schema';
+import { Room, RoomStatusEnum } from '../rooms/room.schema';
+import { Booking } from '../bookings/booking.schema';
+
+// ── random helpers ──────────────────────────────────────────────
+const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+const randNaira = (min: number, max: number) => randInt(min / 1000, max / 1000) * 1000;
+
+function daysAgo(n: number) { const d = new Date(); d.setDate(d.getDate() - n); return d; }
+function daysFromNow(n: number) { const d = new Date(); d.setDate(d.getDate() + n); return d; }
+function ref(prefix: string, n: number) { return `${prefix}-${String(n).padStart(3, '0')}`; }
+
+// ── data pools ───────────────────────────────────────────────────
+const firstNames = [
+  'Chidi', 'Amara', 'Ngozi', 'Obinna', 'Fatima', 'Ibrahim', 'Zainab', 'Tunde',
+  'Chioma', 'Emeka', 'Bolanle', 'Yusuf', 'Aisha', 'Musa', 'Halima', 'Olumide',
+  'Ifeanyi', 'Adaeze', 'Chukwudi', 'Nneka', 'Uche', 'Temitope', 'Kelechi', 'Folake',
+  'Azeez', 'Efe', 'Eno', 'Dayo', 'Sade', 'Bayo',
+];
+
+const lastNames = [
+  'Okonkwo', 'Okafor', 'Mohammed', 'Adebayo', 'Bello', 'Nwachukwu', 'Abubakar',
+  'Olawale', 'Eze', 'Suleiman', 'Adegoke', 'Obi', 'Danladi', 'Alabi', 'Ibe',
+  'Taiwo', 'Onyeka', 'Idris', 'Ojo', 'Balogun', 'Nwosu', 'Yakubu', 'Ogunleye',
+];
+
+const paymentMethods: Array<'Cash' | 'POS_Card' | 'Bank_Transfer'> = ['Cash', 'POS_Card', 'Bank_Transfer'];
+const bookingSources: Array<'WalkIn' | 'Phone' | 'Online'> = ['WalkIn', 'Phone', 'Online'];
+
+// ── scenario presets: [status, checkInOffset, checkOutOffset, nights] ─
+type Scenario = [string, number, number, number];
+
+const scenarios: Scenario[] = [
+  // Confirmed — today or future
+  ['Confirmed', 0, 2, 2],
+  ['Confirmed', 1, 3, 2],
+  ['Confirmed', 2, 5, 3],
+  ['Confirmed', 5, 8, 3],
+  ['Confirmed', 0, 1, 1],
+  ['Confirmed', 3, 5, 2],
+  ['Confirmed', 7, 10, 3],
+  ['Confirmed', 1, 4, 3],
+
+  // Checked_In — check-in in the past, check-out in the future
+  ['Checked_In', -1, 2, 3],
+  ['Checked_In', -2, 1, 3],
+  ['Checked_In', -3, 2, 5],
+  ['Checked_In', 0, 3, 3],
+  ['Checked_In', -1, 0, 1],
+  ['Checked_In', -4, 1, 5],
+  ['Checked_In', -2, 3, 5],
+  ['Checked_In', -1, 4, 5],
+
+  // Checked_Out — both dates in the past
+  ['Checked_Out', -5, -3, 2],
+  ['Checked_Out', -7, -5, 2],
+  ['Checked_Out', -10, -7, 3],
+  ['Checked_Out', -3, -1, 2],
+  ['Checked_Out', -14, -12, 2],
+  ['Checked_Out', -8, -6, 2],
+  ['Checked_Out', -6, -3, 3],
+  ['Checked_Out', -2, 0, 2],
+
+  // Cancelled — various offsets
+  ['Cancelled', 2, 4, 2],
+  ['Cancelled', -3, 1, 4],
+  ['Cancelled', 5, 8, 3],
+  ['Cancelled', -1, 2, 3],
+  ['Cancelled', 10, 12, 2],
+  ['Cancelled', -6, -4, 2],
+];
+
+@Injectable()
+export class SeedService {
+  constructor(
+    @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(Branch.name) private branchModel: Model<Branch>,
+    @InjectModel(RoomType.name) private roomTypeModel: Model<RoomType>,
+    @InjectModel(Room.name) private roomModel: Model<Room>,
+    @InjectModel(Booking.name) private bookingModel: Model<Booking>,
+  ) {}
+
+  async seed() {
+    const existingAdmin = await this.userModel.findOne({ email: 'admin@cityden.com' });
+    if (existingAdmin) {
+      return { message: 'System already seeded. Use POST /api/v1/auth/register to add users.' };
+    }
+
+    const hashedPassword = await bcrypt.hash('admin123', 12);
+
+    // ── branches ──
+    const branches = await this.branchModel.create([
+      { name: 'Abuja', code: 'ABJ', address: 'Plot 123, Central Business District, Abuja', isActive: true },
+      { name: 'Kaduna', code: 'KAD', address: 'No 45, Ahmadu Bello Way, Kaduna', isActive: true },
+      { name: 'Maiduguri', code: 'MAI', address: '15 Damaturu Road, Maiduguri', isActive: true },
+    ]);
+
+    // ── admin ──
+    const admin = await this.userModel.create({
+      email: 'admin@cityden.com', password: hashedPassword, name: 'Super Admin',
+      role: 'SuperAdmin', allowedBranches: branches.map((b) => b._id),
+      activeBranchId: branches[0]._id, isActive: true,
+    });
+
+    // ── room types ──
+    const abujaRT = await this.roomTypeModel.create([
+      { branchId: branches[0]._id, name: 'King Suite', basePrice: 80000, minPriceAllowed: 65000, amenities: ['King Bed', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[0]._id, name: 'Deluxe Suite', basePrice: 55000, minPriceAllowed: 45000, amenities: ['Queen Bed', 'AC', 'WiFi'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[0]._id, name: 'Presidential Suite', basePrice: 150000, minPriceAllowed: 120000, amenities: ['King Bed', 'Living Room', 'Jacuzzi', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
+    ]);
+    const kadunaRT = await this.roomTypeModel.create([
+      { branchId: branches[1]._id, name: 'King Suite', basePrice: 70000, minPriceAllowed: 55000, amenities: ['King Bed', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[1]._id, name: 'Standard Room', basePrice: 40000, minPriceAllowed: 32000, amenities: ['Queen Bed', 'AC', 'WiFi'], createdBy: admin._id, updatedBy: admin._id },
+    ]);
+    const maiRT = await this.roomTypeModel.create([
+      { branchId: branches[2]._id, name: 'Deluxe Suite', basePrice: 50000, minPriceAllowed: 40000, amenities: ['Queen Bed', 'AC', 'WiFi'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[2]._id, name: 'Standard Room', basePrice: 30000, minPriceAllowed: 25000, amenities: ['Queen Bed', 'AC'], createdBy: admin._id, updatedBy: admin._id },
+    ]);
+
+    // ── rooms (references for seeding bookings) ──
+    const roomDefs = [
+      { branch: 0, rt: 0, num: 'KS-101', max: 2 }, { branch: 0, rt: 0, num: 'KS-102', max: 2 },
+      { branch: 0, rt: 1, num: 'DS-201', max: 3 }, { branch: 0, rt: 1, num: 'DS-202', max: 3 },
+      { branch: 0, rt: 1, num: 'DS-203', max: 3 }, { branch: 0, rt: 2, num: 'PS-301', max: 4 },
+      { branch: 1, rt: 0, num: 'KS-101', max: 2 }, { branch: 1, rt: 0, num: 'KS-102', max: 2 },
+      { branch: 1, rt: 1, num: 'SR-201', max: 2 }, { branch: 1, rt: 1, num: 'SR-202', max: 2 },
+      { branch: 2, rt: 0, num: 'DS-101', max: 3 }, { branch: 2, rt: 0, num: 'DS-102', max: 3 },
+      { branch: 2, rt: 1, num: 'SR-201', max: 2 },
+    ];
+
+    const allRT = [abujaRT, kadunaRT, maiRT];
+    const rooms = await this.roomModel.create(
+      roomDefs.map((r) => ({
+        branchId: branches[r.branch]._id,
+        roomTypeId: allRT[r.branch][r.rt]._id,
+        roomNumber: r.num,
+        maxGuests: r.max,
+        status: RoomStatusEnum.AVAILABLE,
+        createdBy: admin._id,
+        updatedBy: admin._id,
+      })),
+    );
+
+    // ── staff ──
+    await this.userModel.create([
+      { email: 'reception@cityden.com', password: hashedPassword, name: 'Amara Reception', role: 'Reception', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true },
+      { email: 'kitchen@cityden.com', password: hashedPassword, name: 'Chef Ibrahim', role: 'KitchenStaff', allowedBranches: [branches[0]._id], activeBranchId: branches[0]._id, isActive: true },
+      { email: 'media@cityden.com', password: hashedPassword, name: 'Zara Media', role: 'SocialMediaManager', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true },
+    ]);
+
+    // ── 30 bookings ─────────────────────────────────────────────────
+    const bookingData: Array<Record<string, unknown>> = [];
+    const roomsToUpdate: Record<string, string> = {}; // roomId -> status
+
+    for (let i = 0; i < 30; i++) {
+      const [status, ciOff, coOff] = scenarios[i % scenarios.length];
+      const room = rooms[i % rooms.length];
+      const branch = branches.find((b) => b._id.toString() === room.branchId.toString())!;
+      const rt = allRT.flat().find((t) => t._id.toString() === room.roomTypeId.toString());
+
+      const ci = ciOff >= 0 ? daysFromNow(ciOff) : daysAgo(Math.abs(ciOff));
+      const co = coOff >= 0 ? daysFromNow(coOff) : daysAgo(Math.abs(coOff));
+
+      // ensure check-out after check-in
+      if (co <= ci) co.setDate(ci.getDate() + 1);
+
+      const nights = Math.max(1, Math.ceil((co.getTime() - ci.getTime()) / 86400000));
+      const pricePerNight = rt ? randNaira(rt.minPriceAllowed, rt.basePrice) : randNaira(25000, 80000);
+      const discount = Math.random() > 0.7 ? randInt(0, 10000) : 0;
+      const total = Math.max(0, pricePerNight * nights - discount);
+
+      const guestName = `${pick(firstNames)} ${pick(lastNames)}`;
+      const guestPhone = `0803${String(randInt(1000000, 9999999)).padStart(7, '0')}`;
+      const hasEmail = Math.random() > 0.5;
+
+      bookingData.push({
+        branchId: room.branchId,
+        roomId: room._id,
+        guestDetails: {
+          name: guestName,
+          phone: guestPhone,
+          ...(hasEmail ? { email: `${guestName.toLowerCase().replace(/\s/g, '.')}@email.com` } : {}),
+        },
+        numberOfGuests: randInt(1, room.maxGuests),
+        checkInDate: ci,
+        checkOutDate: co,
+        actualPricePerNight: pricePerNight,
+        discount,
+        totalAmountPaid: total,
+        paymentMethod: pick(paymentMethods),
+        paymentReference: Math.random() > 0.5 ? `TXN-${Date.now().toString(36)}-${i}` : undefined,
+        bookingStatus: status,
+        bookingSource: pick(bookingSources),
+        bookedBy: admin._id,
+        bookingReference: `CDA-${branch.code}-${String(i + 1).padStart(3, '0')}`,
+      });
+
+      // track room status updates
+      if (status === 'Checked_In' && !roomsToUpdate[room._id.toString()]) {
+        roomsToUpdate[room._id.toString()] = RoomStatusEnum.OCCUPIED;
+      } else if (status === 'Checked_Out' && !roomsToUpdate[room._id.toString()]) {
+        roomsToUpdate[room._id.toString()] = RoomStatusEnum.DIRTY;
+      }
+    }
+
+    await this.bookingModel.create(bookingData);
+
+    // Update room statuses
+    for (const [roomId, status] of Object.entries(roomsToUpdate)) {
+      await this.roomModel.findByIdAndUpdate(roomId, { status });
+    }
+
+    return {
+      message: 'System seeded successfully',
+      credentials: {
+        admin: 'admin@cityden.com / admin123',
+        reception: 'reception@cityden.com / admin123',
+        kitchen: 'kitchen@cityden.com / admin123',
+        media: 'media@cityden.com / admin123',
+      },
+      stats: {
+        users: 4,
+        branches: 3,
+        roomTypes: 7,
+        rooms: rooms.length,
+        bookings: bookingData.length,
+      },
+    };
+  }
+}
