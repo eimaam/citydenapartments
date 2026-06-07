@@ -19,12 +19,17 @@ export class UsersController {
   }
 
   @Post()
-  create(@Body() dto: { email: string; password: string; name: string; role: string; allowedBranches?: string[] }) {
+  create(@Body() dto: { email: string; name: string; role: string; allowedBranches?: string[] }) {
     return this.usersService.create(dto);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: { name?: string; role?: string; allowedBranches?: string[]; activeBranchId?: string; isActive?: boolean }) {
     return this.usersService.update(id, dto);
+  }
+
+  @Post(':id/reset-password')
+  resetPassword(@Param('id') id: string) {
+    return this.usersService.resetPassword(id);
   }
 }

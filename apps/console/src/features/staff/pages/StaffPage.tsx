@@ -109,6 +109,21 @@ export default function StaffPage() {
     } catch (e: any) { toast('error', e.message); }
   };
 
+  const resetPassword = async (u: StaffUser) => {
+    try {
+      const res = await api.post<{ user: StaffUser; generatedPassword: string }>(`/users/${u._id}/reset-password`);
+      setCreatedAccount({
+        email: u.email,
+        password: res.generatedPassword,
+        name: u.name,
+        loginUrl: `${PLATFORM_URL}/login`,
+      });
+      setEdit(u);
+      setDrawer(true);
+      toast('success', 'Password reset. Share new credentials.');
+    } catch (e: any) { toast('error', e.message); }
+  };
+
   const copyToClipboard = async (text: string, field: string) => {
     await navigator.clipboard.writeText(text);
     setCopiedField(field);
@@ -134,10 +149,11 @@ export default function StaffPage() {
       )},
     { title: 'Status', key: 'status', width: 120,
       render: (_: unknown, r: StaffUser) => <Badge status={r.isActive ? RoomStatus.Available : RoomStatus.Maintenance} /> },
-    { title: 'Actions', key: 'action', width: 180,
+    { title: 'Actions', key: 'action', width: 240,
       render: (_: unknown, r: StaffUser) => (
         <div className="flex gap-2">
           <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); openEdit(r); }}>Edit</Button>
+          <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); resetPassword(r); }}>Reset Pwd</Button>
           <Button size="sm" variant={r.isActive ? 'destructive' : 'default'} onClick={(e) => { e.stopPropagation(); toggleActive(r); }}>
             {r.isActive ? 'Deactivate' : 'Activate'}
           </Button>

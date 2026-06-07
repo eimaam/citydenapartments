@@ -54,6 +54,7 @@ export class AuthService {
       name: user.name,
       role: user.role,
       isActive: user.isActive,
+      passwordChangedAt: user.passwordChangedAt?.toISOString?.() ?? null,
       allowedBranches: user.allowedBranches.map((b: any) => b.toString()),
       activeBranchId: user.activeBranchId?.toString() || null,
     };
@@ -106,6 +107,25 @@ export class AuthService {
     return { accessToken: token, user: this.sanitize(user) };
   }
 
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await this.userModel.findById(userId).select('+password');
+    if (!user) throw new UnauthorizedException('User not found.');
+
+    const isValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isValid) throw new BadRequestException('Current password is incorrect.');
+
+    if (newPassword.length < 6) throw new BadRequestException('Password must be at least 6 characters.');
+
+    user.password = await bcrypt.hash(newPassword, 12);
+    user.passwordChangedAt = new Date();
+    await user.save();
+
+    await this.redisService.del(CACHE_KEYS.USER(userId));
+    await this.redisService.del(CACHE_KEYS.USER_SESSION(userId));
+
+    return { message: 'Password changed successfully.' };
+  }
+
   async logout(userId: string) {
     await this.redisService.del(CACHE_KEYS.USER(userId));
     await this.redisService.del(CACHE_KEYS.USER_SESSION(userId));
@@ -129,6 +149,7 @@ export class AuthService {
       name: user.name,
       role: user.role,
       isActive: user.isActive,
+      passwordChangedAt: user.passwordChangedAt?.toISOString?.() ?? null,
       allowedBranches: user.allowedBranches.map((b) => b.toString()),
       activeBranchId: user.activeBranchId?.toString() || null,
     };

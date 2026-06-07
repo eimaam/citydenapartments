@@ -38,4 +38,12 @@ export class AuthController {
     await this.authService.logout(user.id);
     return { message: 'Signed out successfully.' };
   }
+
+  @Post('change-password')
+  changePassword(
+    @ActiveUser() user: any,
+    @Body() dto: { currentPassword: string; newPassword: string },
+  ) {
+    return this.authService.changePassword(user.id, dto.currentPassword, dto.newPassword);
+  }
 }

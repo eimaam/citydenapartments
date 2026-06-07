@@ -47,6 +47,8 @@ export interface AuthUser {
   email: string;
   name: string;
   role: UserRoleType;
+  isActive: boolean;
+  passwordChangedAt: string | null;
   allowedBranches: string[];
   activeBranchId: string | null;
 }
