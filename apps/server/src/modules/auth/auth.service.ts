@@ -74,23 +74,11 @@ export class AuthService {
   }
 
   async switchBranch(userId: string, dto: SwitchBranchDto) {
-    let user;
-    const cacheKey = CACHE_KEYS.USER(userId)
-    const cachedUser = await this.redisService.get(cacheKey)
-    if (cachedUser){
-      console.log("found cached user")
-
-      const parsedUser = JSON.parse(cachedUser)
-      console.log({ parsedUser})
-      user = parsedUser
-    } else {
-      user = await this.userModel.findById(userId);
-    }
-    
+    const user = await this.userModel.findById(userId);
     if (!user) throw new UnauthorizedException('User not found.');
 
     if (!user.isActive) {
-      throw new UnauthorizedException("Account is deactivated. Contact Support")
+      throw new UnauthorizedException('Account is deactivated. Contact Support');
     }
 
     const branchStr = dto.branchId;
@@ -102,6 +90,9 @@ export class AuthService {
 
     user.activeBranchId = dto.branchId as any;
     await user.save();
+
+    await this.redisService.del(CACHE_KEYS.USER(userId));
+    await this.redisService.del(CACHE_KEYS.USER_SESSION(userId));
 
     const token = this.signToken(user);
     return { accessToken: token, user: this.sanitize(user) };

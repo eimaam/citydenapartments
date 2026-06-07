@@ -35,8 +35,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const cachedUser = await this.redisService.get(cacheKey)
     if (cachedUser) {
       const user = JSON.parse(cachedUser)
-      console.log("cache hit")
-      console.log("found user ==>", user)
       if (!user.isActive) {
         throw new UnauthorizedException("Account is deactivated. Contact Support")
       }
