@@ -1,0 +1,51 @@
+services:
+  mongodb:
+    image: mongo:7
+    container_name: cityden-mongo
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: mongosh --eval 'db.runCommand("ping").ok' --quiet || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: cityden-mongo-ui
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://mongodb:27017/cityden?replicaSet=rs0
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mongo-setup:
+    image: mongo:7
+    container_name: cityden-mongo-setup
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: "no"
+    entrypoint:
+      - bash
+      - -c
+      - |
+        sleep 2 &&
+        mongosh --host mongodb:27017 --eval '
+          rs.initiate({
+            _id: "rs0",
+            version: 1,
+            members: [{ _id: 0, host: "localhost:27017" }]
+          });
+        ' &&
+        echo "Replica set initialized."
+
+volumes:
+  mongodb_data:
