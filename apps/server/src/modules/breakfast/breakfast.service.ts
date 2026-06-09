@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as mongoose from 'mongoose';
@@ -10,6 +10,8 @@ import { escapeRegex } from '../../common/utils/escape-regex';
 
 @Injectable()
 export class BreakfastService {
+  private readonly logger = new Logger(BreakfastService.name);
+
   constructor(
     @InjectModel(BreakfastLog.name) private breakfastLogModel: Model<BreakfastLog>,
     @InjectModel(Booking.name) private bookingModel: Model<Booking>,
@@ -92,9 +94,17 @@ export class BreakfastService {
     const todayEnd = endOfDay(now);
 
     const booking = await this.bookingModel.findById(dto.bookingId);
-    if (!booking) throw new NotFoundException('Booking not found.');
+    if (!booking) {
+      this.logger.warn(`Booking not found — id: ${dto.bookingId}`);
+      throw new NotFoundException('Booking not found.');
+    }
     if (booking.bookingStatus !== 'Checked_In') {
+      this.logger.warn(`Breakfast denied — Guest ${booking.guestDetails.name} | booking not checked in`);
       throw new BadRequestException('Booking is not checked in.');
+    }
+
+    if (dto.roomId !== booking.roomId.toString()) {
+      this.logger.warn(`Room mismatch — Guest ${booking.guestDetails.name} | expected ${booking.roomId}, received ${dto.roomId}`);
     }
 
     const alreadyServed = await this.breakfastLogModel.findOne({
@@ -103,10 +113,11 @@ export class BreakfastService {
     });
 
     if (alreadyServed) {
+      this.logger.warn(`Breakfast duplicate — Guest ${booking.guestDetails.name} | already served today`);
       throw new ConflictException('Breakfast already served for this booking today.');
     }
 
-    return this.breakfastLogModel.create({
+    const log = await this.breakfastLogModel.create({
       branchId,
       bookingId: dto.bookingId,
       roomId: booking.roomId,
@@ -115,5 +126,8 @@ export class BreakfastService {
       servingsClaimed: dto.servingsClaimed || 1,
       servedBy: userId,
     });
+
+    this.logger.log(`Breakfast served — Guest ${booking.guestDetails.name} | Room ${booking.roomId} | by ${userId}`);
+    return log;
   }
 }

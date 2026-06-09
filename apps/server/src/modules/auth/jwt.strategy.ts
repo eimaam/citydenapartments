@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -18,6 +18,8 @@ export interface JwtPayload {
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
+  private readonly logger = new Logger(JwtStrategy.name);
+
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
     private redisService: RedisService,
@@ -36,14 +38,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (cachedUser) {
       const user = JSON.parse(cachedUser)
       if (!user.isActive) {
+        this.logger.warn(`JWT rejected — deactivated user: ${user.email}`);
         throw new UnauthorizedException("Account is deactivated. Contact Support")
       }
       return user;
     }
+
+
+
     
     
     const user = await this.userModel.findById(payload.sub).lean();
     if (!user || !user.isActive) {
+      this.logger.warn(`JWT rejected — user not found or deactivated user`);
       throw new UnauthorizedException('User not found or deactivated.');
     }
 

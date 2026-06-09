@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { RoomType } from './room-type.schema';
@@ -8,6 +8,8 @@ import { escapeRegex } from '../../common/utils/escape-regex';
 
 @Injectable()
 export class RoomTypesService {
+  private readonly logger = new Logger(RoomTypesService.name);
+
   constructor(@InjectModel(RoomType.name) private roomTypeModel: Model<RoomType>) {}
 
   async findAll(params: { branchId: string; page?: number; limit?: number; search?: string }) {
@@ -35,10 +37,17 @@ export class RoomTypesService {
     if (existing) {
       throw new BadRequestException('A room type with this name already exists in this branch.');
     }
-    return this.roomTypeModel.create({ ...dto, createdBy: userId });
+    return this.roomTypeModel.create({ ...dto, createdBy: userId }).then((roomType) => {
+      this.logger.log(`Room type created — ${roomType.name} | branch: ${roomType.branchId}`);
+      return roomType;
+    });
   }
 
   async update(id: string, dto: UpdateRoomTypeDto, userId: string) {
-    return this.roomTypeModel.findByIdAndUpdate(id, { ...dto, updatedBy: userId }, { new: true }).lean();
+    const updated = await this.roomTypeModel.findByIdAndUpdate(id, { ...dto, updatedBy: userId }, { new: true }).lean();
+    if (updated) {
+      this.logger.log(`Room type updated — ${updated.name}`);
+    }
+    return updated;
   }
 }

@@ -3,7 +3,7 @@ import { RedisService } from "../redis/redis.service";
 import { Branch } from "./branch.schema";
 import { Model } from "mongoose";
 import { CACHE_KEYS, CACHE_TTL } from "../../config/cache.constants";
-import { NotFoundException, BadRequestException } from "@nestjs/common";
+import { NotFoundException, BadRequestException, Logger } from "@nestjs/common";
 import { CreateBranchDto } from "./dto/create.dto";
 import { BranchUpdateDto } from "./dto/update.dto";
 import { escapeRegex } from "../../common/utils/escape-regex";
@@ -11,6 +11,8 @@ import { escapeRegex } from "../../common/utils/escape-regex";
 
 
 export class BranchService {
+    private readonly logger = new Logger(BranchService.name);
+
     constructor(
         @InjectModel(Branch.name)
         private branchModel: Model<Branch>,
@@ -63,12 +65,15 @@ export class BranchService {
             $or: [{ name: { $regex: `^${escapeRegex(name)}$`, $options: 'i' } }, { code: code.toUpperCase() }],
         });
         if (duplicate) {
+            this.logger.warn(`Duplicate branch name/code on create — ${name} (${code})`);
             throw new BadRequestException('A branch with this name or code already exists.');
         }
 
         const newBranch = await this.branchModel.create({
             name, address, code, isActive
         })
+
+        this.logger.log(`Branch created — ${name} (${code}) | address: ${address}`);
 
         return newBranch;
     }
@@ -78,6 +83,10 @@ export class BranchService {
             ...dto
         }
         const updatedBranch = await this.branchModel.findByIdAndUpdate(branchId, updateDetails, { new: true })
+
+        if (updatedBranch) {
+            this.logger.log(`Branch updated — ${updatedBranch.name} (${updatedBranch.code})`);
+        }
 
         return updatedBranch;
 

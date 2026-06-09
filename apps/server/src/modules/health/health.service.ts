@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { RedisService } from '../redis/redis.service';
@@ -21,6 +21,8 @@ export interface HealthResult {
 
 @Injectable()
 export class HealthService {
+  private readonly logger = new Logger(HealthService.name);
+
   constructor(
     @InjectConnection() 
     private readonly mongoConnection: Connection,
@@ -28,12 +30,18 @@ export class HealthService {
   ) {}
 
   async check(): Promise<HealthResult> {
+    this.logger.log('Health check started');
+
     const [mongo, redis] = await Promise.all([
       this.checkMongo(),
       this.checkRedis(),
     ]);
 
     const allUp = mongo.status === 'up' && redis.status === 'up';
+
+    if (allUp) {
+      this.logger.debug('Health check — all dependencies healthy');
+    }
 
     return {
       status: allUp ? 'ok' : 'degraded',
@@ -49,6 +57,7 @@ export class HealthService {
       await this.mongoConnection.db?.admin().ping();
       return { status: 'up', latency: Date.now() - start };
     } catch (error: any) {
+      this.logger.error(`Health check — MongoDB DOWN: ${error.message}`);
       return { status: 'down', error: error.message };
     }
   }
@@ -61,6 +70,7 @@ export class HealthService {
       if (val !== 'pong') throw new Error('Redis read/write mismatch');
       return { status: 'up', latency: Date.now() - start };
     } catch (error: any) {
+      this.logger.error(`Health check — Redis DOWN: ${error.message}`);
       return { status: 'down', error: error.message };
     }
   }

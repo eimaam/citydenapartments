@@ -3,6 +3,7 @@ import {
   ConflictException,
   BadRequestException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { InjectModel, InjectConnection } from '@nestjs/mongoose';
 import { Model, Connection } from 'mongoose';
@@ -23,6 +24,8 @@ export class BookingsService {
     @InjectConnection() private readonly connection: Connection,
     private readonly redis: RedisService,
   ) {}
+
+  private readonly logger = new Logger(BookingsService.name);
 
   async findAll(params: {
     branchId: string;
@@ -84,9 +87,11 @@ export class BookingsService {
     try {
       const room = await this.roomModel.findById(dto.roomId).session(session);
       if (!room || !room.isActive) {
+        this.logger.warn(`Room not found or inactive — roomId: ${dto.roomId}`);
         throw new BadRequestException('Room not found or inactive.');
       }
       if ((room.status as string) !== RoomStatusEnum.AVAILABLE) {
+        this.logger.warn(`Room status mismatch — room ${room.roomNumber} is "${room.status}", cannot book`);
         throw new BadRequestException(`Room is currently "${room.status}" — cannot book.`);
       }
 
@@ -112,6 +117,7 @@ export class BookingsService {
         .session(session);
 
       if (dateConflict) {
+        this.logger.warn(`Booking conflict — Room ${room.roomNumber} already booked for these dates`);
         throw new ConflictException('Room conflict detected. This room is already reserved.');
       }
 
@@ -154,6 +160,7 @@ export class BookingsService {
 
       await session.commitTransaction();
       await this.redis.del(CACHE_KEYS.DASHBOARD_SUMMARY);
+      this.logger.log(`Booking created — #${newBooking.bookingReference} | Room ${room.roomNumber} | Guest ${dto.guestName} | by ${actorId}`);
       return newBooking;
     } catch (error) {
       await session.abortTransaction();
@@ -165,14 +172,22 @@ export class BookingsService {
 
   async checkIn(id: string, actorId: string, branchId: string) {
     const booking = await this.bookingModel.findOne({ _id: id, branchId });
-    if (!booking) throw new NotFoundException('Booking not found.');
+    if (!booking) {
+      this.logger.warn(`Check-in failed — booking ${id} not found in branch ${branchId}`);
+      throw new NotFoundException('Booking not found.');
+    }
     if (booking.bookingStatus !== 'Confirmed') {
+      this.logger.warn(`Check-in failed — booking #${booking.bookingReference} has status "${booking.bookingStatus}", cannot check in`);
       throw new BadRequestException(`Cannot check in a ${booking.bookingStatus} booking.`);
     }
 
     const room = await this.roomModel.findById(booking.roomId);
-    if (!room) throw new BadRequestException('Room not found.');
+    if (!room) {
+      this.logger.warn(`Room not found — roomId: ${booking.roomId}`);
+      throw new BadRequestException('Room not found.');
+    }
     if (room.status as string !== RoomStatusEnum.AVAILABLE) {
+      this.logger.warn(`Room status mismatch — room ${room.roomNumber} is "${room.status}", cannot check in`);
       throw new BadRequestException(`Room is currently "${room.status}" — cannot check in.`);
     }
 
@@ -190,6 +205,7 @@ export class BookingsService {
 
       await session.commitTransaction();
       await this.redis.del(CACHE_KEYS.DASHBOARD_SUMMARY);
+      this.logger.log(`Check-in — #${booking.bookingReference} | Room ${room.roomNumber} | Guest ${booking.guestDetails.name} | by ${actorId}`);
       return booking;
     } catch (error) {
       await session.abortTransaction();
@@ -201,14 +217,22 @@ export class BookingsService {
 
   async checkOut(id: string, actorId: string, branchId: string) {
     const booking = await this.bookingModel.findOne({ _id: id, branchId });
-    if (!booking) throw new NotFoundException('Booking not found.');
+    if (!booking) {
+      this.logger.warn(`Check-out failed — booking ${id} not found in branch ${branchId}`);
+      throw new NotFoundException('Booking not found.');
+    }
     if (booking.bookingStatus !== 'Checked_In') {
+      this.logger.warn(`Check-out failed — booking #${booking.bookingReference} has status "${booking.bookingStatus}", cannot check out`);
       throw new BadRequestException(`Cannot check out a ${booking.bookingStatus} booking.`);
     }
 
     const room = await this.roomModel.findById(booking.roomId);
-    if (!room) throw new BadRequestException('Room not found.');
+    if (!room) {
+      this.logger.warn(`Room not found — roomId: ${booking.roomId}`);
+      throw new BadRequestException('Room not found.');
+    }
     if (room.status as string !== RoomStatusEnum.OCCUPIED) {
+      this.logger.warn(`Room status mismatch — room ${room.roomNumber} is "${room.status}", cannot check out`);
       throw new BadRequestException(`Room is currently "${room.status}" — cannot check out.`);
     }
 
@@ -226,6 +250,7 @@ export class BookingsService {
 
       await session.commitTransaction();
       await this.redis.del(CACHE_KEYS.DASHBOARD_SUMMARY);
+      this.logger.log(`Check-out — #${booking.bookingReference} | Room ${room.roomNumber} | Guest ${booking.guestDetails.name} | by ${actorId}`);
       return booking;
     } catch (error) {
       await session.abortTransaction();
@@ -237,8 +262,12 @@ export class BookingsService {
 
   async cancel(id: string, actorId: string, branchId: string) {
     const booking = await this.bookingModel.findOne({ _id: id, branchId });
-    if (!booking) throw new NotFoundException('Booking not found.');
+    if (!booking) {
+      this.logger.warn(`Cancel failed — booking ${id} not found in branch ${branchId}`);
+      throw new NotFoundException('Booking not found.');
+    }
     if (['Checked_Out', 'Cancelled'].includes(booking.bookingStatus)) {
+      this.logger.warn(`Cancel failed — booking #${booking.bookingReference} has status "${booking.bookingStatus}", cannot cancel`);
       throw new BadRequestException(`Cannot cancel a ${booking.bookingStatus} booking.`);
     }
 
@@ -246,8 +275,12 @@ export class BookingsService {
     let room: Room | null = null;
     if (wasCheckedIn) {
       room = await this.roomModel.findById(booking.roomId);
-      if (!room) throw new BadRequestException('Room not found.');
+      if (!room) {
+        this.logger.warn(`Room not found — roomId: ${booking.roomId}`);
+        throw new BadRequestException('Room not found.');
+      }
       if (room.status as string !== RoomStatusEnum.OCCUPIED) {
+        this.logger.warn(`Room status mismatch — room ${room.roomNumber} is "${room.status}", cannot release`);
         throw new BadRequestException(`Room is currently "${room.status}" — cannot release.`);
       }
     }
@@ -268,6 +301,7 @@ export class BookingsService {
 
       await session.commitTransaction();
       await this.redis.del(CACHE_KEYS.DASHBOARD_SUMMARY);
+      this.logger.log(`Booking cancelled — #${booking.bookingReference} | Room ${room?.roomNumber ?? 'N/A'} | Guest ${booking.guestDetails.name} | by ${actorId}`);
       return booking;
     } catch (error) {
       await session.abortTransaction();
