@@ -11,8 +11,10 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
 
+  const allowedOrigins = AppConfig.CORS_ORIGINS.split(',').map((o) => o.trim());
+
   app.enableCors({
-    origin: ['http://localhost:5174', 'http://localhost:3001'],
+    origin: allowedOrigins,
     credentials: true,
   });
 

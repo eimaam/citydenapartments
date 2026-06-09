@@ -3,6 +3,7 @@ export * from './src/components/ui/Button';
 export * from './src/components/ui/Card';
 export * from './src/components/ui/Checkbox';
 export * from './src/components/ui/CounterBadge';
+export * from './src/components/ui/CustomMultiSelect';
 export * from './src/components/ui/Input';
 export * from './src/components/ui/Logo';
 export * from './src/components/ui/Modal';

@@ -9,6 +9,7 @@ interface AppConfig {
   JWT_SECRET: string;
   JWT_EXPIRES_IN: string;
   NODE_ENV: string;
+  CORS_ORIGINS: string;
   REDIS_URL?: string;
   REDIS_HOST?: string;
   REDIS_PORT?: number;
@@ -22,6 +23,7 @@ export const AppConfigValidationSchema = Joi.object({
   MONGODB_URI: Joi.string().required(),
   JWT_SECRET: Joi.string().min(16).required(),
   JWT_EXPIRES_IN: Joi.string().default('7d'),
+  CORS_ORIGINS: Joi.string().default('http://localhost:5174,http://localhost:5175'),
   REDIS_URL: Joi.string().uri().optional(),
   REDIS_HOST: Joi.string().optional(),
   REDIS_PORT: Joi.number().optional(),
