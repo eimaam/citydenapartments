@@ -1,11 +1,8 @@
 import { format, getHours } from 'date-fns';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../../contexts/auth';
-import { BookingStatus, RoomStatus } from '@citydenapartments/shared';
 import { Spinner } from '../../../components/ui/Spinner';
-import { bookingsApi, type BookingResponse } from '../../bookings/api/bookings.api';
-import { roomsApi, type RoomResponse } from '../../rooms/api/rooms.api';
-import { breakfastApi, type ManifestEntry } from '../../breakfast/api/breakfast.api';
+import { dashboardApi, type DashboardSummary } from '../api/dashboard.api';
 import { CalendarCheck, Users, DoorOpen, Coffee, Clock, TrendingUp } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -17,44 +14,45 @@ export default function DashboardPage() {
 
 function ReceptionDashboard() {
   const { user } = useAuth();
-  const [bookings, setBookings] = useState<BookingResponse[]>([]);
-  const [rooms, setRooms] = useState<RoomResponse[]>([]);
+  const [data, setData] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([bookingsApi.list({ limit: 1000 }).then(r => r.items).catch(() => [] as BookingResponse[]), roomsApi.list({ limit: 1000 }).then(r => r.items).catch(() => [] as RoomResponse[])])
-      .then(([b, r]) => { setBookings(b); setRooms(r); setLoading(false); });
+    dashboardApi.summary()
+      .then(setData)
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, [user?.activeBranchId]);
 
-  const today = format(new Date(), 'yyyy-MM-dd');
-  const todayBookings = bookings.filter((b) => b.checkInDate && format(new Date(b.checkInDate), 'yyyy-MM-dd') === today);
-  const checkedIn = bookings.filter((b) => b.bookingStatus === BookingStatus.Checked_In);
-  const pendingCheckIns = bookings.filter((b) => b.bookingStatus === BookingStatus.Confirmed);
-  const occupied = rooms.filter((r) => r.status === RoomStatus.Occupied);
-  const occupancyRate = rooms.length ? Math.round((occupied.length / rooms.length) * 100) : 0;
+  const stats = data ? [
+    { label: "Today's Arrivals", value: data.overview.todayArrivals, icon: CalendarCheck, color: '#d4af37' },
+    { label: 'Currently In-House', value: data.overview.checkedInGuests, icon: Users, color: '#3b82f6' },
+    { label: 'Pending Check-ins', value: data.overview.pendingCheckIns, icon: Clock, color: '#f59e0b' },
+    { label: 'Occupancy', value: `${data.overview.occupancyRate}%`, icon: TrendingUp, color: '#10b981' },
+  ] : [];
 
-  const stats = [
-    { label: "Today's Arrivals", value: todayBookings.length, icon: CalendarCheck, color: '#d4af37' },
-    { label: 'Currently In-House', value: checkedIn.length, icon: Users, color: '#3b82f6' },
-    { label: 'Pending Check-ins', value: pendingCheckIns.length, icon: Clock, color: '#f59e0b' },
-    { label: 'Occupancy', value: `${occupancyRate}%`, icon: TrendingUp, color: '#10b981' },
-  ];
-  return renderDashboard('Front Desk', 'Overview of today\'s arrivals, departures, and occupancy.', stats, loading);
+  return renderDashboard('Front Desk', "Overview of today's arrivals, departures, and occupancy.", stats, loading);
 }
 
 function KitchenDashboard() {
   const { user } = useAuth();
-  const [manifest, setManifest] = useState<ManifestEntry[]>([]);
+  const [data, setData] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
-  useEffect(() => { breakfastApi.manifest({ limit: 1000 }).then((d) => { setManifest(d.items); setLoading(false); }).catch(() => setLoading(false)); }, [user?.activeBranchId]);
-  const served = manifest.filter((e) => e.isServed).length;
-  const pending = manifest.filter((e) => !e.isServed).length;
-  const stats = [
-    { label: 'Total Guests', value: manifest.length, icon: Users, color: '#3b82f6' },
-    { label: 'Served', value: served, icon: Coffee, color: '#10b981' },
-    { label: 'Pending', value: pending, icon: Clock, color: '#f59e0b' },
-    { label: 'Coverage', value: manifest.length ? `${Math.round((served / manifest.length) * 100)}%` : '—', icon: TrendingUp, color: '#d4af37' },
-  ];
+
+  useEffect(() => {
+    dashboardApi.summary()
+      .then(setData)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [user?.activeBranchId]);
+
+  const stats = data ? [
+    { label: 'Total Guests', value: data.breakfast.total, icon: Users, color: '#3b82f6' },
+    { label: 'Served', value: data.breakfast.served, icon: Coffee, color: '#10b981' },
+    { label: 'Pending', value: data.breakfast.pending, icon: Clock, color: '#f59e0b' },
+    { label: 'Coverage', value: data.breakfast.total ? `${Math.round((data.breakfast.served / data.breakfast.total) * 100)}%` : '—', icon: TrendingUp, color: '#d4af37' },
+  ] : [];
+
   return renderDashboard('Kitchen', "Today's breakfast manifest — mark guests as they are served.", stats, loading);
 }
 

@@ -12,7 +12,6 @@ import { Room, RoomStatusEnum } from '../rooms/room.schema';
 import { RoomType } from '../room-types/room-type.schema';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { RedisService } from '../redis/redis.service';
-import { CACHE_KEYS } from '../../config/cache.constants';
 import { escapeRegex } from '../../common/utils/escape-regex';
 
 @Injectable()
@@ -159,7 +158,7 @@ export class BookingsService {
       }
 
       await session.commitTransaction();
-      await this.redis.del(CACHE_KEYS.DASHBOARD_SUMMARY);
+      await this.redis.invalidateDashboardCache(branchId);
       this.logger.log(`Booking created — #${newBooking.bookingReference} | Room ${room.roomNumber} | Guest ${dto.guestName} | by ${actorId}`);
       return newBooking;
     } catch (error) {
@@ -204,7 +203,7 @@ export class BookingsService {
       await room.save({ session });
 
       await session.commitTransaction();
-      await this.redis.del(CACHE_KEYS.DASHBOARD_SUMMARY);
+      await this.redis.invalidateDashboardCache(branchId);
       this.logger.log(`Check-in — #${booking.bookingReference} | Room ${room.roomNumber} | Guest ${booking.guestDetails.name} | by ${actorId}`);
       return booking;
     } catch (error) {
@@ -249,7 +248,7 @@ export class BookingsService {
       await room.save({ session });
 
       await session.commitTransaction();
-      await this.redis.del(CACHE_KEYS.DASHBOARD_SUMMARY);
+      await this.redis.invalidateDashboardCache(branchId);
       this.logger.log(`Check-out — #${booking.bookingReference} | Room ${room.roomNumber} | Guest ${booking.guestDetails.name} | by ${actorId}`);
       return booking;
     } catch (error) {
@@ -300,7 +299,7 @@ export class BookingsService {
       }
 
       await session.commitTransaction();
-      await this.redis.del(CACHE_KEYS.DASHBOARD_SUMMARY);
+      await this.redis.invalidateDashboardCache(branchId);
       this.logger.log(`Booking cancelled — #${booking.bookingReference} | Room ${room?.roomNumber ?? 'N/A'} | Guest ${booking.guestDetails.name} | by ${actorId}`);
       return booking;
     } catch (error) {

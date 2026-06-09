@@ -116,7 +116,7 @@ export default function BookingsPage() {
   };
 
   const openCreate = async () => {
-    try { setRooms(await roomsApi.list({ status: RoomStatus.Available, limit: 1000 }).then(r => r.items)); } catch { toast('error', 'Failed to load rooms.'); }
+    try { setRooms(await roomsApi.list({ status: RoomStatus.Available, limit: 20 }).then(r => r.items)); } catch { toast('error', 'Failed to load rooms.'); }
     setShowCreate(true);
   };
 

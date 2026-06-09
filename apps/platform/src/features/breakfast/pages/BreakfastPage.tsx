@@ -33,7 +33,7 @@ export default function BreakfastPage() {
 
   const fetchCounts = useCallback(async () => {
     try {
-      const res = await breakfastApi.manifest({ limit: 1000, date });
+      const res = await breakfastApi.manifest({ limit: 20, date });
       setCountsData(res.items);
     } catch {}
   }, [date, user?.activeBranchId]);

@@ -7,6 +7,7 @@ import { BreakfastLog } from './breakfast-log.schema';
 import { Booking } from '../bookings/booking.schema';
 import { ServeBreakfastDto } from './dto/serve-breakfast.dto';
 import { escapeRegex } from '../../common/utils/escape-regex';
+import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class BreakfastService {
@@ -15,6 +16,7 @@ export class BreakfastService {
   constructor(
     @InjectModel(BreakfastLog.name) private breakfastLogModel: Model<BreakfastLog>,
     @InjectModel(Booking.name) private bookingModel: Model<Booking>,
+    private readonly redis: RedisService,
   ) {}
 
   async getDailyManifest(params: {
@@ -127,6 +129,7 @@ export class BreakfastService {
       servedBy: userId,
     });
 
+    await this.redis.invalidateDashboardCache(branchId);
     this.logger.log(`Breakfast served — Guest ${booking.guestDetails.name} | Room ${booking.roomId} | by ${userId}`);
     return log;
   }

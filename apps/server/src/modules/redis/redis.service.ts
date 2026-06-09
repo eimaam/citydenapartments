@@ -1,7 +1,7 @@
 import { Injectable, OnModuleDestroy, OnModuleInit, Logger } from '@nestjs/common';
 import { createClient, RedisClientType } from 'redis';
 import { AppConfig } from '../../config/app.config';
-import { CACHE_TTL } from '../../config/cache.constants';
+import { CACHE_TTL, CACHE_KEYS } from '../../config/cache.constants';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
@@ -49,5 +49,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   async del(key: string): Promise<void> {
     await this.client.del(key);
+  }
+
+  async invalidateDashboardCache(branchId?: string): Promise<void> {
+    await this.client.del(CACHE_KEYS.DASHBOARD_SUMMARY);
+    if (branchId) await this.client.del(`${CACHE_KEYS.DASHBOARD_SUMMARY}:${branchId}`);
   }
 }
