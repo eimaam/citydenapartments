@@ -1,3 +1,4 @@
+import { format } from 'date-fns';
 import { useState, useEffect, useCallback } from 'react';
 import { Coffee, Check, Calendar, Users } from 'lucide-react';
 import { Button } from '@citydenapartments/shared';
@@ -10,7 +11,7 @@ export default function BreakfastPage() {
   const [manifest, setManifest] = useState<ManifestEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [serving, setServing] = useState<Record<string, boolean>>({});
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
 
   const fetchManifest = useCallback(async () => {
     setLoading(true);
@@ -89,7 +90,7 @@ export default function BreakfastPage() {
                   <td className="px-4 py-3"><p className="font-medium text-on-surface">{entry.guestName}</p></td>
                   <td className="px-4 py-3 hidden sm:table-cell">
                     {entry.isServed ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-emerald-700"><Check size={12} />Served at {entry.servedAt ? new Date(entry.servedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '—'}</span>
+                      <span className="inline-flex items-center gap-1 text-xs text-emerald-700"><Check size={12} />Served at {entry.servedAt ? format(new Date(entry.servedAt), 'HH:mm') : '—'}</span>
                     ) : <span className="text-xs text-amber-700">Pending</span>}
                   </td>
                   <td className="px-4 py-3 text-right">

@@ -53,7 +53,7 @@ export const Badge: React.FC<BadgeProps> = ({
   const displayLabel = label ?? labelMap[status] ?? formatLabel(status);
 
   return (
-    <span className={cn('inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border', color, className)}>
+    <span className={cn('inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-medium border', color, className)}>
       {displayLabel}
     </span>
   );

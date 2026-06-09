@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/auth';
 import { Button } from '@citydenapartments/shared';
-import { Input } from '@citydenapartments/shared';
+import { Input, PasswordInput } from '@citydenapartments/shared';
 import { Mail, Lock, Building2 } from 'lucide-react';
 
 const URBAN_IMAGE = 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=900&q=80';
@@ -108,7 +108,7 @@ export default function LoginPage() {
             />
 
             <div className="relative">
-              <Input
+              <PasswordInput
                 size="lg"
                 type="password"
                 placeholder="Password"

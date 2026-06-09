@@ -135,7 +135,7 @@ export const Modal: React.FC<ModalProps> & {
                 <div className={cn('flex items-start justify-between gap-4')}>
                   <div>
                     {title && (
-                      <h3 className="text-2xl md:text-3xl font-serif font-normal text-on-surface tracking-tight leading-tight">{title}</h3>
+                      <h3 className="text-xl md:text-2xl font-serif font-normal text-on-surface tracking-tight leading-tight">{title}</h3>
                     )}
                   </div>
                   {showCloseButton && (
@@ -150,7 +150,7 @@ export const Modal: React.FC<ModalProps> & {
                   )}
                 </div>
                 {subTitle && (
-                  <p className="mt-2 type-body-lg text-on-surface-variant leading-relaxed">{subTitle}</p>
+                  <p className="mt-2 type-body-sm text-on-surface-variant leading-relaxed">{subTitle}</p>
                 )}
               </div>
             )}
