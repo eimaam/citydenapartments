@@ -114,6 +114,8 @@ export class AuthService {
     const isValid = await bcrypt.compare(currentPassword, user.password);
     if (!isValid) throw new BadRequestException('Current password is incorrect.');
 
+    if (newPassword === currentPassword) throw new BadRequestException('New password must be different from current password.');
+
     if (newPassword.length < 6) throw new BadRequestException('Password must be at least 6 characters.');
 
     user.password = await bcrypt.hash(newPassword, 12);

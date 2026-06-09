@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { SwitchBranchDto } from './dto/switch-branch.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { ActiveUser } from '../../common/decorators/active-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 
@@ -42,7 +43,7 @@ export class AuthController {
   @Post('change-password')
   changePassword(
     @ActiveUser() user: any,
-    @Body() dto: { currentPassword: string; newPassword: string },
+    @Body() dto: ChangePasswordDto,
   ) {
     return this.authService.changePassword(user.id, dto.currentPassword, dto.newPassword);
   }

@@ -1,4 +1,4 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as mongoose from 'mongoose';
@@ -6,6 +6,7 @@ import { startOfDay, endOfDay } from 'date-fns';
 import { BreakfastLog } from './breakfast-log.schema';
 import { Booking } from '../bookings/booking.schema';
 import { ServeBreakfastDto } from './dto/serve-breakfast.dto';
+import { escapeRegex } from '../../common/utils/escape-regex';
 
 @Injectable()
 export class BreakfastService {
@@ -65,7 +66,8 @@ export class BreakfastService {
     ];
 
     if (search) {
-      pipeline.push({ $match: { guestName: { $regex: search, $options: 'i' } } });
+      const escaped = escapeRegex(search);
+      pipeline.push({ $match: { guestName: { $regex: escaped, $options: 'i' } } });
     }
 
     const [result] = await this.bookingModel.aggregate([
@@ -89,6 +91,12 @@ export class BreakfastService {
     const todayStart = startOfDay(now);
     const todayEnd = endOfDay(now);
 
+    const booking = await this.bookingModel.findById(dto.bookingId);
+    if (!booking) throw new NotFoundException('Booking not found.');
+    if (booking.bookingStatus !== 'Checked_In') {
+      throw new BadRequestException('Booking is not checked in.');
+    }
+
     const alreadyServed = await this.breakfastLogModel.findOne({
       bookingId: dto.bookingId,
       dateServed: { $gte: todayStart, $lte: todayEnd },
@@ -101,8 +109,8 @@ export class BreakfastService {
     return this.breakfastLogModel.create({
       branchId,
       bookingId: dto.bookingId,
-      roomId: dto.roomId,
-      guestName: dto.guestName,
+      roomId: booking.roomId,
+      guestName: booking.guestDetails.name,
       dateServed: now,
       servingsClaimed: dto.servingsClaimed || 1,
       servedBy: userId,

@@ -1,12 +1,10 @@
 import { IsString, IsNumber, IsArray, IsOptional, Min, IsMongoId } from 'class-validator';
 
 export class CreateRoomTypeDto {
-  @IsMongoId()
   @IsString()
   name: string;
   
   @IsMongoId()
-  @IsString()
   branchId: string;
 
   @IsNumber()

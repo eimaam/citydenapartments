@@ -10,6 +10,7 @@ import { BookingsModule } from './modules/bookings/bookings.module';
 import { BreakfastModule } from './modules/breakfast/breakfast.module';
 import { SeedModule } from './modules/seed/seed.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { RolesGuard } from './common/guards/roles.guard';
 import { AppConfig, AppConfigValidationSchema } from './config/app.config';
 import { ConfigModule } from '@nestjs/config';
 import { RedisModule } from './modules/redis/redis.module';
@@ -47,6 +48,10 @@ if (AppConfig.NODE_ENV === 'development') {
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
   ],
 })

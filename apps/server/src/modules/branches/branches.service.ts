@@ -3,9 +3,10 @@ import { RedisService } from "../redis/redis.service";
 import { Branch } from "./branch.schema";
 import { Model } from "mongoose";
 import { CACHE_KEYS, CACHE_TTL } from "../../config/cache.constants";
-import { NotFoundException } from "@nestjs/common";
+import { NotFoundException, BadRequestException } from "@nestjs/common";
 import { CreateBranchDto } from "./dto/create.dto";
 import { BranchUpdateDto } from "./dto/update.dto";
+import { escapeRegex } from "../../common/utils/escape-regex";
 
 
 
@@ -20,9 +21,10 @@ export class BranchService {
         const { page = 1, limit = 20, search } = params || {};
         const filter: any = {};
         if (search) {
+            const escaped = escapeRegex(search);
             filter.$or = [
-                { name: { $regex: search, $options: 'i' } },
-                { code: { $regex: search, $options: 'i' } },
+                { name: { $regex: escaped, $options: 'i' } },
+                { code: { $regex: escaped, $options: 'i' } },
             ];
         }
 
@@ -42,7 +44,7 @@ export class BranchService {
         if (cachedBranch) {
             branch = JSON.parse(cachedBranch)
         } else {
-            const branch = await this.branchModel.findById(branchId).lean()
+            branch = await this.branchModel.findById(branchId).lean()
 
         }
 
@@ -57,6 +59,13 @@ export class BranchService {
     async create(dto: CreateBranchDto) {
         const { name, address, code, isActive } = dto
 
+        const duplicate = await this.branchModel.findOne({
+            $or: [{ name: { $regex: `^${escapeRegex(name)}$`, $options: 'i' } }, { code: code.toUpperCase() }],
+        });
+        if (duplicate) {
+            throw new BadRequestException('A branch with this name or code already exists.');
+        }
+
         const newBranch = await this.branchModel.create({
             name, address, code, isActive
         })
@@ -68,7 +77,7 @@ export class BranchService {
         const updateDetails = {
             ...dto
         }
-        const updatedBranch = this.branchModel.findByIdAndUpdate(branchId, updateDetails, { new: true })
+        const updatedBranch = await this.branchModel.findByIdAndUpdate(branchId, updateDetails, { new: true })
 
         return updatedBranch;
 

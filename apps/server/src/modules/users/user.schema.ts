@@ -6,10 +6,11 @@ export enum UserRoleEnum {
   RECEPTION = 'Reception',
   KITCHEN_STAFF = 'KitchenStaff',
   SOCIAL_MEDIA_MANAGER = 'SocialMediaManager',
+  HOUSE_KEEPER = 'HouseKeeper',
 };
 
 
-export type UserRole = 'SuperAdmin' | 'Reception' | 'KitchenStaff' | 'SocialMediaManager';
+export type UserRole = 'SuperAdmin' | 'Reception' | 'KitchenStaff' | 'SocialMediaManager' | 'HouseKeeper';
 
 
 @Schema({ timestamps: true })

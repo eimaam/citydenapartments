@@ -3,6 +3,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { RoomType } from './room-type.schema';
 import { CreateRoomTypeDto } from './dto/create-room-type.dto';
+import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
+import { escapeRegex } from '../../common/utils/escape-regex';
 
 @Injectable()
 export class RoomTypesService {
@@ -12,7 +14,8 @@ export class RoomTypesService {
     const { branchId, page = 1, limit = 20, search } = params;
     const filter: any = { branchId, isActive: true };
     if (search) {
-      filter.name = { $regex: search, $options: 'i' };
+      const escaped = escapeRegex(search);
+      filter.name = { $regex: escaped, $options: 'i' };
     }
 
     const skip = (page - 1) * limit;
@@ -35,7 +38,7 @@ export class RoomTypesService {
     return this.roomTypeModel.create({ ...dto, createdBy: userId });
   }
 
-  async update(id: string, dto: Partial<CreateRoomTypeDto>) {
-    return this.roomTypeModel.findByIdAndUpdate(id, dto, { new: true }).lean();
+  async update(id: string, dto: UpdateRoomTypeDto, userId: string) {
+    return this.roomTypeModel.findByIdAndUpdate(id, { ...dto, updatedBy: userId }, { new: true }).lean();
   }
 }

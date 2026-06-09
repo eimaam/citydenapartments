@@ -5,6 +5,7 @@ import {
   IsDateString,
   IsEnum,
   IsOptional,
+  IsEmail,
   Min,
 } from 'class-validator';
 import { PaymentMethod, BookingStatus, BookingSource } from '../booking.schema';
@@ -20,7 +21,7 @@ export class CreateBookingDto {
   guestPhone: string;
 
   @IsOptional()
-  @IsString()
+  @IsEmail()
   guestEmail?: string;
 
   @IsNumber()
