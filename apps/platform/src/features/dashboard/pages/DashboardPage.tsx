@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import { format, getHours } from 'date-fns';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../../contexts/auth';
 import { BookingStatus, RoomStatus } from '@citydenapartments/shared';
@@ -100,4 +100,4 @@ function renderDashboard(title: string, subtitle: string, stats: { label: string
   );
 }
 
-function getTimeOfDay() { const h = new Date().getHours(); if (h < 12) return 'morning'; if (h < 17) return 'afternoon'; return 'evening'; }
+function getTimeOfDay() { const h = getHours(new Date()); if (h < 12) return 'morning'; if (h < 17) return 'afternoon'; return 'evening'; }

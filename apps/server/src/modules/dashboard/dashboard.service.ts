@@ -7,6 +7,7 @@ import { Branch } from '../branches/branch.schema';
 import { User } from '../users/user.schema';
 import { RedisService } from '../redis/redis.service';
 import { CACHE_KEYS, CACHE_TTL } from '../../config/cache.constants';
+import { format } from 'date-fns';
 
 @Injectable()
 export class DashboardService {
@@ -35,8 +36,8 @@ export class DashboardService {
 
     const checkedIn = bookings.filter((b) => b.bookingStatus === 'Checked_In').length;
     const pending = bookings.filter((b) => b.bookingStatus === 'Confirmed').length;
-    const today = new Date().toISOString().slice(0, 10);
-    const todayArrivals = bookings.filter((b) => b.checkInDate?.toISOString?.()?.slice(0, 10) === today).length;
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const todayArrivals = bookings.filter((b) => b.checkInDate ? format(new Date(b.checkInDate as any), 'yyyy-MM-dd') === today : false).length;
 
     const occupancy = rooms.length > 0
       ? Math.round((rooms.filter((r) => (r.status as string) === RoomStatusEnum.OCCUPIED).length / rooms.length) * 100)

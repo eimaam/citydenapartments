@@ -7,6 +7,7 @@ import { ActiveUser } from '../../common/decorators/active-user.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { PaginatedQueryDto } from '../../common/dto/paginated-query.dto';
+import { format } from 'date-fns';
 
 @Controller('breakfast')
 @UseGuards(JwtAuthGuard, WorkspaceAuthGuard)
@@ -15,7 +16,7 @@ export class BreakfastController {
 
   @Get('manifest')
   getManifest(@ActiveUser() user: any, @Query() query: PaginatedQueryDto, @Query('date') date: string) {
-    const targetDate = date || new Date().toISOString().slice(0, 10);
+    const targetDate = date || format(new Date(), 'yyyy-MM-dd');
     return this.breakfastService.getDailyManifest({
       branchId: user.activeBranchId,
       targetDate,

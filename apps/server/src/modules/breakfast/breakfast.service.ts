@@ -2,6 +2,7 @@ import { Injectable, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as mongoose from 'mongoose';
+import { startOfDay, endOfDay } from 'date-fns';
 import { BreakfastLog } from './breakfast-log.schema';
 import { Booking } from '../bookings/booking.schema';
 import { ServeBreakfastDto } from './dto/serve-breakfast.dto';
@@ -13,14 +14,17 @@ export class BreakfastService {
     @InjectModel(Booking.name) private bookingModel: Model<Booking>,
   ) {}
 
-  async getDailyManifest(params: { branchId: string; targetDate: string; page?: number; limit?: number; search?: string }) {
+  async getDailyManifest(params: {
+    branchId: string;
+    targetDate: string;
+    page?: number;
+    limit?: number;
+    search?: string;
+  }) {
     const { branchId, targetDate, page = 1, limit = 20, search } = params;
-    const startOfDay = new Date(targetDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(targetDate);
-    endOfDay.setHours(23, 59, 59, 999);
-
     const skip = (page - 1) * limit;
+    const start = startOfDay(new Date(targetDate));
+    const end = endOfDay(new Date(targetDate));
 
     const pipeline: any[] = [
       {
@@ -43,17 +47,7 @@ export class BreakfastService {
           from: 'breakfastlogs',
           let: { bId: '$_id' },
           pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [
-                    { $eq: ['$bookingId', '$$bId'] },
-                    { $gte: ['$dateServed', startOfDay] },
-                    { $lte: ['$dateServed', endOfDay] },
-                  ],
-                },
-              },
-            },
+            { $match: { $expr: { $and: [{ $eq: ['$bookingId', '$$bId'] }, { $gte: ['$dateServed', start] }, { $lte: ['$dateServed', end] }] } } },
           ],
           as: 'servingRecord',
         },
@@ -71,39 +65,33 @@ export class BreakfastService {
     ];
 
     if (search) {
-      pipeline.push({
-        $match: {
-          guestName: { $regex: search, $options: 'i' },
-        },
-      });
+      pipeline.push({ $match: { guestName: { $regex: search, $options: 'i' } } });
     }
 
-    const result = await this.bookingModel.aggregate([
+    const [result] = await this.bookingModel.aggregate([
       ...pipeline,
       {
         $facet: {
           items: [{ $skip: skip }, { $limit: limit }],
-          total: [{ $count: 'count' }],
+          totalCount: [{ $count: 'count' }],
         },
       },
     ]);
 
-    const items = result[0].items;
-    const total = result[0].total[0]?.count || 0;
+    const items = result.items;
+    const total = result.totalCount[0]?.count ?? 0;
 
     return { items, total, page, limit };
   }
 
   async serve(dto: ServeBreakfastDto, branchId: string, userId: string) {
     const now = new Date();
-    const startOfToday = new Date(now);
-    startOfToday.setHours(0, 0, 0, 0);
-    const endOfToday = new Date(now);
-    endOfToday.setHours(23, 59, 59, 999);
+    const todayStart = startOfDay(now);
+    const todayEnd = endOfDay(now);
 
     const alreadyServed = await this.breakfastLogModel.findOne({
       bookingId: dto.bookingId,
-      dateServed: { $gte: startOfToday, $lte: endOfToday },
+      dateServed: { $gte: todayStart, $lte: todayEnd },
     });
 
     if (alreadyServed) {
