@@ -14,6 +14,7 @@ import { AppConfig, AppConfigValidationSchema } from './config/app.config';
 import { ConfigModule } from '@nestjs/config';
 import { RedisModule } from './modules/redis/redis.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { HealthModule } from './modules/health/health.module';
 import mongoose from 'mongoose';
 
 if (AppConfig.NODE_ENV === 'development') {
@@ -38,6 +39,7 @@ if (AppConfig.NODE_ENV === 'development') {
     BreakfastModule,
     // SeedModule,
     DashboardModule,
+    HealthModule,
     RedisModule,
   ],
   
