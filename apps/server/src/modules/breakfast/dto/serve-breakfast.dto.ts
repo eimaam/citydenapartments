@@ -11,7 +11,8 @@ export class ServeBreakfastDto {
   guestName: string;
 
   @IsString()
-  dateServed: string;
+  @IsOptional()
+  dateServed?: string;
 
   @IsNumber()
   @Min(1)

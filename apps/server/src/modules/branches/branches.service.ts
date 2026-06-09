@@ -16,13 +16,23 @@ export class BranchService {
         private redisService: RedisService
     ) { }
 
-    async getAll() {
-        const branches = await this.branchModel.find().lean()
+    async getAll(params?: { page?: number; limit?: number; search?: string }) {
+        const { page = 1, limit = 20, search } = params || {};
+        const filter: any = {};
+        if (search) {
+            filter.$or = [
+                { name: { $regex: search, $options: 'i' } },
+                { code: { $regex: search, $options: 'i' } },
+            ];
+        }
 
-        // cache branches
-        await this.redisService.set(CACHE_KEYS.BRANCHES, JSON.stringify(branches), CACHE_TTL.LONG_TERM)
+        const skip = (page - 1) * limit;
+        const [items, total] = await Promise.all([
+            this.branchModel.find(filter).skip(skip).limit(limit).lean(),
+            this.branchModel.countDocuments(filter),
+        ]);
 
-        return branches
+        return { items, total, page, limit };
     }
 
     async findOneById(branchId: string) {

@@ -8,17 +8,18 @@ import { ActiveUser } from '../../common/decorators/active-user.decorator';
 import { UserRoleEnum } from '../users/user.schema';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UpdateRoomDto } from './dto/update-room.dto';
+import { PaginatedQueryDto } from '../../common/dto/paginated-query.dto';
 
 @Controller('rooms')
 @UseGuards(JwtAuthGuard, WorkspaceAuthGuard)
 export class RoomsController {
   constructor(
     private roomsService: RoomsService
-  ) {}
+  ) { }
 
   @Get()
-  findAll(@ActiveUser() user: any, @Query('status') status?: RoomStatus) {
-    return this.roomsService.findAll(user.activeBranchId, status);
+  findAll(@ActiveUser() user: any, @Query() query: PaginatedQueryDto, @Query('status') status?: RoomStatus) {
+    return this.roomsService.findAll({ branchId: user.activeBranchId, page: query.page, limit: query.limit, search: query.search, status });
   }
 
   @Get(':id')
@@ -32,7 +33,7 @@ export class RoomsController {
     return this.roomsService.create(dto, user.id);
   }
 
-  @Patch(':id/status')
+  @Patch(':id')
   @Roles(UserRoleEnum.SUPER_ADMIN)
   updateRoom(@Param('id') id: string, @Body() dto: UpdateRoomDto, @ActiveUser() user: any) {
     return this.roomsService.update(id, dto, user.id);

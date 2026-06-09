@@ -9,10 +9,20 @@ import { UpdateRoomDto } from './dto/update-room.dto';
 export class RoomsService {
   constructor(@InjectModel(Room.name) private roomModel: Model<Room>) { }
 
-  async findAll(branchId: string, status?: RoomStatus) {
+  async findAll(params: { branchId: string; page?: number; limit?: number; search?: string; status?: RoomStatus }) {
+    const { branchId, page = 1, limit = 20, search, status } = params;
     const filter: any = { branchId, isActive: true };
     if (status) filter.status = status;
-    return this.roomModel.find(filter).populate('roomTypeId').lean();
+    if (search) {
+      filter.roomNumber = { $regex: search, $options: 'i' };
+    }
+
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      this.roomModel.find(filter).populate('roomTypeId').skip(skip).limit(limit).lean(),
+      this.roomModel.countDocuments(filter),
+    ]);
+    return { items, total, page, limit };
   }
 
   async findOne(id: string) {

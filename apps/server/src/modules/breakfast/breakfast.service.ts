@@ -13,8 +13,16 @@ export class BreakfastService {
     @InjectModel(Booking.name) private bookingModel: Model<Booking>,
   ) {}
 
-  async getDailyManifest(branchId: string, targetDate: string) {
-    const result = await this.bookingModel.aggregate([
+  async getDailyManifest(params: { branchId: string; targetDate: string; page?: number; limit?: number; search?: string }) {
+    const { branchId, targetDate, page = 1, limit = 20, search } = params;
+    const startOfDay = new Date(targetDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(targetDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const skip = (page - 1) * limit;
+
+    const pipeline: any[] = [
       {
         $match: {
           branchId: new mongoose.Types.ObjectId(branchId),
@@ -33,9 +41,19 @@ export class BreakfastService {
       {
         $lookup: {
           from: 'breakfastlogs',
-          let: { bId: '$_id', today: targetDate },
+          let: { bId: '$_id' },
           pipeline: [
-            { $match: { $expr: { $and: [{ $eq: ['$bookingId', '$$bId'] }, { $eq: ['$dateServed', '$$today'] }] } } },
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$bookingId', '$$bId'] },
+                    { $gte: ['$dateServed', startOfDay] },
+                    { $lte: ['$dateServed', endOfDay] },
+                  ],
+                },
+              },
+            },
           ],
           as: 'servingRecord',
         },
@@ -43,33 +61,63 @@ export class BreakfastService {
       {
         $project: {
           bookingId: '$_id',
+          roomId: '$roomInfo._id',
           roomNumber: '$roomInfo.roomNumber',
           guestName: '$guestDetails.name',
           isServed: { $gt: [{ $size: '$servingRecord' }, 0] },
-          servedAt: { $arrayElemAt: ['$servingRecord.servedAt', 0] },
+          servedAt: { $arrayElemAt: ['$servingRecord.dateServed', 0] },
+        },
+      },
+    ];
+
+    if (search) {
+      pipeline.push({
+        $match: {
+          guestName: { $regex: search, $options: 'i' },
+        },
+      });
+    }
+
+    const result = await this.bookingModel.aggregate([
+      ...pipeline,
+      {
+        $facet: {
+          items: [{ $skip: skip }, { $limit: limit }],
+          total: [{ $count: 'count' }],
         },
       },
     ]);
 
-    return result;
+    const items = result[0].items;
+    const total = result[0].total[0]?.count || 0;
+
+    return { items, total, page, limit };
   }
 
   async serve(dto: ServeBreakfastDto, branchId: string, userId: string) {
-    try {
-      return await this.breakfastLogModel.create({
-        branchId,
-        bookingId: dto.bookingId,
-        roomId: dto.roomId,
-        guestName: dto.guestName,
-        dateServed: dto.dateServed,
-        servingsClaimed: dto.servingsClaimed || 1,
-        servedBy: userId,
-      });
-    } catch (error: any) {
-      if (error?.code === 11000) {
-        throw new ConflictException('Breakfast already served for this booking on this date.');
-      }
-      throw error;
+    const now = new Date();
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+    const endOfToday = new Date(now);
+    endOfToday.setHours(23, 59, 59, 999);
+
+    const alreadyServed = await this.breakfastLogModel.findOne({
+      bookingId: dto.bookingId,
+      dateServed: { $gte: startOfToday, $lte: endOfToday },
+    });
+
+    if (alreadyServed) {
+      throw new ConflictException('Breakfast already served for this booking today.');
     }
+
+    return this.breakfastLogModel.create({
+      branchId,
+      bookingId: dto.bookingId,
+      roomId: dto.roomId,
+      guestName: dto.guestName,
+      dateServed: now,
+      servingsClaimed: dto.servingsClaimed || 1,
+      servedBy: userId,
+    });
   }
 }

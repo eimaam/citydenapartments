@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { QueryBookingsDto } from './dto/query-bookings.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { WorkspaceAuthGuard } from '../../common/guards/workspace-auth.guard';
 import { ActiveUser } from '../../common/decorators/active-user.decorator';
@@ -11,8 +12,17 @@ export class BookingsController {
   constructor(private bookingsService: BookingsService) {}
 
   @Get()
-  findAll(@ActiveUser() user: any) {
-    return this.bookingsService.findAll(user.activeBranchId);
+  findAll(
+    @ActiveUser() user: any,
+    @Query() query: QueryBookingsDto,
+  ) {
+    return this.bookingsService.findAll({
+      branchId: user.activeBranchId,
+      page: query.page ?? 1,
+      limit: query.limit ?? 20,
+      status: query.status,
+      search: query.search,
+    });
   }
 
   @Get(':id')

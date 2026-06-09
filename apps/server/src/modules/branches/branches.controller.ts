@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Patch, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Query, UseGuards } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Branch } from './branch.schema';
@@ -10,6 +10,7 @@ import { UserRoleEnum } from '../users/user.schema';
 import { BranchService } from './branches.service';
 import { CreateBranchDto } from './dto/create.dto';
 import { BranchUpdateDto } from './dto/update.dto';
+import { PaginatedQueryDto } from '../../common/dto/paginated-query.dto';
 
 @Controller('branches')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -21,9 +22,9 @@ export class BranchesController {
   ) {}
 
   @Get()
-  async getAll(@ActiveUser() user: any) {
+  async getAll(@ActiveUser() user: any, @Query() query: PaginatedQueryDto) {
     // const filter = user.role === 'SuperAdmin' ? {} : { _id: { $in: user.allowedBranches } };
-    return this.branchService.getAll()
+    return this.branchService.getAll({ page: query.page, limit: query.limit, search: query.search });
   }
 
   @Get(':id')

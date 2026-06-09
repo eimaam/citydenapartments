@@ -21,12 +21,22 @@ export class UsersService {
     private readonly redis: RedisService,
   ) {}
 
-  async findAll() {
-    const cached = await this.redis.get(CACHE_KEYS.USERS_LIST);
-    if (cached) return JSON.parse(cached);
-    const users = await this.userModel.find().select('-password').lean();
-    await this.redis.set(CACHE_KEYS.USERS_LIST, JSON.stringify(users), CACHE_TTL.ONE_MINUTE);
-    return users;
+  async findAll(params?: { page?: number; limit?: number; search?: string }) {
+    const { page = 1, limit = 20, search } = params || {};
+    const filter: any = {};
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      this.userModel.find(filter).select('-password').skip(skip).limit(limit).lean(),
+      this.userModel.countDocuments(filter),
+    ]);
+    return { items, total, page, limit };
   }
 
   async findOne(id: string) {

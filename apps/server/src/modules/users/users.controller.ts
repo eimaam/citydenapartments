@@ -1,16 +1,20 @@
-import { Controller, Get, Post, Patch, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRoleEnum } from './user.schema';
+import { PaginatedQueryDto } from '../../common/dto/paginated-query.dto';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
 
 @Controller('users')
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRoleEnum.SUPER_ADMIN)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  findAll() {
-    return this.usersService.findAll();
+  findAll(@Query() query: PaginatedQueryDto) {
+    return this.usersService.findAll({ page: query.page, limit: query.limit, search: query.search });
   }
 
   @Get(':id')

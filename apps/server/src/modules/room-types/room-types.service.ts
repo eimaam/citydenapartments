@@ -8,8 +8,19 @@ import { CreateRoomTypeDto } from './dto/create-room-type.dto';
 export class RoomTypesService {
   constructor(@InjectModel(RoomType.name) private roomTypeModel: Model<RoomType>) {}
 
-  async findAll(branchId: string) {
-    return this.roomTypeModel.find({ branchId, isActive: true }).lean();
+  async findAll(params: { branchId: string; page?: number; limit?: number; search?: string }) {
+    const { branchId, page = 1, limit = 20, search } = params;
+    const filter: any = { branchId, isActive: true };
+    if (search) {
+      filter.name = { $regex: search, $options: 'i' };
+    }
+
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      this.roomTypeModel.find(filter).skip(skip).limit(limit).lean(),
+      this.roomTypeModel.countDocuments(filter),
+    ]);
+    return { items, total, page, limit };
   }
 
   async findOne(id: string) {

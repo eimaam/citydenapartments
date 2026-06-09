@@ -23,12 +23,40 @@ export class BookingsService {
     private readonly redis: RedisService,
   ) {}
 
-  async findAll(branchId: string) {
-    return this.bookingModel
-      .find({ branchId })
-      .populate('roomId')
-      .sort({ createdAt: -1 })
-      .lean();
+  async findAll(params: {
+    branchId: string;
+    page: number;
+    limit: number;
+    status?: string;
+    search?: string;
+  }) {
+    const { branchId, page, limit, status, search } = params;
+    const skip = (page - 1) * limit;
+
+    const filter: Record<string, any> = { branchId };
+    if (status) filter.bookingStatus = status;
+
+    if (search) {
+      const regex = { $regex: search, $options: 'i' };
+      filter.$or = [
+        { bookingReference: regex },
+        { 'guestDetails.name': regex },
+        { 'guestDetails.phone': regex },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      this.bookingModel
+        .find(filter)
+        .populate('roomId')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      this.bookingModel.countDocuments(filter),
+    ]);
+
+    return { items, total, page, limit };
   }
 
   async findOne(id: string) {

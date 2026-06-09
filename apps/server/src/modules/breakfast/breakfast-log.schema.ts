@@ -16,7 +16,7 @@ export class BreakfastLog extends Document {
   guestName: string;
 
   @Prop({ required: true })
-  dateServed: string;
+  dateServed: Date;
 
   @Prop({ default: 1 })
   servingsClaimed: number;
@@ -26,4 +26,4 @@ export class BreakfastLog extends Document {
 }
 
 export const BreakfastLogSchema = SchemaFactory.createForClass(BreakfastLog);
-BreakfastLogSchema.index({ bookingId: 1, dateServed: 1 }, { unique: true });
+BreakfastLogSchema.index({ bookingId: 1, dateServed: 1 });
