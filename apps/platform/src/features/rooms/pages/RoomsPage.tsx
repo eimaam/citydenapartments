@@ -1,10 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Search, DoorOpen, Users, Tag } from 'lucide-react';
-import { Input, Badge, RoomStatus, type RoomStatusType } from '@citydenapartments/shared';
-import { Spinner } from '../../../components/ui/Spinner';
-import { roomsApi, type RoomResponse } from '../api/rooms.api';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Search, DoorOpen, Users } from 'lucide-react';
+import { Input, Badge, RoomStatus, Table, type RoomStatusType } from '@citydenapartments/shared';
+import type { TableProps } from '@citydenapartments/shared';
+import { useAuth } from '../../../contexts/auth';
+import { roomsApi, type RoomResponse, type PaginatedRooms } from '../api/rooms.api';
 
 type StatusFilter = 'all' | RoomStatusType;
+
+const LIMIT = 20;
 
 const tabs: { label: string; value: StatusFilter }[] = [
   { label: 'All', value: 'all' },
@@ -15,22 +18,67 @@ const tabs: { label: string; value: StatusFilter }[] = [
 ];
 
 export default function RoomsPage() {
-  const [rooms, setRooms] = useState<RoomResponse[]>([]);
+  const { user } = useAuth();
+  const [rooms, setRooms] = useState<PaginatedRooms>({ items: [], total: 0, page: 1, limit: LIMIT });
+  const [counts, setCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<StatusFilter>('all');
+  const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchRooms = useCallback(async () => {
     setLoading(true);
-    try { setRooms(await roomsApi.list(filter === 'all' ? undefined : filter)); }
-    finally { setLoading(false); }
-  }, [filter]);
+    try {
+      const res = await roomsApi.list({
+        page,
+        limit: LIMIT,
+        search: search || undefined,
+        status: filter === 'all' ? undefined : filter,
+      });
+      setRooms({ items: res.items, total: res.total, page: res.page, limit: res.limit });
+    } finally { setLoading(false); }
+  }, [page, filter, search, user?.activeBranchId]);
+
+  const fetchCounts = useCallback(async () => {
+    try {
+      const res = await roomsApi.list({ limit: 1000 });
+      setCounts(res.items.reduce((acc, r) => { acc[r.status] = (acc[r.status] || 0) + 1; return acc; }, {} as Record<string, number>));
+    } catch { /* silent */ }
+  }, [user?.activeBranchId]);
 
   useEffect(() => { fetchRooms(); }, [fetchRooms]);
+  useEffect(() => { fetchCounts(); }, [fetchCounts]);
+  useEffect(() => { setPage(1); }, [filter, search]);
 
-  const filtered = rooms.filter((r) => !search || r.roomNumber.toLowerCase().includes(search.toLowerCase()) || r.roomTypeId?.name?.toLowerCase().includes(search.toLowerCase()));
+  const onSearchChange = (val: string) => {
+    setSearchInput(val);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => setSearch(val), 400);
+  };
 
-  const counts = rooms.reduce((acc, r) => { acc[r.status] = (acc[r.status] || 0) + 1; return acc; }, {} as Record<string, number>);
+  const columns: TableProps<RoomResponse>['columns'] = [
+    {
+      title: 'Room', dataIndex: 'roomNumber', key: 'room', width: 120,
+      render: (_: unknown, r: RoomResponse) => (
+        <div className="flex items-center gap-2">
+          <DoorOpen size={14} className="text-primary" />
+          <span className="font-mono font-medium">{r.roomNumber}</span>
+        </div>
+      ),
+    },
+    { title: 'Type', key: 'type', render: (_: unknown, r: RoomResponse) => r.roomTypeId?.name || 'Standard' },
+    { title: 'Status', key: 'status', width: 120, render: (_: unknown, r: RoomResponse) => <Badge status={r.status} /> },
+    {
+      title: 'Guests', dataIndex: 'maxGuests', key: 'guests', width: 80,
+      render: (v: number) => <div className="flex items-center gap-1"><Users size={12} /><span>{v}</span></div>,
+    },
+    {
+      title: 'Price/Night', key: 'price', width: 130,
+      render: (_: unknown, r: RoomResponse) => <span className="font-medium">₦{r.roomTypeId?.basePrice?.toLocaleString()}</span>,
+    },
+  ];
 
   return (
     <div className="p-6 md:p-8">
@@ -42,7 +90,7 @@ export default function RoomsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h1 className="font-serif text-2xl sm:text-3xl text-on-surface">Rooms</h1>
         <Input size="sm" placeholder="Search rooms..." prefix={<Search size={14} className="text-outline" />}
-          value={search} onChange={(e) => setSearch(e.target.value)} className="!w-56" />
+          value={searchInput} onChange={(e) => onSearchChange(e.target.value)} className="!w-56" />
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
@@ -71,33 +119,22 @@ export default function RoomsPage() {
         ))}
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-20"><Spinner size={20} className="text-primary" /></div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filtered.map((room) => (
-            <div key={room._id} className="bg-surface-container-lowest border border-outline-variant rounded-lg p-5 transition-all duration-300 hover:border-outline hover:shadow-ambient">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <DoorOpen size={18} className="text-primary" />
-                  <span className="font-bold text-lg text-on-surface">{room.roomNumber}</span>
-                </div>
-                <Badge status={room.status} />
-              </div>
-              <p className="text-sm font-medium text-on-surface-variant mb-3">{room.roomTypeId?.name || 'Standard'}</p>
-              <div className="space-y-2 text-xs text-on-surface-variant">
-                <div className="flex items-center gap-2"><Users size={12} /><span>Up to {room.maxGuests} guests</span></div>
-                <div className="flex items-center gap-2"><Tag size={12} /><span className="font-medium text-on-surface">₦{room.roomTypeId?.basePrice?.toLocaleString()}/night</span></div>
-              </div>
-              {room.roomTypeId?.amenities?.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-3 pt-3 border-t border-outline-variant/50">
-                  {room.roomTypeId.amenities.map((a) => <span key={a} className="px-2 py-0.5 text-[10px] rounded-full bg-surface-container text-on-surface-variant">{a}</span>)}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden">
+        <Table<RoomResponse>
+          columns={columns}
+          dataSource={rooms.items}
+          rowKey="_id"
+          loading={loading}
+          pagination={{
+            current: rooms.page,
+            pageSize: rooms.limit,
+            total: rooms.total,
+            showSizeChanger: true,
+            showTotal: (total: number) => `${total} room${total !== 1 ? 's' : ''}`,
+            onChange: (p) => setPage(p),
+          }}
+        />
+      </div>
     </div>
   );
 }

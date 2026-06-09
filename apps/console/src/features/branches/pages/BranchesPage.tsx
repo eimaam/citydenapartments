@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button, Input, Drawer, Badge, Table, RoomStatus } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
-import { Plus } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { Spinner } from '../../../components/ui/Spinner';
 import { useToast } from '../../../components/ui/Toast';
 import { api } from '../../../lib/api';
+
+const LIMIT = 20;
 
 interface Branch {
   _id: string;
@@ -14,10 +16,21 @@ interface Branch {
   isActive: boolean;
 }
 
+interface PaginatedData {
+  items: Branch[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export default function BranchesPage() {
   const { toast } = useToast();
-  const [branches, setBranches] = useState<Branch[]>([]);
+  const [data, setData] = useState<PaginatedData>({ items: [], total: 0, page: 1, limit: LIMIT });
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [drawer, setDrawer] = useState(false);
   const [edit, setEdit] = useState<Branch | null>(null);
   const [saving, setSaving] = useState(false);
@@ -25,12 +38,23 @@ export default function BranchesPage() {
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    try { setBranches(await api.get<Branch[]>('/branches')); }
+    try {
+      const res = await api.get<PaginatedData>(`/branches?page=${page}&limit=${LIMIT}&search=${encodeURIComponent(search)}`);
+      setData({ items: res.items, total: res.total, page: res.page, limit: res.limit });
+    }
     catch { toast('error', 'Failed to load branches.'); }
     finally { setLoading(false); }
-  }, [toast]);
+  }, [toast, page, search]);
 
   useEffect(() => { fetch(); }, [fetch]);
+
+  useEffect(() => { setPage(1); }, [search]);
+
+  const onSearchChange = (val: string) => {
+    setSearchInput(val);
+    clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => setSearch(val), 400);
+  };
 
   const openCreate = () => { setEdit(null); setForm({ name: '', code: '', address: '', isActive: true }); setDrawer(true); };
   const openEdit = (b: Branch) => { setEdit(b); setForm({ name: b.name, code: b.code, address: b.address, isActive: b.isActive }); setDrawer(true); };
@@ -59,11 +83,27 @@ export default function BranchesPage() {
       <div className="flex items-center gap-3 mb-6"><span className="w-8 h-px bg-primary" /><span className="text-xs font-bold tracking-[0.15em] uppercase text-outline">Administration</span></div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-serif text-2xl sm:text-3xl text-on-surface">Branches</h1>
-        <Button size="sm" icon={<Plus size={14} />} onClick={openCreate}>New Branch</Button>
+        <div className="flex items-center gap-3">
+          <Input size="sm" placeholder="Search branches..." prefix={<Search size={14} className="text-outline" />}
+            value={searchInput} onChange={(e) => onSearchChange(e.target.value)} className="!w-64" />
+          <Button size="sm" icon={<Plus size={14} />} onClick={openCreate}>New Branch</Button>
+        </div>
       </div>
       <div className="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden">
-        {loading ? <div className="flex items-center justify-center py-20"><Spinner size={20} className="text-primary" /></div> :
-          <Table<Branch> columns={columns} dataSource={branches} rowKey="_id" pagination={false} onRow={(r) => ({ onClick: () => openEdit(r), style: { cursor: 'pointer' } })} />}
+        <Table<Branch>
+          columns={columns}
+          dataSource={data.items}
+          rowKey="_id"
+          loading={loading}
+          pagination={{
+            current: data.page,
+            pageSize: data.limit,
+            total: data.total,
+            showSizeChanger: true,
+            onChange: (p) => setPage(p),
+          }}
+          onRow={(r) => ({ onClick: () => openEdit(r), style: { cursor: 'pointer' } })}
+        />
       </div>
       <Drawer open={drawer} onClose={() => setDrawer(false)} title={edit ? 'Edit Branch' : 'New Branch'} size="sm"
         footer={<div className="flex justify-end gap-3"><Button variant="secondary" onClick={() => setDrawer(false)}>Cancel</Button><Button loading={saving} onClick={save}>{edit ? 'Save' : 'Create'}</Button></div>}>

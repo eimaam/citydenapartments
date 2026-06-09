@@ -11,6 +11,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   switchBranch: (branchId: string) => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -68,12 +69,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const changePassword = useCallback(async (currentPassword: string, newPassword: string) => {
+    await api.post('/auth/change-password', { currentPassword, newPassword });
+    const me = await api.get<AuthUser>('/auth/me');
+    setUser(me);
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
         user, token, isLoading, isSwitchingBranch,
         isAuthenticated: !!token && !!user,
-        login, logout, switchBranch,
+        login, logout, switchBranch, changePassword,
       }}
     >
       {children}

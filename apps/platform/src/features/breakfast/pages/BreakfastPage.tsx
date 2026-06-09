@@ -1,39 +1,84 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Coffee, Check, Calendar, Users } from 'lucide-react';
-import { Button } from '@citydenapartments/shared';
-import { Spinner } from '../../../components/ui/Spinner';
+import { format } from 'date-fns';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Coffee, Check, Calendar, Users, Search } from 'lucide-react';
+import { Button, Input, Table } from '@citydenapartments/shared';
+import type { TableProps } from '@citydenapartments/shared';
 import { useToast } from '../../../components/ui/Toast';
-import { breakfastApi, type ManifestEntry } from '../api/breakfast.api';
+import { useAuth } from '../../../contexts/auth';
+import { breakfastApi, type ManifestEntry, type PaginatedManifest } from '../api/breakfast.api';
+
+const LIMIT = 20;
 
 export default function BreakfastPage() {
+  const { user } = useAuth();
   const { toast } = useToast();
-  const [manifest, setManifest] = useState<ManifestEntry[]>([]);
+  const [manifest, setManifest] = useState<PaginatedManifest>({ items: [], total: 0, page: 1, limit: LIMIT });
+  const [countsData, setCountsData] = useState<ManifestEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [serving, setServing] = useState<Record<string, boolean>>({});
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
+  const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchManifest = useCallback(async () => {
     setLoading(true);
-    try { setManifest(await breakfastApi.manifest(date)); }
-    catch { toast('error', 'Failed to load breakfast manifest.'); }
+    try {
+      const res = await breakfastApi.manifest({ page, limit: LIMIT, search: search || undefined, date });
+      setManifest({ items: res.items, total: res.total, page: res.page, limit: res.limit });
+    } catch { toast('error', 'Failed to load breakfast manifest.'); }
     finally { setLoading(false); }
-  }, [date, toast]);
+  }, [page, date, search, toast, user?.activeBranchId]);
+
+  const fetchCounts = useCallback(async () => {
+    try {
+      const res = await breakfastApi.manifest({ limit: 1000, date });
+      setCountsData(res.items);
+    } catch {}
+  }, [date, user?.activeBranchId]);
 
   useEffect(() => { fetchManifest(); }, [fetchManifest]);
+  useEffect(() => { fetchCounts(); }, [fetchCounts]);
+  useEffect(() => { setPage(1); }, [date, search]);
+
+  const onSearchChange = (val: string) => {
+    setSearchInput(val);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => setSearch(val), 400);
+  };
 
   const handleServe = async (entry: ManifestEntry) => {
     setServing((prev) => ({ ...prev, [entry.bookingId]: true }));
     try {
-      await breakfastApi.serve({ bookingId: entry.bookingId, roomId: '', guestName: entry.guestName, dateServed: date });
+      await breakfastApi.serve({ bookingId: entry.bookingId, roomId: entry.roomId, guestName: entry.guestName, dateServed: date });
       toast('success', `${entry.guestName} served.`);
       await fetchManifest();
+      await fetchCounts();
     } catch (e) {
       toast('error', e instanceof Error ? e.message : 'Failed to record serving.');
     } finally { setServing((prev) => ({ ...prev, [entry.bookingId]: false })); }
   };
 
-  const served = manifest.filter((e) => e.isServed).length;
-  const pending = manifest.filter((e) => !e.isServed).length;
+  const served = countsData.filter((e) => e.isServed).length;
+  const pending = countsData.filter((e) => !e.isServed).length;
+
+  const columns: TableProps<ManifestEntry>['columns'] = [
+    { title: 'Room', dataIndex: 'roomNumber', key: 'room', width: 100, render: (_: unknown, r: ManifestEntry) => <span className="font-mono font-medium">{r.roomNumber}</span> },
+    { title: 'Guest', dataIndex: 'guestName', key: 'guest', render: (_: unknown, r: ManifestEntry) => <span className="font-medium">{r.guestName}</span> },
+    { title: 'Status', key: 'status', width: 140, responsive: ['sm' as const], render: (_: unknown, r: ManifestEntry) => (
+      r.isServed ? (
+        <span className="inline-flex items-center gap-1 text-xs text-emerald-700"><Check size={12} />Served at {r.servedAt ? format(new Date(r.servedAt), 'HH:mm') : '—'}</span>
+      ) : <span className="text-xs text-amber-700">Pending</span>
+    )},
+    { title: 'Action', key: 'action', width: 100, align: 'right' as const, render: (_: unknown, r: ManifestEntry) => (
+      r.isServed ? (
+        <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium"><Check size={14} />Served</span>
+      ) : (
+        <Button size="sm" loading={serving[r.bookingId]} onClick={() => handleServe(r)}>Serve</Button>
+      )
+    )},
+  ];
 
   return (
     <div className="p-6 md:p-8">
@@ -48,6 +93,8 @@ export default function BreakfastPage() {
           <p className="text-sm text-on-surface-variant mt-1">Daily meal manifest — mark guests as served.</p>
         </div>
         <div className="flex items-center gap-2">
+          <Input size="sm" placeholder="Search guest or room..." prefix={<Search size={14} className="text-outline" />}
+            value={searchInput} onChange={(e) => onSearchChange(e.target.value)} className="!w-48" />
           <Calendar size={16} className="text-outline" />
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
             className="h-9 px-3 text-xs rounded border border-outline-variant bg-surface-container-lowest text-on-surface focus:outline-none focus:border-primary" />
@@ -56,7 +103,7 @@ export default function BreakfastPage() {
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
         {[
-          { label: 'Total Guests', value: manifest.length, icon: Users, color: '#3b82f6' },
+          { label: 'Total Guests', value: countsData.length, icon: Users, color: '#3b82f6' },
           { label: 'Served', value: served, icon: Coffee, color: '#10b981' },
           { label: 'Pending', value: pending, icon: Coffee, color: '#f59e0b' },
         ].map(({ label, value, icon: Icon, color }) => (
@@ -67,44 +114,22 @@ export default function BreakfastPage() {
         ))}
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-20"><Spinner size={20} className="text-primary" /></div>
-      ) : manifest.length === 0 ? (
-        <div className="text-center py-20 bg-surface-container-lowest border border-outline-variant rounded-lg">
-          <Coffee size={32} className="mx-auto mb-3 text-outline" /><p className="text-sm text-on-surface-variant">No breakfast data for this date.</p>
-        </div>
-      ) : (
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden">
-          <table className="w-full text-sm">
-            <thead><tr className="border-b border-outline-variant">
-              <th className="px-4 py-3 text-left text-xs font-bold tracking-[0.1em] uppercase text-outline">Room</th>
-              <th className="px-4 py-3 text-left text-xs font-bold tracking-[0.1em] uppercase text-outline">Guest</th>
-              <th className="px-4 py-3 text-left text-xs font-bold tracking-[0.1em] uppercase text-outline hidden sm:table-cell">Status</th>
-              <th className="px-4 py-3 text-right text-xs font-bold tracking-[0.1em] uppercase text-outline">Action</th>
-            </tr></thead>
-            <tbody>
-              {manifest.map((entry) => (
-                <tr key={entry.bookingId} className="border-b border-outline-variant/50">
-                  <td className="px-4 py-3 font-mono font-medium text-on-surface">{entry.roomNumber}</td>
-                  <td className="px-4 py-3"><p className="font-medium text-on-surface">{entry.guestName}</p></td>
-                  <td className="px-4 py-3 hidden sm:table-cell">
-                    {entry.isServed ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-emerald-700"><Check size={12} />Served at {entry.servedAt ? new Date(entry.servedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '—'}</span>
-                    ) : <span className="text-xs text-amber-700">Pending</span>}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {entry.isServed ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium"><Check size={14} />Served</span>
-                    ) : (
-                      <Button size="sm" loading={serving[entry.bookingId]} onClick={() => handleServe(entry)}>Serve</Button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden">
+        <Table<ManifestEntry>
+          columns={columns}
+          dataSource={manifest.items}
+          rowKey="bookingId"
+          loading={loading}
+          pagination={{
+            current: manifest.page,
+            pageSize: manifest.limit,
+            total: manifest.total,
+            showSizeChanger: true,
+            showTotal: (total: number) => `${total} guest${total !== 1 ? 's' : ''}`,
+            onChange: (p) => setPage(p),
+          }}
+        />
+      </div>
     </div>
   );
 }

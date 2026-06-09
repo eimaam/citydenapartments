@@ -1,5 +1,7 @@
+import { format } from 'date-fns';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../../contexts/auth';
+import { BookingStatus, RoomStatus } from '@citydenapartments/shared';
 import { Spinner } from '../../../components/ui/Spinner';
 import { bookingsApi, type BookingResponse } from '../../bookings/api/bookings.api';
 import { roomsApi, type RoomResponse } from '../../rooms/api/rooms.api';
@@ -14,20 +16,21 @@ export default function DashboardPage() {
 }
 
 function ReceptionDashboard() {
+  const { user } = useAuth();
   const [bookings, setBookings] = useState<BookingResponse[]>([]);
   const [rooms, setRooms] = useState<RoomResponse[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([bookingsApi.list().catch(() => [] as BookingResponse[]), roomsApi.list().catch(() => [] as RoomResponse[])])
+    Promise.all([bookingsApi.list({ limit: 1000 }).then(r => r.items).catch(() => [] as BookingResponse[]), roomsApi.list({ limit: 1000 }).then(r => r.items).catch(() => [] as RoomResponse[])])
       .then(([b, r]) => { setBookings(b); setRooms(r); setLoading(false); });
-  }, []);
+  }, [user?.activeBranchId]);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const todayBookings = bookings.filter((b) => b.checkInDate?.slice(0, 10) === today);
-  const checkedIn = bookings.filter((b) => b.bookingStatus === 'Checked_In');
-  const pendingCheckIns = bookings.filter((b) => b.bookingStatus === 'Confirmed');
-  const occupied = rooms.filter((r) => r.status === 'occupied');
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const todayBookings = bookings.filter((b) => b.checkInDate && format(new Date(b.checkInDate), 'yyyy-MM-dd') === today);
+  const checkedIn = bookings.filter((b) => b.bookingStatus === BookingStatus.Checked_In);
+  const pendingCheckIns = bookings.filter((b) => b.bookingStatus === BookingStatus.Confirmed);
+  const occupied = rooms.filter((r) => r.status === RoomStatus.Occupied);
   const occupancyRate = rooms.length ? Math.round((occupied.length / rooms.length) * 100) : 0;
 
   const stats = [
@@ -40,9 +43,10 @@ function ReceptionDashboard() {
 }
 
 function KitchenDashboard() {
+  const { user } = useAuth();
   const [manifest, setManifest] = useState<ManifestEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  useEffect(() => { breakfastApi.manifest().then((d) => { setManifest(d); setLoading(false); }).catch(() => setLoading(false)); }, []);
+  useEffect(() => { breakfastApi.manifest({ limit: 1000 }).then((d) => { setManifest(d.items); setLoading(false); }).catch(() => setLoading(false)); }, [user?.activeBranchId]);
   const served = manifest.filter((e) => e.isServed).length;
   const pending = manifest.filter((e) => !e.isServed).length;
   const stats = [

@@ -1,11 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button, Input, Drawer, Table } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
-import { Plus } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { Spinner } from '../../../components/ui/Spinner';
 import { useToast } from '../../../components/ui/Toast';
 import { useAuth } from '../../../contexts/auth';
 import { api } from '../../../lib/api';
+
+const LIMIT = 20;
 
 interface RoomType {
   _id: string;
@@ -16,11 +18,22 @@ interface RoomType {
   amenities: string[];
 }
 
+interface PaginatedData {
+  items: RoomType[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export default function RoomTypesPage() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [items, setItems] = useState<RoomType[]>([]);
+  const [data, setData] = useState<PaginatedData>({ items: [], total: 0, page: 1, limit: LIMIT });
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [drawer, setDrawer] = useState(false);
   const [edit, setEdit] = useState<RoomType | null>(null);
   const [saving, setSaving] = useState(false);
@@ -28,12 +41,23 @@ export default function RoomTypesPage() {
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    try { setItems(await api.get<RoomType[]>('/room-types')); }
+    try {
+      const res = await api.get<PaginatedData>(`/room-types?page=${page}&limit=${LIMIT}&search=${encodeURIComponent(search)}`);
+      setData({ items: res.items, total: res.total, page: res.page, limit: res.limit });
+    }
     catch { toast('error', 'Failed to load room types.'); }
     finally { setLoading(false); }
-  }, [toast, user?.activeBranchId]);
+  }, [toast, user?.activeBranchId, page, search]);
 
   useEffect(() => { fetch(); }, [fetch]);
+
+  useEffect(() => { setPage(1); }, [search]);
+
+  const onSearchChange = (val: string) => {
+    setSearchInput(val);
+    clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => setSearch(val), 400);
+  };
 
   const openCreate = () => { setEdit(null); setForm({ name: '', basePrice: 0, minPriceAllowed: 0 }); setDrawer(true); };
   const openEdit = (r: RoomType) => { setEdit(r); setForm({ name: r.name, basePrice: r.basePrice, minPriceAllowed: r.minPriceAllowed }); setDrawer(true); };
@@ -63,11 +87,27 @@ export default function RoomTypesPage() {
       <div className="flex items-center gap-3 mb-6"><span className="w-8 h-px bg-primary" /><span className="text-xs font-bold tracking-[0.15em] uppercase text-outline">Administration</span></div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-serif text-2xl sm:text-3xl text-on-surface">Room Types</h1>
-        <Button size="sm" icon={<Plus size={14} />} onClick={openCreate}>New Type</Button>
+        <div className="flex items-center gap-3">
+          <Input size="sm" placeholder="Search room types..." prefix={<Search size={14} className="text-outline" />}
+            value={searchInput} onChange={(e) => onSearchChange(e.target.value)} className="!w-64" />
+          <Button size="sm" icon={<Plus size={14} />} onClick={openCreate}>New Type</Button>
+        </div>
       </div>
       <div className="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden">
-        {loading ? <div className="flex items-center justify-center py-20"><Spinner size={20} className="text-primary" /></div> :
-          <Table<RoomType> columns={columns} dataSource={items} rowKey="_id" pagination={false} onRow={(r) => ({ onClick: () => openEdit(r), style: { cursor: 'pointer' } })} />}
+        <Table<RoomType>
+          columns={columns}
+          dataSource={data.items}
+          rowKey="_id"
+          loading={loading}
+          pagination={{
+            current: data.page,
+            pageSize: data.limit,
+            total: data.total,
+            showSizeChanger: true,
+            onChange: (p) => setPage(p),
+          }}
+          onRow={(r) => ({ onClick: () => openEdit(r), style: { cursor: 'pointer' } })}
+        />
       </div>
       <Drawer open={drawer} onClose={() => setDrawer(false)} title={edit ? 'Edit Room Type' : 'New Room Type'} size="sm"
         footer={<div className="flex justify-end gap-3"><Button variant="secondary" onClick={() => setDrawer(false)}>Cancel</Button><Button loading={saving} onClick={save}>{edit ? 'Save' : 'Create'}</Button></div>}>

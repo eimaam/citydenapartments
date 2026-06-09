@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button, Input, Select, Option, Drawer, Badge, Table, UserRole, RoomStatus, CustomMultiSelect, type UserRoleType } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
-import { Plus, Copy, Check } from 'lucide-react';
+import { Plus, Copy, Check, Search } from 'lucide-react';
 import { Spinner } from '../../../components/ui/Spinner';
 import { useToast } from '../../../components/ui/Toast';
 import { api } from '../../../lib/api';
+
+const LIMIT = 20;
 
 const PLATFORM_URL = import.meta.env.VITE_PLATFORM_URL || 'https://staff.citydenapartments.com';
 
@@ -30,11 +32,22 @@ interface CreatedAccount {
   loginUrl: string;
 }
 
+interface PaginatedData {
+  items: StaffUser[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export default function StaffPage() {
   const { toast } = useToast();
-  const [users, setUsers] = useState<StaffUser[]>([]);
+  const [data, setData] = useState<PaginatedData>({ items: [], total: 0, page: 1, limit: LIMIT });
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [drawer, setDrawer] = useState(false);
   const [edit, setEdit] = useState<StaffUser | null>(null);
   const [saving, setSaving] = useState(false);
@@ -46,16 +59,24 @@ export default function StaffPage() {
     setLoading(true);
     try {
       const [u, b] = await Promise.all([
-        api.get<StaffUser[]>('/users'),
+        api.get<PaginatedData>(`/users?page=${page}&limit=${LIMIT}&search=${encodeURIComponent(search)}`),
         api.get<Branch[]>('/branches'),
       ]);
-      setUsers(u);
+      setData({ items: u.items, total: u.total, page: u.page, limit: u.limit });
       setBranches(b);
     } catch { toast('error', 'Failed to load data.'); }
     finally { setLoading(false); }
-  }, [toast]);
+  }, [toast, page, search]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  useEffect(() => { setPage(1); }, [search]);
+
+  const onSearchChange = (val: string) => {
+    setSearchInput(val);
+    clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => setSearch(val), 400);
+  };
 
   const branchOptions = branches.map((b) => ({ label: `${b.name} (${b.code})`, value: b._id }));
 
@@ -166,11 +187,26 @@ export default function StaffPage() {
       <div className="flex items-center gap-3 mb-6"><span className="w-8 h-px bg-primary" /><span className="text-xs font-bold tracking-[0.15em] uppercase text-outline">Administration</span></div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-serif text-2xl sm:text-3xl text-on-surface">Staff</h1>
-        <Button size="sm" icon={<Plus size={14} />} onClick={openCreate}>Add Staff</Button>
+        <div className="flex items-center gap-3">
+          <Input size="sm" placeholder="Search staff..." prefix={<Search size={14} className="text-outline" />}
+            value={searchInput} onChange={(e) => onSearchChange(e.target.value)} className="!w-64" />
+          <Button size="sm" icon={<Plus size={14} />} onClick={openCreate}>Add Staff</Button>
+        </div>
       </div>
       <div className="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden">
-        {loading ? <div className="flex items-center justify-center py-20"><Spinner size={20} className="text-primary" /></div> :
-          <Table<StaffUser> columns={columns} dataSource={users} rowKey="_id" pagination={false} />}
+        <Table<StaffUser>
+          columns={columns}
+          dataSource={data.items}
+          rowKey="_id"
+          loading={loading}
+          pagination={{
+            current: data.page,
+            pageSize: data.limit,
+            total: data.total,
+            showSizeChanger: true,
+            onChange: (p) => setPage(p),
+          }}
+        />
       </div>
 
       <Drawer open={drawer} onClose={() => setDrawer(false)} title={edit ? 'Edit Staff' : 'Add Staff'} size="sm"

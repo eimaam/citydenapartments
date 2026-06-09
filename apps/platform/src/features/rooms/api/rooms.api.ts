@@ -17,10 +17,29 @@ export interface RoomResponse {
   isActive: boolean;
 }
 
+export interface PaginatedRooms {
+  items: RoomResponse[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface RoomsQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+}
+
 export const roomsApi = {
-  list: (status?: string) => {
-    const params = status ? `?status=${status}` : '';
-    return api.get<RoomResponse[]>(`/rooms${params}`);
+  list: (query: RoomsQuery = {}) => {
+    const params = new URLSearchParams();
+    if (query.page) params.set('page', String(query.page));
+    if (query.limit) params.set('limit', String(query.limit));
+    if (query.search) params.set('search', query.search);
+    if (query.status) params.set('status', query.status);
+    const qs = params.toString();
+    return api.get<PaginatedRooms>(`/rooms${qs ? `?${qs}` : ''}`);
   },
   get: (id: string) => api.get<RoomResponse>(`/rooms/${id}`),
 };
