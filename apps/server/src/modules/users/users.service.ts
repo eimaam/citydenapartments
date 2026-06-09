@@ -3,9 +3,11 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
-import { User } from './user.schema';
+import { User, UserRoleEnum } from './user.schema';
+import { Branch } from '../branches/branch.schema';
 import { RedisService } from '../redis/redis.service';
 import { CACHE_KEYS, CACHE_TTL } from '../../config/cache.constants';
+import { escapeRegex } from '../../common/utils/escape-regex';
 
 function generatePassword(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
@@ -18,6 +20,7 @@ function generatePassword(): string {
 export class UsersService {
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(Branch.name) private branchModel: Model<Branch>,
     private readonly redis: RedisService,
   ) {}
 
@@ -25,9 +28,10 @@ export class UsersService {
     const { page = 1, limit = 20, search } = params || {};
     const filter: any = {};
     if (search) {
+      const escaped = escapeRegex(search);
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
+        { name: { $regex: escaped, $options: 'i' } },
+        { email: { $regex: escaped, $options: 'i' } },
       ];
     }
 
@@ -51,6 +55,16 @@ export class UsersService {
   async create(dto: { email: string; name: string; role: string; allowedBranches?: string[] }) {
     const exists = await this.userModel.findOne({ email: dto.email.toLowerCase() });
     if (exists) throw new BadRequestException('Email already registered.');
+
+    if (dto.allowedBranches?.length) {
+      const validBranches = await this.branchModel.find({
+        _id: { $in: dto.allowedBranches },
+        isActive: true,
+      });
+      if (validBranches.length !== dto.allowedBranches.length) {
+        throw new BadRequestException('One or more allowed branches are invalid or inactive.');
+      }
+    }
 
     const rawPassword = generatePassword();
     const hashed = await bcrypt.hash(rawPassword, 12);
@@ -77,8 +91,30 @@ export class UsersService {
 
     if (dto.name !== undefined) user.name = dto.name;
     if (dto.role !== undefined) user.role = dto.role as any;
-    if (dto.allowedBranches !== undefined) user.allowedBranches = dto.allowedBranches as any;
-    if (dto.activeBranchId !== undefined) user.activeBranchId = dto.activeBranchId as any;
+    if (dto.allowedBranches !== undefined) {
+      if (dto.allowedBranches.length) {
+        const validBranches = await this.branchModel.find({
+          _id: { $in: dto.allowedBranches },
+          isActive: true,
+        });
+        if (validBranches.length !== dto.allowedBranches.length) {
+          throw new BadRequestException('One or more allowed branches are invalid or inactive.');
+        }
+      }
+      user.allowedBranches = dto.allowedBranches as any;
+    }
+    if (dto.activeBranchId !== undefined) {
+      const newRole = dto.role !== undefined ? dto.role : (user.role as string);
+      if (newRole !== UserRoleEnum.SUPER_ADMIN) {
+        const allowed = dto.allowedBranches !== undefined
+          ? dto.allowedBranches.map((b: any) => b.toString())
+          : user.allowedBranches.map((b: any) => b.toString());
+        if (!allowed.includes(dto.activeBranchId.toString())) {
+          throw new BadRequestException('Active branch must be in allowed branches.');
+        }
+      }
+      user.activeBranchId = dto.activeBranchId as any;
+    }
     if (dto.isActive !== undefined) user.isActive = dto.isActive;
 
     await user.save();

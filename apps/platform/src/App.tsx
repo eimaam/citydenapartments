@@ -33,6 +33,10 @@ export default function App() {
               <Route element={<RoleGuard roles={['KitchenStaff']} />}>
                 <Route path="breakfast" element={<BreakfastPage />} />
               </Route>
+
+              <Route element={<RoleGuard roles={['HouseKeeper']} />}>
+                <Route path="rooms" element={<RoomsPage />} />
+              </Route>
             </Route>
           </Route>
         </Routes>

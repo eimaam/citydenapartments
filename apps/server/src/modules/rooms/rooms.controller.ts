@@ -8,6 +8,7 @@ import { ActiveUser } from '../../common/decorators/active-user.decorator';
 import { UserRoleEnum } from '../users/user.schema';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UpdateRoomDto } from './dto/update-room.dto';
+import { UpdateRoomStatusDto } from './dto/update-room-status.dto';
 import { PaginatedQueryDto } from '../../common/dto/paginated-query.dto';
 
 @Controller('rooms')
@@ -40,8 +41,8 @@ export class RoomsController {
   }
 
   @Patch(':id/status')
-  @Roles(UserRoleEnum.SUPER_ADMIN)
-  updateStatus(@Param('id') id: string, @Body('status') status: RoomStatus, @ActiveUser() user: any) {
-    return this.roomsService.updateStatus(id, status, user.id);
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.HOUSE_KEEPER)
+  updateStatus(@Param('id') id: string, @Body() body: UpdateRoomStatusDto, @ActiveUser() user: any) {
+    return this.roomsService.updateStatus(id, body.status as unknown as RoomStatus, user.id);
   }
 }

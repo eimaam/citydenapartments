@@ -42,4 +42,5 @@ export const roomsApi = {
     return api.get<PaginatedRooms>(`/rooms${qs ? `?${qs}` : ''}`);
   },
   get: (id: string) => api.get<RoomResponse>(`/rooms/${id}`),
+  updateStatus: (id: string, status: string) => api.patch<RoomResponse>(`/rooms/${id}/status`, { status }),
 };

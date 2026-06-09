@@ -35,6 +35,10 @@ const menuConfig: Record<UserRoleType, SidebarItem[]> = {
   SocialMediaManager: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
   ],
+  HouseKeeper: [
+    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
+  ],
 };
 
 interface SidebarProps {

@@ -34,6 +34,7 @@ const menuConfig: Record<UserRoleType, SidebarItem[]> = {
   Reception: [],
   KitchenStaff: [],
   SocialMediaManager: [],
+  HouseKeeper: [],
 };
 
 interface SidebarProps {
