@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/auth';
 import { ToastProvider } from './components/ui/Toast';
+import { ForcePasswordModal } from './components/ui/ForcePasswordModal';
 import { AuthGuard, GuestGuard } from './guards/AuthGuard';
 import { RoleGuard } from './guards/RoleGuard';
 import { MainLayout } from './components/layout/MainLayout';
@@ -14,6 +15,7 @@ export default function App() {
   return (
     <AuthProvider>
       <ToastProvider>
+        <ForcePasswordModal />
         <Routes>
           <Route element={<GuestGuard />}>
             <Route path="/login" element={<LoginPage />} />

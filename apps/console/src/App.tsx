@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import { UserRole } from '@citydenapartments/shared';
 import { AuthProvider } from './contexts/auth';
 import { ToastProvider } from './components/ui/Toast';
+import { ForcePasswordModal } from './components/ui/ForcePasswordModal';
 import { AuthGuard, GuestGuard } from './guards/AuthGuard';
 import { RoleGuard } from './guards/RoleGuard';
 import { MainLayout } from './components/layout/MainLayout';
@@ -12,11 +13,13 @@ import RoomTypesPage from './features/room-types/pages/RoomTypesPage';
 import RoomsPage from './features/rooms/pages/RoomsPage';
 import BookingsPage from './features/bookings/pages/BookingsPage';
 import StaffPage from './features/staff/pages/StaffPage';
+import BreakfastPage from './features/breakfast/pages/BreakfastPage';
 
 export default function App() {
   return (
     <AuthProvider>
       <ToastProvider>
+        <ForcePasswordModal />
         <Routes>
           <Route element={<GuestGuard />}>
             <Route path="/login" element={<LoginPage />} />
@@ -31,6 +34,7 @@ export default function App() {
                 <Route path="rooms" element={<RoomsPage />} />
                 <Route path="bookings" element={<BookingsPage />} />
                 <Route path="staff" element={<StaffPage />} />
+                <Route path="breakfast" element={<BreakfastPage />} />
               </Route>
             </Route>
           </Route>
