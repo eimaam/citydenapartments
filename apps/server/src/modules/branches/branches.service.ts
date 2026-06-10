@@ -73,6 +73,7 @@ export class BranchService {
             name, address, code, isActive
         })
 
+        await this.redisService.invalidateDashboardCache();
         this.logger.log(`Branch created — ${name} (${code}) | address: ${address}`);
 
         return newBranch;
@@ -85,6 +86,8 @@ export class BranchService {
         const updatedBranch = await this.branchModel.findByIdAndUpdate(branchId, updateDetails, { new: true })
 
         if (updatedBranch) {
+            await this.redisService.del(CACHE_KEYS.BRANCH_DETAILS(branchId));
+            await this.redisService.invalidateDashboardCache();
             this.logger.log(`Branch updated — ${updatedBranch.name} (${updatedBranch.code})`);
         }
 
