@@ -116,7 +116,7 @@ export class DashboardService {
       ]),
 
       branchId ? this.branchModel.findById(branchId).lean() : null,
-      this.userModel.countDocuments(),
+      this.userModel.countDocuments({ isActive: true }),
     ]);
 
     const rooms = roomResult[0] || { total: 0, available: 0, occupied: 0, dirty: 0, maintenance: 0 };
