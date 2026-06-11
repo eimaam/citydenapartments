@@ -5,6 +5,7 @@ import {
   CalendarCheck,
   DoorOpen,
   Coffee,
+  Package,
   Users,
   LogOut,
   X,
@@ -30,6 +31,16 @@ const menuConfig: Record<UserRoleType, SidebarItem[]> = {
     { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
     { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
     { label: 'Staff', icon: Users, path: '/staff' },
+  ],
+  StoreManager: [
+    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    { label: 'Inventory', icon: Package, path: '/inventory' },
+    { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
+  ],
+  StoreKeeper: [
+    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    { label: 'Inventory', icon: Package, path: '/inventory' },
+    { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
   ],
   Reception: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },

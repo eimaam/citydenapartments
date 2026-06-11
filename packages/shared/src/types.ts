@@ -2,6 +2,8 @@
 export const UserRole = {
   SuperAdmin: 'SuperAdmin',
   BranchManager: 'BranchManager',
+  StoreManager: 'StoreManager',
+  StoreKeeper: 'StoreKeeper',
   Reception: 'Reception',
   KitchenStaff: 'KitchenStaff',
   SocialMediaManager: 'SocialMediaManager',
@@ -45,6 +47,18 @@ export const BookingSource = {
   Online: 'Online',
 } as const;
 export type BookingSourceType = (typeof BookingSource)[keyof typeof BookingSource];
+
+// ── Departments ────────────────────────────────────────────────
+export const Departments = [
+  'Housekeeping',
+  'Kitchen',
+  'Front Desk',
+  'Maintenance',
+  'Admin',
+  'Laundry',
+  'Security',
+] as const;
+export type DepartmentType = (typeof Departments)[number];
 
 // ── Auth shapes ─────────────────────────────────────────────────
 export interface AuthUser {

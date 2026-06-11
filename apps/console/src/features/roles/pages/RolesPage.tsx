@@ -1,4 +1,4 @@
-import { Shield, Building2, CalendarCheck, DoorOpen, Coffee, Users, Camera, Sparkles } from 'lucide-react';
+import { Shield, Building2, CalendarCheck, DoorOpen, Coffee, Package, Users, Camera, Sparkles } from 'lucide-react';
 
 interface RolePermission {
   role: string;
@@ -24,6 +24,7 @@ const roles: RolePermission[] = [
       { name: 'Bookings', description: 'View and manage every booking in the system' },
       { name: 'Breakfast', description: 'View breakfast logs across all branches' },
       { name: 'Staff', description: 'Create, edit, or deactivate any user account' },
+      { name: 'Inventory', description: 'View and manage store items, stock levels, and transactions' },
     ],
     can: [
       'Create and manage hotel branches',
@@ -65,6 +66,54 @@ const roles: RolePermission[] = [
       'Create or edit Super Admin or other Branch Manager accounts',
       'See data from other branches',
       'Add or remove rooms',
+    ],
+  },
+  {
+    role: 'Store Manager',
+    icon: Package,
+    color: '#06b6d4',
+    summary: 'Manages inventory items, stock levels, and store operations.',
+    pages: [
+      { name: 'Dashboard', description: 'See branch stats' },
+      { name: 'Inventory', description: 'Add, edit, and restock inventory items' },
+      { name: 'Transactions', description: 'View stock movement history' },
+    ],
+    can: [
+      'Create new inventory items with categories and units',
+      'Add stock (restock) to any item',
+      'Issue items to staff or departments',
+      'Edit item details and reorder levels',
+      'View transaction history for all items',
+      'View daily stock snapshots and close the day manually',
+    ],
+    cannot: [
+      'Create or manage staff accounts',
+      'Access bookings, rooms, or guest data',
+      'Create branches or room types',
+      'View financial data outside inventory',
+    ],
+  },
+  {
+    role: 'Store Keeper',
+    icon: Package,
+    color: '#14b8a6',
+    summary: 'Issues store items to staff and tracks daily stock movement.',
+    pages: [
+      { name: 'Dashboard', description: 'See branch stats' },
+      { name: 'Inventory', description: 'View items and issue stock' },
+      { name: 'Transactions', description: 'View stock movement history' },
+    ],
+    can: [
+      'View all inventory items and current stock levels',
+      'Issue items to staff or departments',
+      'View transaction history',
+      'See alerts when stock is low',
+    ],
+    cannot: [
+      'Add or edit inventory items',
+      'Restock items (only Store Manager can restock)',
+      'Create or manage staff accounts',
+      'Access bookings, rooms, or guest data',
     ],
   },
   {

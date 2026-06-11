@@ -11,6 +11,8 @@ import BookingsPage from './features/bookings/pages/BookingsPage';
 import RoomsPage from './features/rooms/pages/RoomsPage';
 import BreakfastPage from './features/breakfast/pages/BreakfastPage';
 import StaffPage from './features/staff/pages/StaffPage';
+import InventoryPage from './features/inventory/pages/InventoryPage';
+import TransactionsPage from './features/inventory/pages/TransactionsPage';
 
 export default function App() {
   return (
@@ -41,6 +43,11 @@ export default function App() {
 
               <Route element={<RoleGuard roles={['BranchManager']} />}>
                 <Route path="staff" element={<StaffPage />} />
+              </Route>
+
+              <Route element={<RoleGuard roles={['StoreKeeper', 'StoreManager']} />}>
+                <Route path="inventory" element={<InventoryPage />} />
+                <Route path="inventory/transactions" element={<TransactionsPage />} />
               </Route>
             </Route>
           </Route>

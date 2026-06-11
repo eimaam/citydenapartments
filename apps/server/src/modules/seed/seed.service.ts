@@ -8,6 +8,8 @@ import { Branch } from '../branches/branch.schema';
 import { RoomType } from '../room-types/room-type.schema';
 import { Room, RoomStatusEnum } from '../rooms/room.schema';
 import { Booking } from '../bookings/booking.schema';
+import { InventoryItem } from '../inventory/inventory-item.schema';
+import { InventoryTransaction } from '../inventory/inventory-transaction.schema';
 
 // ── random helpers ──────────────────────────────────────────────
 const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
@@ -88,6 +90,8 @@ export class SeedService {
     @InjectModel(RoomType.name) private roomTypeModel: Model<RoomType>,
     @InjectModel(Room.name) private roomModel: Model<Room>,
     @InjectModel(Booking.name) private bookingModel: Model<Booking>,
+    @InjectModel(InventoryItem.name) private inventoryItemModel: Model<InventoryItem>,
+    @InjectModel(InventoryTransaction.name) private inventoryTxModel: Model<InventoryTransaction>,
   ) {}
 
   async seed() {
@@ -170,7 +174,66 @@ export class SeedService {
       { email: 'manager-maiduguri@cityden.com', password: hashedPassword, name: 'Ibrahim Manager', role: 'BranchManager', allowedBranches: [branches[2]._id], activeBranchId: branches[2]._id, isActive: true },
     ]);
 
-    this.logger.log(`Seed — users created: 1 admin + 4 staff + 3 branch managers`);
+    // ── store staff ──
+    const storeKeeper = await this.userModel.create({
+      email: 'storekeeper@cityden.com', password: hashedPassword, name: 'Emeka Store',
+      role: 'StoreKeeper', allowedBranches: [branches[0]._id], activeBranchId: branches[0]._id, isActive: true,
+    });
+    await this.userModel.create({
+      email: 'storemanager@cityden.com', password: hashedPassword, name: 'Ngozi Store',
+      role: 'StoreManager', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true,
+    });
+
+    this.logger.log(`Seed — users created: 1 admin + 4 staff + 3 branch managers + 2 store staff`);
+
+    // ── inventory items ─────────────────────────────────────────
+    const itemDefs = [
+      { name: 'Bar Soap', category: 'Toiletries', unit: 'pcs' },
+      { name: 'Shampoo', category: 'Toiletries', unit: 'bottles' },
+      { name: 'Toilet Paper', category: 'Cleaning', unit: 'rolls' },
+      { name: 'Hand Towels', category: 'Linen', unit: 'pcs' },
+      { name: 'Bleach', category: 'Cleaning', unit: 'litres' },
+      { name: 'Floor Detergent', category: 'Cleaning', unit: 'litres' },
+      { name: 'Light Bulbs', category: 'Maintenance', unit: 'pcs' },
+      { name: 'Trash Bags', category: 'Cleaning', unit: 'packs' },
+      { name: 'Dishwashing Liquid', category: 'Kitchen', unit: 'bottles' },
+      { name: 'Bottled Water', category: 'Kitchen', unit: 'cartons' },
+    ];
+
+    const inventoryItems: Array<Record<string, unknown>> = [];
+    for (const branch of branches) {
+      for (const def of itemDefs) {
+        const stock = 20 + Math.floor(Math.random() * 80);
+        const reorder = 5 + Math.floor(Math.random() * 15);
+        inventoryItems.push({
+          name: def.name,
+          category: def.category,
+          unit: def.unit,
+          currentStock: stock,
+          reorderLevel: reorder,
+          branchId: branch._id,
+          isActive: true,
+          createdBy: storeKeeper._id,
+          updatedBy: storeKeeper._id,
+        });
+      }
+    }
+    const createdItems = await this.inventoryItemModel.create(inventoryItems);
+
+    // initial stock transactions
+    const txns = createdItems.map((item) => ({
+      itemId: item._id,
+      type: 'restock',
+      quantity: item.currentStock,
+      previousStock: 0,
+      newStock: item.currentStock,
+      notes: 'Initial stock on setup',
+      performedBy: storeKeeper._id,
+      branchId: item.branchId,
+    }));
+    await this.inventoryTxModel.create(txns);
+
+    this.logger.log(`Seed — inventory items created: ${createdItems.length} across ${branches.length} branches`);
 
     // ── 30 bookings ─────────────────────────────────────────────────
     const bookingData: Array<Record<string, unknown>> = [];
@@ -248,9 +311,11 @@ export class SeedService {
         'manager-abuja': 'manager-abuja@cityden.com / admin123',
         'manager-kaduna': 'manager-kaduna@cityden.com / admin123',
         'manager-maiduguri': 'manager-maiduguri@cityden.com / admin123',
+        'storekeeper': 'storekeeper@cityden.com / admin123',
+        'storemanager': 'storemanager@cityden.com / admin123',
       },
       stats: {
-        users: 8,
+        users: 10,
         branches: 3,
         roomTypes: 7,
         rooms: rooms.length,
