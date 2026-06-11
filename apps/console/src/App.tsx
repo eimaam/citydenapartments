@@ -14,6 +14,7 @@ import RoomsPage from './features/rooms/pages/RoomsPage';
 import BookingsPage from './features/bookings/pages/BookingsPage';
 import StaffPage from './features/staff/pages/StaffPage';
 import BreakfastPage from './features/breakfast/pages/BreakfastPage';
+import RolesPage from './features/roles/pages/RolesPage';
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
                 <Route path="bookings" element={<BookingsPage />} />
                 <Route path="staff" element={<StaffPage />} />
                 <Route path="breakfast" element={<BreakfastPage />} />
+                <Route path="roles" element={<RolesPage />} />
               </Route>
             </Route>
           </Route>

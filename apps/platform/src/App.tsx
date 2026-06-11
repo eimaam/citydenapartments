@@ -10,6 +10,7 @@ import DashboardPage from './features/dashboard/pages/DashboardPage';
 import BookingsPage from './features/bookings/pages/BookingsPage';
 import RoomsPage from './features/rooms/pages/RoomsPage';
 import BreakfastPage from './features/breakfast/pages/BreakfastPage';
+import StaffPage from './features/staff/pages/StaffPage';
 
 export default function App() {
   return (
@@ -25,17 +26,21 @@ export default function App() {
             <Route element={<MainLayout />}>
               <Route index element={<DashboardPage />} />
 
-              <Route element={<RoleGuard roles={['Reception']} />}>
+              <Route element={<RoleGuard roles={['Reception', 'BranchManager']} />}>
                 <Route path="bookings" element={<BookingsPage />} />
                 <Route path="rooms" element={<RoomsPage />} />
               </Route>
 
-              <Route element={<RoleGuard roles={['KitchenStaff']} />}>
+              <Route element={<RoleGuard roles={['KitchenStaff', 'BranchManager']} />}>
                 <Route path="breakfast" element={<BreakfastPage />} />
               </Route>
 
               <Route element={<RoleGuard roles={['HouseKeeper']} />}>
                 <Route path="rooms" element={<RoomsPage />} />
+              </Route>
+
+              <Route element={<RoleGuard roles={['BranchManager']} />}>
+                <Route path="staff" element={<StaffPage />} />
               </Route>
             </Route>
           </Route>

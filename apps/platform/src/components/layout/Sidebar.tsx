@@ -5,6 +5,7 @@ import {
   CalendarCheck,
   DoorOpen,
   Coffee,
+  Users,
   LogOut,
   X,
   ChevronLeft,
@@ -22,6 +23,13 @@ interface SidebarItem {
 const menuConfig: Record<UserRoleType, SidebarItem[]> = {
   SuperAdmin: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+  ],
+  BranchManager: [
+    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
+    { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
+    { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
+    { label: 'Staff', icon: Users, path: '/staff' },
   ],
   Reception: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },

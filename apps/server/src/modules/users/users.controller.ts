@@ -5,37 +5,46 @@ import { UserRoleEnum } from './user.schema';
 import { PaginatedQueryDto } from '../../common/dto/paginated-query.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { WorkspaceAuthGuard } from '../../common/guards/workspace-auth.guard';
+import { ActiveUser } from '../../common/decorators/active-user.decorator';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 @Controller('users')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRoleEnum.SUPER_ADMIN)
+@UseGuards(JwtAuthGuard, RolesGuard, WorkspaceAuthGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  findAll(@Query() query: PaginatedQueryDto) {
-    return this.usersService.findAll({ page: query.page, limit: query.limit, search: query.search });
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.BRANCH_MANAGER)
+  findAll(@Query() query: PaginatedQueryDto, @ActiveUser() user: any) {
+    return this.usersService.findAll(
+      { page: query.page, limit: query.limit, search: query.search },
+      { role: user.role, activeBranchId: user.activeBranchId },
+    );
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(id);
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.BRANCH_MANAGER)
+  findOne(@Param('id') id: string, @ActiveUser() user: any) {
+    return this.usersService.findOne(id, { role: user.role, activeBranchId: user.activeBranchId });
   }
 
   @Post()
-  create(@Body() dto: CreateUserDto) {
-    return this.usersService.create(dto);
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.BRANCH_MANAGER)
+  create(@Body() dto: CreateUserDto, @ActiveUser() user: any) {
+    return this.usersService.create(dto, { role: user.role, activeBranchId: user.activeBranchId });
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
-    return this.usersService.update(id, dto);
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.BRANCH_MANAGER)
+  update(@Param('id') id: string, @Body() dto: UpdateUserDto, @ActiveUser() user: any) {
+    return this.usersService.update(id, dto, { role: user.role, activeBranchId: user.activeBranchId });
   }
 
   @Post(':id/reset-password')
-  resetPassword(@Param('id') id: string) {
-    return this.usersService.resetPassword(id);
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.BRANCH_MANAGER)
+  resetPassword(@Param('id') id: string, @ActiveUser() user: any) {
+    return this.usersService.resetPassword(id, { role: user.role, activeBranchId: user.activeBranchId });
   }
 }

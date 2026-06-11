@@ -7,7 +7,7 @@ import { CalendarCheck, Users, DoorOpen, Coffee, Clock, TrendingUp } from 'lucid
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  if (user?.role === 'Reception') return <ReceptionDashboard />;
+  if (user?.role === 'Reception' || user?.role === 'BranchManager') return <ReceptionDashboard />;
   if (user?.role === 'KitchenStaff') return <KitchenDashboard />;
   return <DefaultDashboard />;
 }

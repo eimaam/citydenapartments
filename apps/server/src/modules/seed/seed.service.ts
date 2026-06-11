@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
+import { subDays, addDays, differenceInDays } from 'date-fns';
 import { User } from '../users/user.schema';
 import { Branch } from '../branches/branch.schema';
 import { RoomType } from '../room-types/room-type.schema';
@@ -13,8 +14,8 @@ const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 const randNaira = (min: number, max: number) => randInt(min / 1000, max / 1000) * 1000;
 
-function daysAgo(n: number) { const d = new Date(); d.setDate(d.getDate() - n); return d; }
-function daysFromNow(n: number) { const d = new Date(); d.setDate(d.getDate() + n); return d; }
+function daysAgo(n: number) { return subDays(new Date(), n); }
+function daysFromNow(n: number) { return addDays(new Date(), n); }
 function ref(prefix: string, n: number) { return `${prefix}-${String(n).padStart(3, '0')}`; }
 
 // ── data pools ───────────────────────────────────────────────────
@@ -79,6 +80,8 @@ const scenarios: Scenario[] = [
 
 @Injectable()
 export class SeedService {
+  private readonly logger = new Logger(SeedService.name);
+
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(Branch.name) private branchModel: Model<Branch>,
@@ -88,6 +91,8 @@ export class SeedService {
   ) {}
 
   async seed() {
+    this.logger.log('Seed started');
+
     const existingAdmin = await this.userModel.findOne({ email: 'admin@cityden.com' });
     if (existingAdmin) {
       return { message: 'System already seeded. Use POST /api/v1/auth/register to add users.' };
@@ -101,6 +106,8 @@ export class SeedService {
       { name: 'Kaduna', code: 'KAD', address: 'No 45, Ahmadu Bello Way, Kaduna', isActive: true },
       { name: 'Maiduguri', code: 'MAI', address: '15 Damaturu Road, Maiduguri', isActive: true },
     ]);
+
+    this.logger.log(`Seed — branches created: ${branches.length}`);
 
     // ── admin ──
     const admin = await this.userModel.create({
@@ -123,6 +130,8 @@ export class SeedService {
       { branchId: branches[2]._id, name: 'Deluxe Suite', basePrice: 50000, minPriceAllowed: 40000, amenities: ['Queen Bed', 'AC', 'WiFi'], createdBy: admin._id, updatedBy: admin._id },
       { branchId: branches[2]._id, name: 'Standard Room', basePrice: 30000, minPriceAllowed: 25000, amenities: ['Queen Bed', 'AC'], createdBy: admin._id, updatedBy: admin._id },
     ]);
+
+    this.logger.log(`Seed — room types created: ${abujaRT.length + kadunaRT.length + maiRT.length}`);
 
     // ── rooms (references for seeding bookings) ──
     const roomDefs = [
@@ -148,12 +157,20 @@ export class SeedService {
       })),
     );
 
+    this.logger.log(`Seed — rooms created: ${rooms.length}`);
+
     // ── staff ──
     await this.userModel.create([
       { email: 'reception@cityden.com', password: hashedPassword, name: 'Amara Reception', role: 'Reception', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true },
       { email: 'kitchen@cityden.com', password: hashedPassword, name: 'Chef Ibrahim', role: 'KitchenStaff', allowedBranches: [branches[0]._id], activeBranchId: branches[0]._id, isActive: true },
       { email: 'media@cityden.com', password: hashedPassword, name: 'Zara Media', role: 'SocialMediaManager', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true },
+      { email: 'housekeeper@cityden.com', password: hashedPassword, name: 'Mama Bisi', role: 'HouseKeeper', allowedBranches: [branches[0]._id], activeBranchId: branches[0]._id, isActive: true },
+      { email: 'manager-abuja@cityden.com', password: hashedPassword, name: 'Chidi Manager', role: 'BranchManager', allowedBranches: [branches[0]._id], activeBranchId: branches[0]._id, isActive: true },
+      { email: 'manager-kaduna@cityden.com', password: hashedPassword, name: 'Fatima Manager', role: 'BranchManager', allowedBranches: [branches[1]._id], activeBranchId: branches[1]._id, isActive: true },
+      { email: 'manager-maiduguri@cityden.com', password: hashedPassword, name: 'Ibrahim Manager', role: 'BranchManager', allowedBranches: [branches[2]._id], activeBranchId: branches[2]._id, isActive: true },
     ]);
+
+    this.logger.log(`Seed — users created: 1 admin + 4 staff + 3 branch managers`);
 
     // ── 30 bookings ─────────────────────────────────────────────────
     const bookingData: Array<Record<string, unknown>> = [];
@@ -166,12 +183,11 @@ export class SeedService {
       const rt = allRT.flat().find((t) => t._id.toString() === room.roomTypeId.toString());
 
       const ci = ciOff >= 0 ? daysFromNow(ciOff) : daysAgo(Math.abs(ciOff));
-      const co = coOff >= 0 ? daysFromNow(coOff) : daysAgo(Math.abs(coOff));
+      let co = coOff >= 0 ? daysFromNow(coOff) : daysAgo(Math.abs(coOff));
 
-      // ensure check-out after check-in
-      if (co <= ci) co.setDate(ci.getDate() + 1);
+      if (co <= ci) co = addDays(ci, 1);
 
-      const nights = Math.max(1, Math.ceil((co.getTime() - ci.getTime()) / 86400000));
+      const nights = Math.max(1, differenceInDays(co, ci));
       const pricePerNight = rt ? randNaira(rt.minPriceAllowed, rt.basePrice) : randNaira(25000, 80000);
       const discount = Math.random() > 0.7 ? randInt(0, 10000) : 0;
       const total = Math.max(0, pricePerNight * nights - discount);
@@ -212,10 +228,14 @@ export class SeedService {
 
     await this.bookingModel.create(bookingData);
 
+    this.logger.log(`Seed — bookings created: ${bookingData.length}`);
+
     // Update room statuses
     for (const [roomId, status] of Object.entries(roomsToUpdate)) {
       await this.roomModel.findByIdAndUpdate(roomId, { status });
     }
+
+    this.logger.log(`Seed completed — users: 5, branches: ${branches.length}, roomTypes: 7, rooms: ${rooms.length}, bookings: ${bookingData.length}`);
 
     return {
       message: 'System seeded successfully',
@@ -224,9 +244,13 @@ export class SeedService {
         reception: 'reception@cityden.com / admin123',
         kitchen: 'kitchen@cityden.com / admin123',
         media: 'media@cityden.com / admin123',
+        housekeeper: 'housekeeper@cityden.com / admin123',
+        'manager-abuja': 'manager-abuja@cityden.com / admin123',
+        'manager-kaduna': 'manager-kaduna@cityden.com / admin123',
+        'manager-maiduguri': 'manager-maiduguri@cityden.com / admin123',
       },
       stats: {
-        users: 4,
+        users: 8,
         branches: 3,
         roomTypes: 7,
         rooms: rooms.length,

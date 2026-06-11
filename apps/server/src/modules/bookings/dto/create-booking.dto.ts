@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsEmail,
   Min,
+  Max,
 } from 'class-validator';
 import { PaymentMethod, BookingStatus, BookingSource } from '../booking.schema';
 
@@ -43,6 +44,16 @@ export class CreateBookingDto {
   @Min(0)
   @IsOptional()
   discount?: number;
+
+  @IsOptional()
+  @IsString()
+  discountType?: 'fixed' | 'percentage';
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  discountPercentage?: number;
 
   @IsOptional()
   @IsString()

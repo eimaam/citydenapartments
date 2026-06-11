@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
@@ -26,9 +26,17 @@ export class UsersService {
     private readonly redis: RedisService,
   ) {}
 
-  async findAll(params?: { page?: number; limit?: number; search?: string }) {
+  async findAll(
+    params?: { page?: number; limit?: number; search?: string },
+    caller?: { role: string; activeBranchId: string },
+  ) {
     const { page = 1, limit = 20, search } = params || {};
     const filter: any = {};
+
+    if (caller?.role === UserRoleEnum.BRANCH_MANAGER) {
+      filter.allowedBranches = caller.activeBranchId;
+    }
+
     if (search) {
       const escaped = escapeRegex(search);
       filter.$or = [
@@ -45,19 +53,38 @@ export class UsersService {
     return { items, total, page, limit };
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, caller?: { role: string; activeBranchId: string }) {
     const cached = await this.redis.get(CACHE_KEYS.USER(id));
-    if (cached) return JSON.parse(cached);
+    if (cached && caller?.role !== UserRoleEnum.BRANCH_MANAGER) return JSON.parse(cached);
     const user = await this.userModel.findById(id).select('-password').lean();
     if (!user) {
       this.logger.warn(`User not found — id: ${id}`);
       throw new NotFoundException('User not found.');
     }
+
+    if (caller?.role === UserRoleEnum.BRANCH_MANAGER) {
+      const branchIdStr = caller.activeBranchId?.toString();
+      const userBranchIds = (user.allowedBranches || []).map((b: any) => b.toString());
+      if (!userBranchIds.includes(branchIdStr)) {
+        throw new ForbiddenException('User not in your branch.');
+      }
+    }
+
     await this.redis.set(CACHE_KEYS.USER(id), JSON.stringify(user), CACHE_TTL.ONE_HOUR);
     return user;
   }
 
-  async create(dto: { email: string; name: string; role: string; allowedBranches?: string[] }) {
+  async create(
+    dto: { email: string; name: string; role: string; allowedBranches?: string[] },
+    caller?: { role: string; activeBranchId: string },
+  ) {
+    if (caller?.role === UserRoleEnum.BRANCH_MANAGER) {
+      if (dto.role === UserRoleEnum.SUPER_ADMIN || dto.role === UserRoleEnum.BRANCH_MANAGER) {
+        throw new BadRequestException('Cannot create admin or manager accounts.');
+      }
+      dto.allowedBranches = [caller.activeBranchId];
+    }
+
     const exists = await this.userModel.findOne({ email: dto.email.toLowerCase() });
     if (exists) throw new BadRequestException('Email already registered.');
 
@@ -87,15 +114,33 @@ export class UsersService {
     await this.redis.del(CACHE_KEYS.USERS_LIST);
 
     const sanitized = await this.userModel.findById(user._id).select('-password').lean();
-    this.logger.log(`User created — ${user.email} | role: ${user.role} | by admin`);
+    this.logger.log(`User created — ${user.email} | role: ${user.role} | by ${caller?.role ?? 'admin'}`);
     return { user: sanitized, generatedPassword: rawPassword };
   }
 
-  async update(id: string, dto: { name?: string; role?: string; allowedBranches?: string[]; activeBranchId?: string; isActive?: boolean }) {
+  async update(
+    id: string,
+    dto: { name?: string; role?: string; allowedBranches?: string[]; activeBranchId?: string; isActive?: boolean },
+    caller?: { role: string; activeBranchId: string },
+  ) {
     const user = await this.userModel.findById(id);
     if (!user) {
       this.logger.warn(`User not found — id: ${id}`);
       throw new NotFoundException('User not found.');
+    }
+
+    if (caller?.role === UserRoleEnum.BRANCH_MANAGER) {
+      const branchIdStr = caller.activeBranchId?.toString();
+      const userBranchIds = (user.allowedBranches || []).map((b: any) => b.toString());
+      if (!userBranchIds.includes(branchIdStr)) {
+        throw new ForbiddenException('User not in your branch.');
+      }
+      if (dto.role && (dto.role === UserRoleEnum.SUPER_ADMIN || dto.role === UserRoleEnum.BRANCH_MANAGER)) {
+        throw new BadRequestException('Cannot assign admin or manager roles.');
+      }
+      if (dto.allowedBranches !== undefined) {
+        throw new BadRequestException('Cannot change branch assignments.');
+      }
     }
 
     if (dto.name !== undefined) user.name = dto.name;
@@ -157,11 +202,19 @@ export class UsersService {
     return this.userModel.findById(id).select('-password').lean();
   }
 
-  async resetPassword(id: string) {
+  async resetPassword(id: string, caller?: { role: string; activeBranchId: string }) {
     const user = await this.userModel.findById(id);
     if (!user) {
       this.logger.warn(`User not found — id: ${id}`);
       throw new NotFoundException('User not found.');
+    }
+
+    if (caller?.role === UserRoleEnum.BRANCH_MANAGER) {
+      const branchIdStr = caller.activeBranchId?.toString();
+      const userBranchIds = (user.allowedBranches || []).map((b: any) => b.toString());
+      if (!userBranchIds.includes(branchIdStr)) {
+        throw new ForbiddenException('User not in your branch.');
+      }
     }
 
     const rawPassword = generatePassword();

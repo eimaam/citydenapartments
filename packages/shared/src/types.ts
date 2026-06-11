@@ -1,6 +1,7 @@
 // ── User Roles ──────────────────────────────────────────────────
 export const UserRole = {
   SuperAdmin: 'SuperAdmin',
+  BranchManager: 'BranchManager',
   Reception: 'Reception',
   KitchenStaff: 'KitchenStaff',
   SocialMediaManager: 'SocialMediaManager',
@@ -17,7 +18,6 @@ export const BookingStatus = {
 } as const;
 export type BookingStatusType = (typeof BookingStatus)[keyof typeof BookingStatus];
 
-// ── Room Statuses ───────────────────────────────────────────────
 export const RoomStatus = {
   Available: 'available',
   Occupied: 'occupied',
@@ -26,7 +26,6 @@ export const RoomStatus = {
 } as const;
 export type RoomStatusType = (typeof RoomStatus)[keyof typeof RoomStatus];
 
-// ── Payment Methods ─────────────────────────────────────────────
 export const PaymentMethod = {
   Cash: 'Cash',
   POS_Card: 'POS_Card',
@@ -34,7 +33,12 @@ export const PaymentMethod = {
 } as const;
 export type PaymentMethodType = (typeof PaymentMethod)[keyof typeof PaymentMethod];
 
-// ── Booking Sources ─────────────────────────────────────────────
+export const DiscountType = {
+  Fixed: 'fixed',
+  Percentage: 'percentage',
+} as const;
+export type DiscountTypeType = (typeof DiscountType)[keyof typeof DiscountType];
+
 export const BookingSource = {
   WalkIn: 'WalkIn',
   Phone: 'Phone',

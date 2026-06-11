@@ -8,6 +8,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { PaginatedQueryDto } from '../../common/dto/paginated-query.dto';
 import { format } from 'date-fns';
+import { UserRoleEnum } from '../users/user.schema';
 
 @Controller('breakfast')
 @UseGuards(JwtAuthGuard, WorkspaceAuthGuard)
@@ -28,7 +29,7 @@ export class BreakfastController {
 
   @Post('serve')
   @UseGuards(RolesGuard)
-  @Roles('KitchenStaff', 'SuperAdmin')
+  @Roles(UserRoleEnum.KITCHEN_STAFF, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.BRANCH_MANAGER)
   serve(@Body() dto: ServeBreakfastDto, @ActiveUser() user: any) {
     return this.breakfastService.serve(dto, user.activeBranchId, user.id);
   }

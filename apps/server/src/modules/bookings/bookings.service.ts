@@ -104,6 +104,35 @@ export class BookingsService {
           `Price violation. Minimum floor limit: ₦${typeConfig.minPriceAllowed}`,
         );
       }
+      if (dto.actualPricePerNight > typeConfig.basePrice) {
+        throw new BadRequestException(
+          `Price violation. Maximum allowed: ₦${typeConfig.basePrice}`,
+        );
+      }
+
+      const nights = Math.ceil(
+        (new Date(dto.checkOutDate).getTime() - new Date(dto.checkInDate).getTime()) / (1000 * 60 * 60 * 24),
+      );
+      if (nights < 1) {
+        throw new BadRequestException('Stay must be at least 1 night.');
+      }
+
+      const subtotal = dto.actualPricePerNight * nights;
+      let computedDiscount = dto.discount || 0;
+      if (dto.discountType === 'percentage') {
+        const pct = dto.discountPercentage || 0;
+        if (pct < 0 || pct > 100) {
+          throw new BadRequestException('Discount percentage must be between 0 and 100.');
+        }
+        computedDiscount = Math.round((subtotal * pct) / 100);
+      }
+      const computedTotal = subtotal - computedDiscount;
+
+      if (Math.abs(dto.totalAmountPaid - computedTotal) > 1) {
+        throw new BadRequestException(
+          `Price mismatch. Expected ₦${computedTotal} (₦${dto.actualPricePerNight} × ${nights} nights${dto.discount ? ` − ₦${computedDiscount} discount` : ''}), got ₦${dto.totalAmountPaid}`,
+        );
+      }
 
       const dateConflict = await this.bookingModel
         .findOne({
@@ -138,6 +167,8 @@ export class BookingsService {
             checkOutDate: new Date(dto.checkOutDate),
             actualPricePerNight: dto.actualPricePerNight,
             discount: dto.discount || 0,
+            discountType: dto.discountType || 'fixed',
+            discountPercentage: dto.discountPercentage || 0,
             discountReason: dto.discountReason,
             totalAmountPaid: dto.totalAmountPaid,
             paymentMethod: dto.paymentMethod,

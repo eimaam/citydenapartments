@@ -3,6 +3,7 @@ import { Document, Schema as MongooseSchema } from 'mongoose';
 
 export enum UserRoleEnum {
   SUPER_ADMIN =  'SuperAdmin',
+  BRANCH_MANAGER = 'BranchManager',
   RECEPTION = 'Reception',
   KITCHEN_STAFF = 'KitchenStaff',
   SOCIAL_MEDIA_MANAGER = 'SocialMediaManager',
@@ -10,7 +11,7 @@ export enum UserRoleEnum {
 };
 
 
-export type UserRole = 'SuperAdmin' | 'Reception' | 'KitchenStaff' | 'SocialMediaManager' | 'HouseKeeper';
+export type UserRole = 'SuperAdmin' | 'BranchManager' | 'Reception' | 'KitchenStaff' | 'SocialMediaManager' | 'HouseKeeper';
 
 
 @Schema({ timestamps: true })

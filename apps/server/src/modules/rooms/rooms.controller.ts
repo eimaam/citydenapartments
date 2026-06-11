@@ -41,7 +41,7 @@ export class RoomsController {
   }
 
   @Patch(':id/status')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.HOUSE_KEEPER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.BRANCH_MANAGER, UserRoleEnum.HOUSE_KEEPER, UserRoleEnum.RECEPTION)
   updateStatus(@Param('id') id: string, @Body() body: UpdateRoomStatusDto, @ActiveUser() user: any) {
     return this.roomsService.updateStatus(id, body.status as unknown as RoomStatus, user.id);
   }

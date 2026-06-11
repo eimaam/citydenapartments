@@ -31,7 +31,23 @@ export default function RoomsPage() {
   const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const isHouseKeeper = user?.role === 'HouseKeeper';
+  const canUpdateStatus = user?.role === 'SuperAdmin' || user?.role === 'BranchManager' || user?.role === 'HouseKeeper' || user?.role === 'Reception';
+
+  const validTransitions: Record<string, { value: RoomStatusType; label: string }[]> = {
+    [RoomStatus.Available]: [
+      { value: RoomStatus.Dirty, label: 'Dirty' },
+      { value: RoomStatus.Maintenance, label: 'Maintenance' },
+    ],
+    [RoomStatus.Dirty]: [
+      { value: RoomStatus.Available, label: 'Available' },
+    ],
+    [RoomStatus.Occupied]: [
+      { value: RoomStatus.Dirty, label: 'Dirty' },
+    ],
+    [RoomStatus.Maintenance]: [
+      { value: RoomStatus.Available, label: 'Available' },
+    ],
+  };
 
   const fetchRooms = useCallback(async () => {
     setLoading(true);
@@ -87,7 +103,7 @@ export default function RoomsPage() {
       render: (_: unknown, r: RoomResponse) => <span className="font-medium">₦{r.roomTypeId?.basePrice?.toLocaleString()}</span> },
   ];
 
-  if (isHouseKeeper) {
+  if (canUpdateStatus) {
     columns.push({
       title: 'Action', key: 'action', width: 180,
       render: (_: unknown, r: RoomResponse) => (
@@ -99,9 +115,9 @@ export default function RoomsPage() {
             loading={updatingIds.has(r._id)}
             onChange={(v) => handleStatusChange(r._id, v)}
           >
-            <Option value={RoomStatus.Available}>Available</Option>
-            <Option value={RoomStatus.Dirty}>Dirty</Option>
-            <Option value={RoomStatus.Maintenance}>Maintenance</Option>
+            {(validTransitions[r.status] || []).map((t) => (
+              <Option key={t.value} value={t.value}>{t.label}</Option>
+            ))}
           </Select>
         </div>
       ),
