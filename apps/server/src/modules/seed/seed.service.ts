@@ -117,7 +117,7 @@ export class SeedService {
     const admin = await this.userModel.create({
       email: 'admin@cityden.com', password: hashedPassword, name: 'Super Admin',
       role: 'SuperAdmin', allowedBranches: branches.map((b) => b._id),
-      activeBranchId: branches[0]._id, isActive: true,
+      activeBranchId: null, isActive: true,
     });
 
     // ── room types ──

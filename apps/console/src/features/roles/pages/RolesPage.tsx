@@ -291,7 +291,6 @@ export default function RolesPage() {
       {/* Footer note */}
       <div className="mt-8 p-4 rounded-lg border border-outline-variant bg-surface-container">
         <div className="flex items-start gap-3">
-          <Sparkles size={18} className="text-primary mt-0.5 flex-shrink-0" />
           <div>
             <p className="text-sm font-medium text-on-surface mb-1">Need a different permission setup?</p>
             <p className="text-xs text-on-surface-variant">

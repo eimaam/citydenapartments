@@ -11,6 +11,7 @@ export class DashboardController {
 
   @Get('summary')
   getSummary(@ActiveUser() user: any) {
-    return this.dashboardService.getSummary(user.activeBranchId);
+    const branchId = user.role === 'SuperAdmin' ? undefined : user.activeBranchId;
+    return this.dashboardService.getSummary(branchId);
   }
 }
