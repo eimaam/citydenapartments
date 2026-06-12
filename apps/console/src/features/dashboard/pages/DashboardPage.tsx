@@ -45,17 +45,18 @@ export default function AdminDashboard() {
   if (error) return <div className="p-8 text-center text-error">{error}</div>;
   if (!summary) return null;
 
-  const { overview, byBranch } = summary;
+  const { overview = {} as Summary['overview'], byBranch = [] } = summary;
 
+  const o = overview;
   const stats = [
-    { label: 'Revenue', value: `₦${overview.totalRevenue.toLocaleString()}`, icon: TrendingUp, color: '#10b981' },
-    { label: 'Occupancy', value: `${overview.occupancyRate}%`, icon: BedDouble, color: '#d4af37' },
-    { label: 'Total Bookings', value: overview.totalBookings, icon: CalendarCheck, color: '#3b82f6' },
-    { label: 'In-House Guests', value: overview.checkedInGuests, icon: Users, color: '#8b5cf6' },
-    { label: 'Pending Check-ins', value: overview.pendingCheckIns, icon: CalendarCheck, color: '#f59e0b' },
-    { label: "Today's Arrivals", value: overview.todayArrivals, icon: Building2, color: '#6366f1' },
-    { label: 'Active Staff', value: overview.activeUsers, icon: Users, color: '#ec4899' },
-    { label: 'Total Rooms', value: overview.totalRooms, icon: BedDouble, color: '#14b8a6' },
+    { label: 'Revenue', value: `₦${(o.totalRevenue ?? 0).toLocaleString()}`, icon: TrendingUp, color: '#10b981' },
+    { label: 'Occupancy', value: `${o.occupancyRate ?? 0}%`, icon: BedDouble, color: '#d4af37' },
+    { label: 'Total Bookings', value: o.totalBookings ?? 0, icon: CalendarCheck, color: '#3b82f6' },
+    { label: 'In-House Guests', value: o.checkedInGuests ?? 0, icon: Users, color: '#8b5cf6' },
+    { label: 'Pending Check-ins', value: o.pendingCheckIns ?? 0, icon: CalendarCheck, color: '#f59e0b' },
+    { label: "Today's Arrivals", value: o.todayArrivals ?? 0, icon: Building2, color: '#6366f1' },
+    { label: 'Active Staff', value: o.activeUsers ?? 0, icon: Users, color: '#ec4899' },
+    { label: 'Total Rooms', value: o.totalRooms ?? 0, icon: BedDouble, color: '#14b8a6' },
   ];
 
   return (
