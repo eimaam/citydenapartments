@@ -23,6 +23,9 @@ export class BreakfastLog extends Document {
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
   servedBy: MongooseSchema.Types.ObjectId;
+
+  @Prop({ type: String, enum: ['served', 'expired'], default: 'served' })
+  status: string;
 }
 
 export const BreakfastLogSchema = SchemaFactory.createForClass(BreakfastLog);

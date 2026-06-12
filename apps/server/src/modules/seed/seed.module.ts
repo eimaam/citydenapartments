@@ -7,6 +7,8 @@ import { Branch, BranchSchema } from '../branches/branch.schema';
 import { RoomType, RoomTypeSchema } from '../room-types/room-type.schema';
 import { Room, RoomSchema } from '../rooms/room.schema';
 import { Booking, BookingSchema } from '../bookings/booking.schema';
+import { InventoryItem, InventoryItemSchema } from '../inventory/inventory-item.schema';
+import { InventoryTransaction, InventoryTransactionSchema } from '../inventory/inventory-transaction.schema';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { Booking, BookingSchema } from '../bookings/booking.schema';
       { name: RoomType.name, schema: RoomTypeSchema },
       { name: Room.name, schema: RoomSchema },
       { name: Booking.name, schema: BookingSchema },
+      { name: InventoryItem.name, schema: InventoryItemSchema },
+      { name: InventoryTransaction.name, schema: InventoryTransactionSchema },
     ]),
   ],
   controllers: [SeedController],

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { BreakfastService } from './breakfast.service';
 import { ServeBreakfastDto } from './dto/serve-breakfast.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -32,5 +32,12 @@ export class BreakfastController {
   @Roles(UserRoleEnum.KITCHEN_STAFF, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.BRANCH_MANAGER)
   serve(@Body() dto: ServeBreakfastDto, @ActiveUser() user: any) {
     return this.breakfastService.serve(dto, user.activeBranchId, user.id);
+  }
+
+  @Post(':bookingId/reset')
+  @UseGuards(RolesGuard)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.BRANCH_MANAGER)
+  reset(@Param('bookingId') bookingId: string, @ActiveUser() user: any) {
+    return this.breakfastService.resetExpired(bookingId, user.activeBranchId, user.id);
   }
 }

@@ -17,10 +17,36 @@ export class Booking extends Document {
   roomId: MongooseSchema.Types.ObjectId;
 
   @Prop({
-    type: { name: { type: String, required: true }, phone: { type: String, required: true }, email: String },
+    type: {
+      name: { type: String, required: true },
+      phone: { type: String, required: true },
+      email: String,
+      address: { type: String, required: true },
+      nationality: { type: String, required: true },
+      dob: Date,
+      phone2: String,
+      comingFrom: String,
+      stateOfOrigin: String,
+      occupation: String,
+      nextDestination: String,
+      religion: String,
+    },
     required: true,
   })
-  guestDetails: { name: string; phone: string; email?: string };
+  guestDetails: {
+    name: string;
+    phone: string;
+    email?: string;
+    address: string;
+    nationality: string;
+    dob?: Date;
+    phone2?: string;
+    comingFrom?: string;
+    stateOfOrigin?: string;
+    occupation?: string;
+    nextDestination?: string;
+    religion?: string;
+  };
 
   @Prop({ default: 1 })
   numberOfGuests: number;

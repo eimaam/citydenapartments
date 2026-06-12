@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Coffee, Check, Calendar, Users, Search } from 'lucide-react';
+import { Coffee, Check, Calendar, Users, Search, RotateCcw, XCircle } from 'lucide-react';
 import { Button, Input, Table } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
 import { useToast } from '../../../components/ui/Toast';
@@ -16,11 +16,14 @@ export default function BreakfastPage() {
   const [countsData, setCountsData] = useState<ManifestEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [serving, setServing] = useState<Record<string, boolean>>({});
+  const [resetting, setResetting] = useState<Record<string, boolean>>({});
   const [date, setDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const canReset = user?.role === 'SuperAdmin' || user?.role === 'BranchManager';
 
   const fetchManifest = useCallback(async () => {
     setLoading(true);
@@ -60,24 +63,46 @@ export default function BreakfastPage() {
     } finally { setServing((prev) => ({ ...prev, [entry.bookingId]: false })); }
   };
 
-  const served = countsData.filter((e) => e.isServed).length;
-  const pending = countsData.filter((e) => !e.isServed).length;
+  const handleReset = async (entry: ManifestEntry) => {
+    setResetting((prev) => ({ ...prev, [entry.bookingId]: true }));
+    try {
+      await breakfastApi.reset(entry.bookingId);
+      toast('success', `${entry.guestName} reset to pending.`);
+      await fetchManifest();
+      await fetchCounts();
+    } catch (e) {
+      toast('error', e instanceof Error ? e.message : 'Failed to reset breakfast.');
+    } finally { setResetting((prev) => ({ ...prev, [entry.bookingId]: false })); }
+  };
+
+  const served = countsData.filter((e) => e.breakfastStatus === 'served').length;
+  const expired = countsData.filter((e) => e.breakfastStatus === 'expired').length;
+  const pending = countsData.filter((e) => e.breakfastStatus === 'pending').length;
 
   const columns: TableProps<ManifestEntry>['columns'] = [
     { title: 'Room', dataIndex: 'roomNumber', key: 'room', width: 100, render: (_: unknown, r: ManifestEntry) => <span className="font-mono font-medium">{r.roomNumber}</span> },
     { title: 'Guest', dataIndex: 'guestName', key: 'guest', render: (_: unknown, r: ManifestEntry) => <span className="font-medium">{r.guestName}</span> },
-    { title: 'Status', key: 'status', width: 140, responsive: ['sm' as const], render: (_: unknown, r: ManifestEntry) => (
-      r.isServed ? (
-        <span className="inline-flex items-center gap-1 text-xs text-emerald-700"><Check size={12} />Served at {r.servedAt ? format(new Date(r.servedAt), 'HH:mm') : '—'}</span>
-      ) : <span className="text-xs text-amber-700">Pending</span>
-    )},
-    { title: 'Action', key: 'action', width: 100, align: 'right' as const, render: (_: unknown, r: ManifestEntry) => (
-      r.isServed ? (
-        <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium"><Check size={14} />Served</span>
-      ) : (
-        <Button size="sm" loading={serving[r.bookingId]} onClick={() => handleServe(r)}>Serve</Button>
-      )
-    )},
+    { title: 'Status', key: 'status', width: 140, responsive: ['sm' as const], render: (_: unknown, r: ManifestEntry) => {
+      if (r.breakfastStatus === 'served') {
+        return <span className="inline-flex items-center gap-1 text-xs text-emerald-700"><Check size={12} />Served at {r.servedAt ? format(new Date(r.servedAt), 'HH:mm') : '—'}</span>;
+      }
+      if (r.breakfastStatus === 'expired') {
+        return <span className="inline-flex items-center gap-1 text-xs text-red-600"><XCircle size={12} />Expired</span>;
+      }
+      return <span className="text-xs text-amber-700">Pending</span>;
+    }},
+    { title: 'Action', key: 'action', width: 110, align: 'right' as const, render: (_: unknown, r: ManifestEntry) => {
+      if (r.breakfastStatus === 'served') {
+        return <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium"><Check size={14} />Served</span>;
+      }
+      if (r.breakfastStatus === 'expired') {
+        if (canReset) {
+          return <Button size="sm" variant="outline" loading={resetting[r.bookingId]} onClick={() => handleReset(r)}><RotateCcw size={12} />Reset</Button>;
+        }
+        return <span className="inline-flex items-center gap-1 text-xs text-red-500 font-medium"><XCircle size={14} />Expired</span>;
+      }
+      return <Button size="sm" loading={serving[r.bookingId]} onClick={() => handleServe(r)}>Serve</Button>;
+    }},
   ];
 
   return (
@@ -101,10 +126,11 @@ export default function BreakfastPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
         {[
           { label: 'Total Guests', value: countsData.length, icon: Users, color: '#3b82f6' },
           { label: 'Served', value: served, icon: Coffee, color: '#10b981' },
+          { label: 'Expired', value: expired, icon: XCircle, color: '#ef4444' },
           { label: 'Pending', value: pending, icon: Coffee, color: '#f59e0b' },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="p-4 rounded-lg border border-outline-variant bg-surface-container-lowest">

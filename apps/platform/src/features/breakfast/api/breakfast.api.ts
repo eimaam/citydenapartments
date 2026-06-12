@@ -1,5 +1,7 @@
 import { api } from '../../../lib/api';
 
+export type BreakfastStatus = 'pending' | 'served' | 'expired';
+
 export interface ManifestEntry {
   bookingId: string;
   roomId: string;
@@ -7,6 +9,7 @@ export interface ManifestEntry {
   guestName: string;
   isServed: boolean;
   servedAt: string | null;
+  breakfastStatus: BreakfastStatus;
 }
 
 export interface ServePayload {
@@ -42,4 +45,5 @@ export const breakfastApi = {
     return api.get<PaginatedManifest>(`/breakfast/manifest${qs ? `?${qs}` : ''}`);
   },
   serve: (data: ServePayload) => api.post<void>('/breakfast/serve', data),
+  reset: (bookingId: string) => api.post<void>(`/breakfast/${bookingId}/reset`),
 };

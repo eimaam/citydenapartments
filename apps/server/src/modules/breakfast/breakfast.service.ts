@@ -58,12 +58,24 @@ export class BreakfastService {
         },
       },
       {
+        $addFields: {
+          servingStatus: {
+            $cond: {
+              if: { $eq: [{ $size: '$servingRecord' }, 0] },
+              then: 'pending',
+              else: { $ifNull: [{ $arrayElemAt: ['$servingRecord.status', 0] }, 'served'] },
+            },
+          },
+        },
+      },
+      {
         $project: {
           bookingId: '$_id',
           roomId: '$roomInfo._id',
           roomNumber: '$roomInfo.roomNumber',
           guestName: '$guestDetails.name',
-          isServed: { $gt: [{ $size: '$servingRecord' }, 0] },
+          breakfastStatus: '$servingStatus',
+          isServed: { $eq: ['$servingStatus', 'served'] },
           servedAt: { $arrayElemAt: ['$servingRecord.dateServed', 0] },
         },
       },
@@ -109,12 +121,16 @@ export class BreakfastService {
       this.logger.warn(`Room mismatch — Guest ${booking.guestDetails.name} | expected ${booking.roomId}, received ${dto.roomId}`);
     }
 
-    const alreadyServed = await this.breakfastLogModel.findOne({
+    const existingLog = await this.breakfastLogModel.findOne({
       bookingId: dto.bookingId,
       dateServed: { $gte: todayStart, $lte: todayEnd },
     });
 
-    if (alreadyServed) {
+    if (existingLog) {
+      if (existingLog.status === 'expired') {
+        this.logger.warn(`Breakfast expired — Guest ${booking.guestDetails.name} | cannot serve`);
+        throw new BadRequestException('Breakfast has expired for this booking. Contact an admin to reset.');
+      }
       this.logger.warn(`Breakfast duplicate — Guest ${booking.guestDetails.name} | already served today`);
       throw new ConflictException('Breakfast already served for this booking today.');
     }
@@ -127,10 +143,38 @@ export class BreakfastService {
       dateServed: now,
       servingsClaimed: dto.servingsClaimed || 1,
       servedBy: userId,
+      status: 'served',
     });
 
     await this.redis.invalidateDashboardCache(branchId);
     this.logger.log(`Breakfast served — Guest ${booking.guestDetails.name} | Room ${booking.roomId} | by ${userId}`);
     return log;
+  }
+
+  async resetExpired(bookingId: string, branchId: string, userId: string) {
+    const todayStart = startOfDay(new Date());
+    const todayEnd = endOfDay(new Date());
+
+    const expiredLog = await this.breakfastLogModel.findOne({
+      bookingId,
+      dateServed: { $gte: todayStart, $lte: todayEnd },
+      status: 'expired',
+    });
+
+    if (!expiredLog) {
+      const servedLog = await this.breakfastLogModel.findOne({
+        bookingId,
+        dateServed: { $gte: todayStart, $lte: todayEnd },
+        status: 'served',
+      });
+      if (servedLog) {
+        throw new BadRequestException('Cannot reset: breakfast already served for this booking today.');
+      }
+      throw new NotFoundException('No expired breakfast record found for this booking.');
+    }
+
+    await this.breakfastLogModel.deleteOne({ _id: expiredLog._id });
+    await this.redis.invalidateDashboardCache(branchId);
+    this.logger.log(`Breakfast expired reset — Booking ${bookingId} | by ${userId}`);
   }
 }

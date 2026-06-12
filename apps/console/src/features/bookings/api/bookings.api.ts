@@ -11,7 +11,20 @@ export interface BookingResponse {
     roomTypeId?: { _id: string; name: string; basePrice: number };
     status: RoomStatusType;
   };
-  guestDetails: { name: string; phone: string; email?: string };
+  guestDetails: {
+    name: string;
+    phone: string;
+    email?: string;
+    address: string;
+    nationality: string;
+    dob?: string;
+    phone2?: string;
+    comingFrom?: string;
+    stateOfOrigin?: string;
+    occupation?: string;
+    nextDestination?: string;
+    religion?: string;
+  };
   numberOfGuests: number;
   checkInDate: string;
   checkOutDate: string;
@@ -31,6 +44,15 @@ export interface CreateBookingPayload {
   guestName: string;
   guestPhone: string;
   guestEmail?: string;
+  guestAddress: string;
+  guestNationality: string;
+  guestDob?: string;
+  guestPhone2?: string;
+  guestComingFrom?: string;
+  guestStateOfOrigin?: string;
+  guestOccupation?: string;
+  guestNextDestination?: string;
+  guestReligion?: string;
   numberOfGuests?: number;
   checkInDate: string;
   checkOutDate: string;

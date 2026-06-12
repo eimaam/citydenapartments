@@ -41,7 +41,7 @@ if (AppConfig.NODE_ENV === 'development') {
     RoomsModule,
     BookingsModule,
     BreakfastModule,
-    // SeedModule,
+    SeedModule,
     DashboardModule,
     HealthModule,
     InventoryModule,

@@ -72,17 +72,25 @@ export default function BookingsPage() {
 
   const [form, setForm] = useState<{
     roomId: string; guestName: string; guestPhone: string; guestEmail: string;
+    guestAddress: string; guestNationality: string; guestDob: string; guestPhone2: string;
+    guestComingFrom: string; guestStateOfOrigin: string; guestOccupation: string;
+    guestNextDestination: string; guestReligion: string;
     numberOfGuests: number; checkInDate: string; nights: number; checkOutDate: string;
     useNights: boolean; actualPricePerNight: number; discount: number; totalAmountPaid: number;
     paymentMethod: PaymentMethodType; bookingSource: BookingSourceType;
   }>({
-    roomId: '', guestName: '', guestPhone: '', guestEmail: '', numberOfGuests: 1,
+    roomId: '', guestName: '', guestPhone: '', guestEmail: '',
+    guestAddress: '', guestNationality: '', guestDob: '', guestPhone2: '',
+    guestComingFrom: '', guestStateOfOrigin: '', guestOccupation: '',
+    guestNextDestination: '', guestReligion: '',
+    numberOfGuests: 1,
     checkInDate: todayStr(), nights: 1, checkOutDate: tomorrowStr(), useNights: true,
     actualPricePerNight: 0, discount: 0, totalAmountPaid: 0,
     paymentMethod: PaymentMethod.Cash, bookingSource: BookingSource.WalkIn,
   });
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [priceError, setPriceError] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const selectedRoom = useMemo(() => rooms.find((r) => r._id === form.roomId), [rooms, form.roomId]);
   const basePrice = selectedRoom?.roomTypeId?.basePrice ?? 0;
@@ -144,6 +152,12 @@ export default function BookingsPage() {
 
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
+    const errors: Record<string, string> = {};
+    if (!form.guestAddress.trim()) errors.guestAddress = 'Address is required.';
+    if (!form.guestNationality.trim()) errors.guestNationality = 'Nationality is required.';
+    setFormErrors(errors);
+    if (Object.keys(errors).length) return;
+
     const phoneErr = validatePhone(form.guestPhone);
     if (phoneErr) { setPhoneError(phoneErr); return; }
     const price = Number(form.actualPricePerNight) || basePrice;
@@ -151,7 +165,17 @@ export default function BookingsPage() {
     if (Number(form.totalAmountPaid) <= 0) { toast('error', 'Total amount paid must be greater than zero.'); return; }
     setSubmitting(true);
     try {
-      await bookingsApi.create({ roomId: form.roomId, guestName: form.guestName, guestPhone: form.guestPhone, guestEmail: form.guestEmail || undefined, numberOfGuests: Number(form.numberOfGuests) || 1, checkInDate: form.checkInDate, checkOutDate: form.checkOutDate, actualPricePerNight: price, discount: Number(form.discount) || 0, totalAmountPaid: Number(form.totalAmountPaid), paymentMethod: form.paymentMethod, bookingSource: form.bookingSource });
+      await bookingsApi.create({
+        roomId: form.roomId, guestName: form.guestName, guestPhone: form.guestPhone, guestEmail: form.guestEmail || undefined,
+        guestAddress: form.guestAddress, guestNationality: form.guestNationality,
+        guestDob: form.guestDob || undefined, guestPhone2: form.guestPhone2 || undefined,
+        guestComingFrom: form.guestComingFrom || undefined, guestStateOfOrigin: form.guestStateOfOrigin || undefined,
+        guestOccupation: form.guestOccupation || undefined, guestNextDestination: form.guestNextDestination || undefined,
+        guestReligion: form.guestReligion || undefined,
+        numberOfGuests: Number(form.numberOfGuests) || 1, checkInDate: form.checkInDate, checkOutDate: form.checkOutDate,
+        actualPricePerNight: price, discount: Number(form.discount) || 0,
+        totalAmountPaid: Number(form.totalAmountPaid), paymentMethod: form.paymentMethod, bookingSource: form.bookingSource,
+      });
       setShowCreate(false);
       toast('success', 'Booking created.');
       fetchBookings();
@@ -183,7 +207,7 @@ export default function BookingsPage() {
     { title: 'Paid', dataIndex: 'totalAmountPaid', key: 'paid', width: 110, align: 'right' as const, render: (_: unknown, r: BookingResponse) => <span className="font-medium">₦{r.totalAmountPaid?.toLocaleString()}</span> },
   ];
 
-  const formValid = form.roomId && form.guestName && form.guestPhone && !phoneError && !priceError && Number(form.totalAmountPaid) > 0;
+  const formValid = form.roomId && form.guestName && form.guestPhone && form.guestAddress.trim() && form.guestNationality.trim() && !phoneError && !priceError && Number(form.totalAmountPaid) > 0;
 
   return (
     <div className="p-6 md:p-8">
@@ -244,6 +268,23 @@ export default function BookingsPage() {
             <Input size="lg" type="email" placeholder="Email (optional)" value={form.guestEmail} onChange={(e) => updateField('guestEmail', e.target.value)} />
             <Input size="lg" type="number" min={1} placeholder="Number of Guests" value={form.numberOfGuests} onChange={(e) => updateField('numberOfGuests', Number(e.target.value))} />
           </div>
+          <div className="mb-5"><label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Additional Guest Info</label>
+            <div className="mt-2 space-y-3">
+              <Input size="lg" placeholder="Address *" value={form.guestAddress} onChange={(e) => { updateField('guestAddress', e.target.value); setFormErrors((prev) => ({ ...prev, guestAddress: '' })); }} status={formErrors.guestAddress ? 'error' : undefined} />
+              {formErrors.guestAddress && <p className="text-xs text-error">{formErrors.guestAddress}</p>}
+              <Input size="lg" placeholder="Nationality *" value={form.guestNationality} onChange={(e) => { updateField('guestNationality', e.target.value); setFormErrors((prev) => ({ ...prev, guestNationality: '' })); }} status={formErrors.guestNationality ? 'error' : undefined} />
+              {formErrors.guestNationality && <p className="text-xs text-error">{formErrors.guestNationality}</p>}
+              <div className="grid grid-cols-2 gap-3">
+                <Input size="lg" type="date" placeholder="Date of Birth" value={form.guestDob} onChange={(e) => updateField('guestDob', e.target.value)} />
+                <Input size="lg" placeholder="Phone 2 (optional)" value={form.guestPhone2} onChange={(e) => updateField('guestPhone2', e.target.value)} />
+                <Input size="lg" placeholder="Coming From" value={form.guestComingFrom} onChange={(e) => updateField('guestComingFrom', e.target.value)} />
+                <Input size="lg" placeholder="State of Origin" value={form.guestStateOfOrigin} onChange={(e) => updateField('guestStateOfOrigin', e.target.value)} />
+                <Input size="lg" placeholder="Occupation" value={form.guestOccupation} onChange={(e) => updateField('guestOccupation', e.target.value)} />
+                <Input size="lg" placeholder="Next Destination" value={form.guestNextDestination} onChange={(e) => updateField('guestNextDestination', e.target.value)} />
+                <Input size="lg" placeholder="Religion" value={form.guestReligion} onChange={(e) => updateField('guestReligion', e.target.value)} />
+              </div>
+            </div>
+          </div>
           <div className="mb-5"><label className="text-xs font-bold tracking-[0.1em] uppercase text-outline flex items-center gap-2 mb-1"><Calendar size={12} /> Dates</label>
             <div className="grid grid-cols-2 gap-3">
               <div><span className="text-[10px] text-outline uppercase tracking-wide">Check-in</span><Input size="lg" type="date" value={form.checkInDate} onChange={(e) => onCheckInChange(e.target.value)} required /></div>
@@ -261,7 +302,18 @@ export default function BookingsPage() {
       <Drawer open={!!showDetail} onClose={() => setShowDetail(null)} title="Booking Details" width={480}>
         {showDetail && (<div className="space-y-5">
           <div className="flex items-center justify-between"><div><p className="text-xs text-outline">Reference</p><div className="flex items-center gap-2"><p className="font-mono font-medium">{showDetail.bookingReference}</p><button onClick={() => { navigator.clipboard.writeText(showDetail.bookingReference); setCopiedRef(true); setTimeout(() => setCopiedRef(false), 2000); }} className="p-0.5 rounded hover:bg-surface-container cursor-pointer bg-transparent border-none text-outline hover:text-primary">{copiedRef ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}</button></div></div><Badge status={showDetail.bookingStatus} /></div>
-          <div className="grid grid-cols-2 gap-4 text-sm"><div><p className="text-xs text-outline">Guest</p><p className="font-medium">{showDetail.guestDetails.name}</p><p className="text-xs">{showDetail.guestDetails.phone}</p></div><div><p className="text-xs text-outline">Room</p><p className="font-medium">{showDetail.roomId?.roomNumber}</p><p className="text-xs">{showDetail.roomId?.roomTypeId?.name}</p></div><div><p className="text-xs text-outline">Check-in</p><p>{format(new Date(showDetail.checkInDate), 'EEE d MMM, yyyy')}</p></div><div><p className="text-xs text-outline">Check-out</p><p>{format(new Date(showDetail.checkOutDate), 'EEE d MMM, yyyy')}</p></div><div><p className="text-xs text-outline">Price/Night</p><p className="font-medium">₦{showDetail.actualPricePerNight?.toLocaleString()}</p></div><div><p className="text-xs text-outline">Total Paid</p><p className="font-medium">₦{showDetail.totalAmountPaid?.toLocaleString()}</p></div><div><p className="text-xs text-outline">Payment</p><p>{showDetail.paymentMethod?.replace('_', ' ')}</p></div><div><p className="text-xs text-outline">Source</p><p>{showDetail.bookingSource}</p></div></div>
+          <div className="grid grid-cols-2 gap-4 text-sm"><div><p className="text-xs text-outline">Guest</p><p className="font-medium">{showDetail.guestDetails.name}</p><p className="text-xs">{showDetail.guestDetails.phone}</p>{showDetail.guestDetails.email && <p className="text-xs">{showDetail.guestDetails.email}</p>}</div><div><p className="text-xs text-outline">Room</p><p className="font-medium">{showDetail.roomId?.roomNumber}</p><p className="text-xs">{showDetail.roomId?.roomTypeId?.name}</p></div><div><p className="text-xs text-outline">Check-in</p><p>{format(new Date(showDetail.checkInDate), 'EEE d MMM, yyyy')}</p></div><div><p className="text-xs text-outline">Check-out</p><p>{format(new Date(showDetail.checkOutDate), 'EEE d MMM, yyyy')}</p></div><div><p className="text-xs text-outline">Price/Night</p><p className="font-medium">₦{showDetail.actualPricePerNight?.toLocaleString()}</p></div><div><p className="text-xs text-outline">Total Paid</p><p className="font-medium">₦{showDetail.totalAmountPaid?.toLocaleString()}</p></div><div><p className="text-xs text-outline">Payment</p><p>{showDetail.paymentMethod?.replace('_', ' ')}</p></div><div><p className="text-xs text-outline">Source</p><p>{showDetail.bookingSource}</p></div></div>
+          <div className="pt-2 border-t border-outline-variant"><p className="text-xs font-bold tracking-[0.1em] uppercase text-outline mb-2">Guest Info</p><div className="grid grid-cols-2 gap-3 text-sm">{[
+            ['Address', showDetail.guestDetails.address],
+            ['Nationality', showDetail.guestDetails.nationality],
+            ['DOB', showDetail.guestDetails.dob ? format(new Date(showDetail.guestDetails.dob), 'd MMM yyyy') : null],
+            ['Phone 2', showDetail.guestDetails.phone2],
+            ['Coming From', showDetail.guestDetails.comingFrom],
+            ['State of Origin', showDetail.guestDetails.stateOfOrigin],
+            ['Occupation', showDetail.guestDetails.occupation],
+            ['Next Destination', showDetail.guestDetails.nextDestination],
+            ['Religion', showDetail.guestDetails.religion],
+          ].filter(([, v]) => v).map(([label, value]) => (<div key={label as string}><p className="text-xs text-outline">{label as string}</p><p className="font-medium">{value as string}</p></div>))}</div></div>
           <div className="flex gap-3 pt-2">{showDetail.bookingStatus === BookingStatus.Confirmed && <Button size="sm" loading={actionLoading === `checkIn-${showDetail._id}`} onClick={() => handleAction('checkIn', showDetail._id)}>Check In</Button>}{showDetail.bookingStatus === BookingStatus.Checked_In && <Button size="sm" loading={actionLoading === `checkOut-${showDetail._id}`} onClick={() => handleAction('checkOut', showDetail._id)}>Check Out</Button>}{(showDetail.bookingStatus === BookingStatus.Confirmed || showDetail.bookingStatus === BookingStatus.Checked_In) && <Button variant="destructive" size="sm" loading={actionLoading === `cancel-${showDetail._id}`} onClick={() => handleAction('cancel', showDetail._id)}>Cancel</Button>}</div>
         </div>)}
       </Drawer>

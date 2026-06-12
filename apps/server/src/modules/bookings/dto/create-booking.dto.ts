@@ -6,6 +6,7 @@ import {
   IsEnum,
   IsOptional,
   IsEmail,
+  IsNotEmpty,
   Min,
   Max,
 } from 'class-validator';
@@ -24,6 +25,42 @@ export class CreateBookingDto {
   @IsOptional()
   @IsEmail()
   guestEmail?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  guestAddress: string;
+
+  @IsString()
+  @IsNotEmpty()
+  guestNationality: string;
+
+  @IsOptional()
+  @IsDateString()
+  guestDob?: string;
+
+  @IsOptional()
+  @IsString()
+  guestPhone2?: string;
+
+  @IsOptional()
+  @IsString()
+  guestComingFrom?: string;
+
+  @IsOptional()
+  @IsString()
+  guestStateOfOrigin?: string;
+
+  @IsOptional()
+  @IsString()
+  guestOccupation?: string;
+
+  @IsOptional()
+  @IsString()
+  guestNextDestination?: string;
+
+  @IsOptional()
+  @IsString()
+  guestReligion?: string;
 
   @IsNumber()
   @Min(1)
