@@ -60,7 +60,7 @@ export default function StaffPage() {
     try {
       const [u, b] = await Promise.all([
         api.get<PaginatedData>(`/users?page=${page}&limit=${LIMIT}&search=${encodeURIComponent(search)}`),
-        api.get<Branch[]>('/branches'),
+        api.get<{ items: Branch[] }>('/branches').then((r) => r.items),
       ]);
       setData({ items: u.items, total: u.total, page: u.page, limit: u.limit });
       setBranches(b);

@@ -20,7 +20,7 @@ export interface RoomResponse {
 export const roomsApi = {
   list: (status?: string) => {
     const params = status ? `?status=${status}` : '';
-    return api.get<RoomResponse[]>(`/rooms${params}`);
+    return api.get<{ items: RoomResponse[] }>(`/rooms${params}`).then((r) => r.items);
   },
   get: (id: string) => api.get<RoomResponse>(`/rooms/${id}`),
 };

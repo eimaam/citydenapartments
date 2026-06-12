@@ -23,7 +23,7 @@ export interface ServePayload {
 export const breakfastApi = {
   manifest: (date?: string) => {
     const params = date ? `?date=${date}` : '';
-    return api.get<ManifestEntry[]>(`/breakfast/manifest${params}`);
+    return api.get<{ items: ManifestEntry[] }>(`/breakfast/manifest${params}`).then((r) => r.items);
   },
   serve: (data: ServePayload) => api.post<void>('/breakfast/serve', data),
   reset: (bookingId: string) => api.post<void>(`/breakfast/${bookingId}/reset`),

@@ -265,6 +265,8 @@ export class SeedService {
         guestDetails: {
           name: guestName,
           phone: guestPhone,
+          address: pick(['12 Ahmadu Bello Way', 'Plot 5 Lugard Avenue', '23 Tafawa Balewa Road', '8 Yakubu Gowon Crescent', '45 Obafemi Awolowo Street']),
+          nationality: 'Nigeria',
           ...(hasEmail ? { email: `${guestName.toLowerCase().replace(/\s/g, '.')}@email.com` } : {}),
         },
         numberOfGuests: randInt(1, room.maxGuests),
@@ -298,7 +300,7 @@ export class SeedService {
       await this.roomModel.findByIdAndUpdate(roomId, { status });
     }
 
-    this.logger.log(`Seed completed — users: 5, branches: ${branches.length}, roomTypes: 7, rooms: ${rooms.length}, bookings: ${bookingData.length}`);
+    this.logger.log(`Seed completed — users: 10, branches: ${branches.length}, roomTypes: 7, rooms: ${rooms.length}, bookings: ${bookingData.length}`);
 
     return {
       message: 'System seeded successfully',

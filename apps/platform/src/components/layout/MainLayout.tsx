@@ -32,7 +32,7 @@ export function MainLayout() {
   const currentTitle = pageTitles[location.pathname] ?? '';
 
   useEffect(() => {
-    api.get<Branch[]>('/branches').then(setBranches).catch(() => {});
+    api.get<{ items: Branch[] }>('/branches').then((res) => setBranches(res.items)).catch(() => {});
   }, []);
 
   useEffect(() => {
