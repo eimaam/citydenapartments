@@ -6,7 +6,21 @@ export interface IBranch {
   name: string;
   code: string;
   address: string;
-  isActive: boolean
+  isActive: boolean;
+}
+
+export interface IBranchPolicies {
+  checkInTime: string;
+  checkOutTime: string;
+  earlyCheckIn: string;
+  lateCheckOut: string;
+  cancellation: string;
+  houseRules: string[];
+  paymentInfo: string;
+  breakfastInfo: string;
+  contactPhone: string;
+  contactEmail: string;
+  additionalNotes: string;
 }
 
 @Schema({ timestamps: true })
@@ -22,6 +36,9 @@ export class Branch extends Document {
 
   @Prop({ required: true, default: true })
   isActive: boolean
+
+  @Prop({ type: Object, default: {} })
+  policies: IBranchPolicies
 }
 
 

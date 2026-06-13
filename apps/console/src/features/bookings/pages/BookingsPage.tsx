@@ -1,15 +1,18 @@
 import { useState, useEffect, useCallback, useMemo, useRef, type FormEvent } from 'react';
-import { Plus, Search, Banknote, CreditCard, Building2, Users, Calendar, Copy, Check } from 'lucide-react';
+import { Plus, Search, Banknote, CreditCard, Building2, Users, Calendar, Copy, Check, Printer } from 'lucide-react';
 import { format, addDays, differenceInDays } from 'date-fns';
 import {
-  Button, Input, Select, Table, Option, Drawer, Badge,
+  Button, Input, Select, Table, Option, Drawer, Modal, Badge,
   BookingStatus, PaymentMethod, BookingSource, RoomStatus,
+  BookingReceipt,
   type BookingStatusType, type PaymentMethodType, type BookingSourceType,
+  type BranchInfo, type ReceiptBooking,
 } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
 import { Spinner } from '../../../components/ui/Spinner';
 import { useToast } from '../../../components/ui/Toast';
 import { useAuth } from '../../../contexts/auth';
+import { api } from '../../../lib/api';
 import { bookingsApi, type BookingResponse, type CreateBookingPayload } from '../api/bookings.api';
 import { roomsApi, type RoomResponse } from '../../rooms/api/rooms.api';
 
@@ -69,6 +72,10 @@ export default function BookingsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [actionLoading, setActionLoading] = useState('');
   const [copiedRef, setCopiedRef] = useState(false);
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [receiptBooking, setReceiptBooking] = useState<ReceiptBooking | null>(null);
+  const [receiptBranch, setReceiptBranch] = useState<BranchInfo | null>(null);
+  const [loadingReceipt, setLoadingReceipt] = useState(false);
 
   const [form, setForm] = useState<{
     roomId: string; guestName: string; guestPhone: string; guestEmail: string;
@@ -165,7 +172,7 @@ export default function BookingsPage() {
     if (Number(form.totalAmountPaid) <= 0) { toast('error', 'Total amount paid must be greater than zero.'); return; }
     setSubmitting(true);
     try {
-      await bookingsApi.create({
+      const created = await bookingsApi.create({
         roomId: form.roomId, guestName: form.guestName, guestPhone: form.guestPhone, guestEmail: form.guestEmail || undefined,
         guestAddress: form.guestAddress, guestNationality: form.guestNationality,
         guestDob: form.guestDob || undefined, guestPhone2: form.guestPhone2 || undefined,
@@ -179,6 +186,7 @@ export default function BookingsPage() {
       setShowCreate(false);
       toast('success', 'Booking created.');
       fetchBookings();
+      openReceipt(created as unknown as ReceiptBooking);
     } catch (e) { toast('error', e instanceof Error ? e.message : 'Failed to create booking.'); }
     finally { setSubmitting(false); }
   };
@@ -197,6 +205,17 @@ export default function BookingsPage() {
     } catch (e) { toast('error', e instanceof Error ? e.message : `Failed to ${action}.`); }
     finally { setActionLoading(''); }
   };
+
+  const openReceipt = useCallback(async (booking: ReceiptBooking) => {
+    setLoadingReceipt(true);
+    setReceiptBooking(booking);
+    try {
+      const branch = await api.get<BranchInfo>(`/branches/${booking.branchId}`);
+      setReceiptBranch(branch);
+      setShowReceipt(true);
+    } catch { toast('error', 'Failed to load branch info.'); }
+    finally { setLoadingReceipt(false); }
+  }, [toast]);
 
   const columns: TableProps<BookingResponse>['columns'] = [
     { title: 'Reference', dataIndex: 'bookingReference', key: 'ref', width: 120, render: (_: unknown, r: BookingResponse) => <span className="font-mono text-xs">{r.bookingReference?.slice(-8)}</span> },
@@ -314,9 +333,18 @@ export default function BookingsPage() {
             ['Next Destination', showDetail.guestDetails.nextDestination],
             ['Religion', showDetail.guestDetails.religion],
           ].filter(([, v]) => v).map(([label, value]) => (<div key={label as string}><p className="text-xs text-outline">{label as string}</p><p className="font-medium">{value as string}</p></div>))}</div></div>
-          <div className="flex gap-3 pt-2">{showDetail.bookingStatus === BookingStatus.Confirmed && <Button size="sm" loading={actionLoading === `checkIn-${showDetail._id}`} onClick={() => handleAction('checkIn', showDetail._id)}>Check In</Button>}{showDetail.bookingStatus === BookingStatus.Checked_In && <Button size="sm" loading={actionLoading === `checkOut-${showDetail._id}`} onClick={() => handleAction('checkOut', showDetail._id)}>Check Out</Button>}{(showDetail.bookingStatus === BookingStatus.Confirmed || showDetail.bookingStatus === BookingStatus.Checked_In) && <Button variant="destructive" size="sm" loading={actionLoading === `cancel-${showDetail._id}`} onClick={() => handleAction('cancel', showDetail._id)}>Cancel</Button>}</div>
+          <div className="flex gap-3 pt-2 flex-wrap">{showDetail.bookingStatus === BookingStatus.Confirmed && <Button size="sm" loading={actionLoading === `checkIn-${showDetail._id}`} onClick={() => handleAction('checkIn', showDetail._id)}>Check In</Button>}{showDetail.bookingStatus === BookingStatus.Checked_In && <Button size="sm" loading={actionLoading === `checkOut-${showDetail._id}`} onClick={() => handleAction('checkOut', showDetail._id)}>Check Out</Button>}{(showDetail.bookingStatus === BookingStatus.Confirmed || showDetail.bookingStatus === BookingStatus.Checked_In) && <Button variant="destructive" size="sm" loading={actionLoading === `cancel-${showDetail._id}`} onClick={() => handleAction('cancel', showDetail._id)}>Cancel</Button>}<Button size="sm" variant="secondary" icon={<Printer size={14} />} onClick={() => { setShowDetail(null); openReceipt(showDetail as unknown as ReceiptBooking); }}>Print Receipt</Button></div>
         </div>)}
       </Drawer>
+
+      {/* Receipt Modal */}
+      <Modal isOpen={showReceipt} onClose={() => setShowReceipt(false)} width={800}>
+        {loadingReceipt ? (
+          <div className="flex items-center justify-center py-16"><Spinner /></div>
+        ) : receiptBooking && receiptBranch ? (
+          <BookingReceipt booking={receiptBooking} branch={receiptBranch} receptionistName={user?.name} />
+        ) : null}
+      </Modal>
     </div>
   );
 }

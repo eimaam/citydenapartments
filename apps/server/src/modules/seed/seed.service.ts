@@ -106,9 +106,75 @@ export class SeedService {
 
     // ── branches ──
     const branches = await this.branchModel.create([
-      { name: 'Abuja', code: 'ABJ', address: 'Plot 123, Central Business District, Abuja', isActive: true },
-      { name: 'Kaduna', code: 'KAD', address: 'No 45, Ahmadu Bello Way, Kaduna', isActive: true },
-      { name: 'Maiduguri', code: 'MAI', address: '15 Damaturu Road, Maiduguri', isActive: true },
+      {
+        name: 'Abuja', code: 'ABJ', address: 'Plot 123, Central Business District, Abuja', isActive: true,
+        policies: {
+          checkInTime: '14:00', checkOutTime: '12:00',
+          earlyCheckIn: 'Early check-in is subject to availability and may incur additional charges.',
+          lateCheckOut: 'Late check-out is subject to availability. A fee may apply for check-out after 12:00 PM.',
+          cancellation: 'Cancellations made by guests for reserved dates: refunds cannot be issued; however, the payment will be credited to the guests account for use towards a future reservation.',
+          houseRules: [
+            'Smoking is strictly prohibited in all rooms. Default attracts a fine of ₦200,000. Designated smoking areas are available.',
+            'Guests must have deposit at the front office before bills can be charged to room.',
+            'The Hotel will not be liable for loss of valuables left in the rooms or public area of the Hotel.',
+            'Children and babies are allowed in the rooms.',
+            'Visitors must register at the front desk.',
+            'Quiet hours from 10:00 PM to 7:00 AM.',
+            'Guests are responsible for any damage to hotel property.',
+          ],
+          paymentInfo: 'Cash and card payments are accepted. A security deposit is required at check-in.',
+          breakfastInfo: 'Complimentary continental breakfast served from 7:00 AM to 10:30 AM in the dining area.',
+          contactPhone: '+234 809 000 1234',
+          contactEmail: 'abuja@citydenapartments.com',
+          additionalNotes: 'Free WiFi is available throughout the property.',
+        },
+      },
+      {
+        name: 'Kaduna', code: 'KAD', address: 'No 45, Ahmadu Bello Way, Kaduna', isActive: true,
+        policies: {
+          checkInTime: '14:00', checkOutTime: '12:00',
+          earlyCheckIn: 'Early check-in is subject to availability and may incur additional charges.',
+          lateCheckOut: 'Late check-out is subject to availability. A fee may apply for check-out after 12:00 PM.',
+          cancellation: 'Cancellations made by guests for reserved dates: refunds cannot be issued; however, the payment will be credited to the guests account for use towards a future reservation.',
+          houseRules: [
+            'Smoking is strictly prohibited in all rooms. Default attracts a fine of ₦200,000. Designated smoking areas are available.',
+            'Guests must have deposit at the front office before bills can be charged to room.',
+            'The Hotel will not be liable for loss of valuables left in the rooms or public area of the Hotel.',
+            'Children and babies are allowed in the rooms.',
+            'Visitors must register at the front desk.',
+            'Quiet hours from 10:00 PM to 7:00 AM.',
+            'Guests are responsible for any damage to hotel property.',
+          ],
+          paymentInfo: 'Cash and card payments are accepted. A security deposit is required at check-in.',
+          breakfastInfo: 'Complimentary continental breakfast served from 7:00 AM to 10:30 AM in the dining area.',
+          contactPhone: '+234 809 000 5678',
+          contactEmail: 'kaduna@citydenapartments.com',
+          additionalNotes: 'Free WiFi is available throughout the property.',
+        },
+      },
+      {
+        name: 'Maiduguri', code: 'MAI', address: '15 Damaturu Road, Maiduguri', isActive: true,
+        policies: {
+          checkInTime: '14:00', checkOutTime: '12:00',
+          earlyCheckIn: 'Early check-in is subject to availability and may incur additional charges.',
+          lateCheckOut: 'Late check-out is subject to availability. A fee may apply for check-out after 12:00 PM.',
+          cancellation: 'Cancellations made by guests for reserved dates: refunds cannot be issued; however, the payment will be credited to the guests account for use towards a future reservation.',
+          houseRules: [
+            'Smoking is strictly prohibited in all rooms. Default attracts a fine of ₦200,000. Designated smoking areas are available.',
+            'Guests must have deposit at the front office before bills can be charged to room.',
+            'The Hotel will not be liable for loss of valuables left in the rooms or public area of the Hotel.',
+            'Children and babies are allowed in the rooms.',
+            'Visitors must register at the front desk.',
+            'Quiet hours from 10:00 PM to 7:00 AM.',
+            'Guests are responsible for any damage to hotel property.',
+          ],
+          paymentInfo: 'Cash and card payments are accepted. A security deposit is required at check-in.',
+          breakfastInfo: 'Complimentary breakfast served from 7:00 AM to 10:30 AM in the dining area.',
+          contactPhone: '+234 809 000 9012',
+          contactEmail: 'maiduguri@citydenapartments.com',
+          additionalNotes: 'Free WiFi is available throughout the property.',
+        },
+      },
     ]);
 
     this.logger.log(`Seed — branches created: ${branches.length}`);

@@ -6,7 +6,7 @@ import { WorkspaceAuthGuard } from '../../common/guards/workspace-auth.guard';
 import { ActiveUser } from '../../common/decorators/active-user.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { PaginatedQueryDto } from '../../common/dto/paginated-query.dto';
+import { QueryBreakfastDto } from '../../common/dto/query-breakfast.dto';
 import { format } from 'date-fns';
 import { UserRoleEnum } from '../users/user.schema';
 
@@ -16,8 +16,8 @@ export class BreakfastController {
   constructor(private breakfastService: BreakfastService) {}
 
   @Get('manifest')
-  getManifest(@ActiveUser() user: any, @Query() query: PaginatedQueryDto, @Query('date') date: string) {
-    const targetDate = date || format(new Date(), 'yyyy-MM-dd');
+  getManifest(@ActiveUser() user: any, @Query() query: QueryBreakfastDto) {
+    const targetDate = query.date || format(new Date(), 'yyyy-MM-dd');
     return this.breakfastService.getDailyManifest({
       branchId: user.activeBranchId,
       targetDate,

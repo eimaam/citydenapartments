@@ -9,7 +9,9 @@ import { WorkspaceAuthGuard } from '../../common/guards/workspace-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { ActiveUser } from '../../common/decorators/active-user.decorator';
-import { PaginatedQueryDto } from '../../common/dto/paginated-query.dto';
+import { QueryInventoryItemsDto } from '../../common/dto/query-inventory-items.dto';
+import { QueryTransactionsDto } from '../../common/dto/query-transactions.dto';
+import { QuerySnapshotsDto } from '../../common/dto/query-snapshots.dto';
 import { UserRoleEnum } from '../users/user.schema';
 
 @Controller('inventory')
@@ -21,7 +23,7 @@ export class InventoryController {
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER)
   findAllItems(
     @ActiveUser() user: any,
-    @Query() query: PaginatedQueryDto & { category?: string; lowStock?: string },
+    @Query() query: QueryInventoryItemsDto,
   ) {
     return this.inventoryService.findAllItems({
       branchId: user.activeBranchId,
@@ -67,7 +69,7 @@ export class InventoryController {
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER)
   findTransactions(
     @ActiveUser() user: any,
-    @Query() query: PaginatedQueryDto & { itemId?: string; type?: string; from?: string; to?: string },
+    @Query() query: QueryTransactionsDto,
   ) {
     return this.inventoryService.findTransactions({
       branchId: user.activeBranchId,
@@ -84,7 +86,7 @@ export class InventoryController {
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER)
   findSnapshots(
     @ActiveUser() user: any,
-    @Query() query: PaginatedQueryDto & { from?: string; to?: string },
+    @Query() query: QuerySnapshotsDto,
   ) {
     return this.inventoryService.findSnapshots({
       branchId: user.activeBranchId,

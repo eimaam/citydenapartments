@@ -15,6 +15,7 @@ export * from './src/components/ui/UserAvatar';
 export * from './src/components/ui/FadeIn';
 export * from './src/components/ui/PageHeader';
 export * from './src/components/ui/Drawer';
+export * from './src/components/ui/BookingReceipt';
 export * from './src/lib/utils';
 export * from './src/utils/format';
 export * from "./src/types"

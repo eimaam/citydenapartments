@@ -60,7 +60,7 @@ export default function LoginPage() {
           <div className="flex gap-2">
             <span className="w-8 h-px bg-primary opacity-60 self-center" />
             <span className="text-xs tracking-[0.2em] uppercase text-inverse-on-surface opacity-40">
-              Staff Portal v1
+              Admin Portal v1
             </span>
           </div>
         </div>
@@ -84,7 +84,7 @@ export default function LoginPage() {
                 City Den Management
               </span>
             </div>
-            <h2 className="font-serif text-2xl sm:text-3xl text-on-surface mb-2">Staff Portal</h2>
+            <h2 className="font-serif text-2xl sm:text-3xl text-on-surface mb-2">Admin Portal</h2>
             <p className="text-sm text-on-surface-variant">
               Enter your credentials to access the secure network.
             </p>

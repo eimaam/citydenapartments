@@ -9,7 +9,7 @@ import { UserRoleEnum } from '../users/user.schema';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { UpdateRoomStatusDto } from './dto/update-room-status.dto';
-import { PaginatedQueryDto } from '../../common/dto/paginated-query.dto';
+import { QueryRoomsDto } from './dto/room-query.dto';
 
 @Controller('rooms')
 @UseGuards(JwtAuthGuard, WorkspaceAuthGuard)
@@ -19,8 +19,8 @@ export class RoomsController {
   ) { }
 
   @Get()
-  findAll(@ActiveUser() user: any, @Query() query: PaginatedQueryDto, @Query('status') status?: RoomStatus) {
-    return this.roomsService.findAll({ branchId: user.activeBranchId, page: query.page, limit: query.limit, search: query.search, status });
+  findAll(@ActiveUser() user: any, @Query() query: QueryRoomsDto) {
+    return this.roomsService.findAll({ branchId: user.activeBranchId, page: query.page, limit: query.limit, search: query.search, status: query.status as any });
   }
 
   @Get(':id')

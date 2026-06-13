@@ -59,7 +59,7 @@ export class BranchService {
     }
 
     async create(dto: CreateBranchDto) {
-        const { name, address, code, isActive } = dto
+        const { name, address, code, isActive, policies } = dto
 
         const duplicate = await this.branchModel.findOne({
             $or: [{ name: { $regex: `^${escapeRegex(name)}$`, $options: 'i' } }, { code: code.toUpperCase() }],
@@ -70,7 +70,7 @@ export class BranchService {
         }
 
         const newBranch = await this.branchModel.create({
-            name, address, code, isActive
+            name, address, code, isActive, policies
         })
 
         await this.redisService.invalidateDashboardCache();

@@ -196,7 +196,7 @@ export class DashboardService {
                   },
                 },
                 initialValue: 0,
-                in: { $add: ['$$value', '$$b.totalAmountPaid'] },
+                in: { $add: ['$$value', '$$this.totalAmountPaid'] },
               },
             },
           },
