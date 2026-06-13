@@ -41,15 +41,15 @@ const bookingSources: Array<'WalkIn' | 'Phone' | 'Online'> = ['WalkIn', 'Phone',
 type Scenario = [string, number, number, number];
 
 const scenarios: Scenario[] = [
-  // Confirmed — today or future
-  ['Confirmed', 0, 2, 2],
-  ['Confirmed', 1, 3, 2],
-  ['Confirmed', 2, 5, 3],
-  ['Confirmed', 5, 8, 3],
-  ['Confirmed', 0, 1, 1],
-  ['Confirmed', 3, 5, 2],
-  ['Confirmed', 7, 10, 3],
-  ['Confirmed', 1, 4, 3],
+  // Checked_In — paid = checked in. Future or past.
+  ['Checked_In', 0, 2, 2],
+  ['Checked_In', 1, 3, 2],
+  ['Checked_In', 2, 5, 3],
+  ['Checked_In', 5, 8, 3],
+  ['Checked_In', 0, 1, 1],
+  ['Checked_In', 3, 5, 2],
+  ['Checked_In', 7, 10, 3],
+  ['Checked_In', 1, 4, 3],
 
   // Checked_In — check-in in the past, check-out in the future
   ['Checked_In', -1, 2, 3],
@@ -349,11 +349,13 @@ export class SeedService {
         bookingReference: `CDA-${branch.code}-${String(i + 1).padStart(3, '0')}`,
       });
 
-      // track room status updates
-      if (status === 'Checked_In' && !roomsToUpdate[room._id.toString()]) {
-        roomsToUpdate[room._id.toString()] = RoomStatusEnum.OCCUPIED;
-      } else if (status === 'Checked_Out' && !roomsToUpdate[room._id.toString()]) {
+      // track room status — last booking per room wins
+      if (status === 'Checked_Out') {
         roomsToUpdate[room._id.toString()] = RoomStatusEnum.DIRTY;
+      } else if (status === 'Checked_In' && roomsToUpdate[room._id.toString()] !== RoomStatusEnum.DIRTY) {
+        roomsToUpdate[room._id.toString()] = RoomStatusEnum.OCCUPIED;
+      } else if (status === 'Cancelled' && !roomsToUpdate[room._id.toString()]) {
+        roomsToUpdate[room._id.toString()] = RoomStatusEnum.AVAILABLE;
       }
     }
 

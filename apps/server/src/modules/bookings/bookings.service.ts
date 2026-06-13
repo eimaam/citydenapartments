@@ -182,20 +182,18 @@ export class BookingsService {
             totalAmountPaid: dto.totalAmountPaid,
             paymentMethod: dto.paymentMethod,
             paymentReference: dto.paymentReference,
-            bookingStatus: dto.bookingStatus || 'Confirmed',
+            bookingStatus: 'Checked_In',
             bookingSource: dto.bookingSource || 'WalkIn',
             bookedBy: actorId,
-            checkedInBy: dto.bookingStatus === 'Checked_In' ? actorId : null,
+            checkedInBy: actorId,
           },
         ],
         { session },
       );
 
-      if (dto.bookingStatus === 'Checked_In') {
-        room.status = RoomStatusEnum.OCCUPIED as any;
-        room.updatedBy = actorId as any;
-        await room.save({ session });
-      }
+      room.status = RoomStatusEnum.OCCUPIED as any;
+      room.updatedBy = actorId as any;
+      await room.save({ session });
 
       await session.commitTransaction();
       await this.redis.invalidateDashboardCache(branchId);
