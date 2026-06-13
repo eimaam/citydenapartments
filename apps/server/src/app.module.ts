@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthModule } from './modules/auth/auth.module';
 import { BranchesModule } from './modules/branches/branches.module';
@@ -34,6 +35,19 @@ if (AppConfig.NODE_ENV === 'development') {
       validationSchema: AppConfigValidationSchema,
     }),
     ScheduleModule.forRoot(),
+    ThrottlerModule.forRoot([{
+      name: 'short',
+      ttl: 1000,
+      limit: 10,
+    }, {
+      name: 'medium',
+      ttl: 10000,
+      limit: 50,
+    }, {
+      name: 'long',
+      ttl: 60000,
+      limit: 200,
+    }]),
     AuthModule,
     BranchesModule,
     UsersModule,
@@ -49,6 +63,10 @@ if (AppConfig.NODE_ENV === 'development') {
   ],
   
   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

@@ -4,6 +4,8 @@ import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { AppConfig } from './config/app.config';
+import helmet from 'helmet';
+import compression from 'compression';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -17,6 +19,9 @@ async function bootstrap() {
     origin: allowedOrigins,
     credentials: true,
   });
+
+  app.use(helmet());
+  app.use(compression());
 
   app.useGlobalPipes(
     new ValidationPipe({
