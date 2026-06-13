@@ -65,7 +65,7 @@ export class Booking extends Document {
   @Prop({ default: 0 })
   discount: number;
 
-  @Prop({ type: String, enum: ['fixed', 'percentage'], default: 'fixed' })
+  @Prop({ type: String, enum: ['fixed', 'percentage'], lowercase: true, default: 'fixed' })
   discountType: string;
 
   @Prop({ default: 0 })
@@ -77,7 +77,7 @@ export class Booking extends Document {
   @Prop({ required: true })
   totalAmountPaid: number;
 
-  @Prop({ type: String, enum: ['pos_card', 'cash', 'bank_transfer'], required: true })
+  @Prop({ type: String, enum: ['pos_card', 'cash', 'bank_transfer'], lowercase: true, required: true })
   paymentMethod: string;
 
   @Prop()
@@ -85,6 +85,7 @@ export class Booking extends Document {
 
   @Prop({
     type: String,
+    lowercase: true,
     enum: ['confirmed', 'checked_in', 'checked_out', 'cancelled'],
     default: 'checked_in',
   })
@@ -92,6 +93,7 @@ export class Booking extends Document {
 
   @Prop({
     type: String,
+    lowercase: true,
     enum: ['walk_in', 'phone', 'online'],
     default: 'walk_in',
   })

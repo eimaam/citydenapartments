@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef, type FormEvent } from 'react';
 import { Plus, Search, Banknote, CreditCard, Building2, Users, Calendar, Copy, Check, Printer } from 'lucide-react';
 import { format, addDays, differenceInDays } from 'date-fns';
+import { getAllStates } from 'ng-geo-data';
 import {
   Button, Input, Select, Table, Option, Drawer, Modal, Badge,
   BookingStatus, PaymentMethod, BookingSource, RoomStatus,
@@ -57,6 +58,7 @@ interface PaginatedData {
 
 export default function BookingsPage() {
   const { toast } = useToast();
+  const nigeriaStates = useMemo(() => getAllStates(), []);
   const { user } = useAuth();
   const [data, setData] = useState<PaginatedData>({ items: [], total: 0, page: 1, limit: LIMIT });
   const [rooms, setRooms] = useState<RoomResponse[]>([]);
@@ -305,7 +307,9 @@ export default function BookingsPage() {
                 </Select></div>
                 <div><label className="text-[10px] text-outline uppercase tracking-wide">Phone 2 (Optional)</label><Input size="lg" placeholder="e.g. 0805xxxxxxx" value={form.guestPhone2} onChange={(e) => updateField('guestPhone2', e.target.value)} /></div>
                 <div><label className="text-[10px] text-outline uppercase tracking-wide">Coming From</label><Input size="lg" placeholder="e.g. Lagos" value={form.guestComingFrom} onChange={(e) => updateField('guestComingFrom', e.target.value)} /></div>
-                <div><label className="text-[10px] text-outline uppercase tracking-wide">State of Origin</label><Input size="lg" placeholder="e.g. Oyo" value={form.guestStateOfOrigin} onChange={(e) => updateField('guestStateOfOrigin', e.target.value)} /></div>
+                <div><label className="text-[10px] text-outline uppercase tracking-wide">State of Origin</label><Select showSearch optionFilterProp="children" size="lg" className="w-full" placeholder="Select state" value={form.guestStateOfOrigin || undefined} onChange={(v) => updateField('guestStateOfOrigin', v)}>
+                  {nigeriaStates.map((s) => (<Option key={s.code} value={s.name}>{s.name}</Option>))}
+                </Select></div>
                 <div><label className="text-[10px] text-outline uppercase tracking-wide">Occupation</label><Input size="lg" placeholder="e.g. Engineer" value={form.guestOccupation} onChange={(e) => updateField('guestOccupation', e.target.value)} /></div>
                 <div><label className="text-[10px] text-outline uppercase tracking-wide">Next Destination</label><Input size="lg" placeholder="e.g. Abuja" value={form.guestNextDestination} onChange={(e) => updateField('guestNextDestination', e.target.value)} /></div>
                 <div><label className="text-[10px] text-outline uppercase tracking-wide">Religion (Optional)</label><Input size="lg" placeholder="e.g. Christianity" value={form.guestReligion} onChange={(e) => updateField('guestReligion', e.target.value)} /></div>

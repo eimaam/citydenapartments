@@ -7,6 +7,7 @@ import { startOfDay, endOfDay } from 'date-fns';
 import { BreakfastLog } from './breakfast-log.schema';
 import { Booking } from '../bookings/booking.schema';
 import { Branch } from '../branches/branch.schema';
+import { BookingStatus } from '@citydenapartments/shared';
 
 @Injectable()
 export class BreakfastCron {
@@ -31,7 +32,7 @@ export class BreakfastCron {
         const checkedInBookings = await this.bookingModel.find(
           {
             branchId: branch._id,
-            bookingStatus: 'checked_in',
+            bookingStatus: BookingStatus.Checked_In,
           },
           '_id',
         ).lean();

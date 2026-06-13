@@ -8,6 +8,7 @@ import { Booking } from '../bookings/booking.schema';
 import { ServeBreakfastDto } from './dto/serve-breakfast.dto';
 import { escapeRegex } from '../../common/utils/escape-regex';
 import { RedisService } from '../redis/redis.service';
+import { BookingStatus } from '@citydenapartments/shared';
 
 @Injectable()
 export class BreakfastService {
@@ -35,7 +36,7 @@ export class BreakfastService {
       {
         $match: {
           branchId: new mongoose.Types.ObjectId(branchId),
-          bookingStatus: 'checked_in',
+          bookingStatus: BookingStatus.Checked_In,
         },
       },
       {
@@ -112,7 +113,7 @@ export class BreakfastService {
       this.logger.warn(`Booking not found — id: ${dto.bookingId}`);
       throw new NotFoundException('Booking not found.');
     }
-    if (booking.bookingStatus !== 'checked_in') {
+    if (booking.bookingStatus !== BookingStatus.Checked_In) {
       this.logger.warn(`Breakfast denied — Guest ${booking.guestDetails.name} | booking not checked in`);
       throw new BadRequestException('Booking is not checked in.');
     }
