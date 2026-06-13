@@ -12,6 +12,7 @@ import BranchesPage from './features/branches/pages/BranchesPage';
 import RoomTypesPage from './features/room-types/pages/RoomTypesPage';
 import RoomsPage from './features/rooms/pages/RoomsPage';
 import BookingsPage from './features/bookings/pages/BookingsPage';
+import CalendarPage from './features/bookings/pages/CalendarPage';
 import StaffPage from './features/staff/pages/StaffPage';
 import BreakfastPage from './features/breakfast/pages/BreakfastPage';
 import InventoryPage from './features/inventory/pages/InventoryPage';
@@ -36,6 +37,7 @@ export default function App() {
                 <Route path="room-types" element={<RoomTypesPage />} />
                 <Route path="rooms" element={<RoomsPage />} />
                 <Route path="bookings" element={<BookingsPage />} />
+                <Route path="bookings/calendar" element={<CalendarPage />} />
                 <Route path="staff" element={<StaffPage />} />
                 <Route path="breakfast" element={<BreakfastPage />} />
                 <Route path="inventory" element={<InventoryPage />} />

@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/co
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { QueryBookingsDto } from './dto/query-bookings.dto';
+import { CalendarQueryDto } from './dto/calendar-query.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { WorkspaceAuthGuard } from '../../common/guards/workspace-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -13,6 +14,11 @@ import { ActiveUser } from '../../common/decorators/active-user.decorator';
 @UseGuards(JwtAuthGuard, WorkspaceAuthGuard, RolesGuard)
 export class BookingsController {
   constructor(private bookingsService: BookingsService) {}
+
+  @Get('calendar')
+  getCalendar(@ActiveUser() user: any, @Query() query: CalendarQueryDto) {
+    return this.bookingsService.getCalendar(user.activeBranchId, query.year, query.month);
+  }
 
   @Get()
   findAll(

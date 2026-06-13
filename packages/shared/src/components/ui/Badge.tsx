@@ -2,7 +2,6 @@ import React from 'react';
 import { cn } from '../../lib/utils';
 import { BookingStatus, RoomStatus } from '../../types';
 
-// ── color / label registry keyed by enum values ─────────────────
 const colorMap: Record<string, string> = {
   [BookingStatus.Confirmed]:   'bg-blue-50 text-blue-700 border-blue-200',
   [BookingStatus.Checked_In]:  'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -34,7 +33,6 @@ function formatLabel(status: string): string {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-// ── component ────────────────────────────────────────────────────
 export interface BadgeProps {
   status: string;
   label?: string;

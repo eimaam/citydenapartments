@@ -8,6 +8,7 @@ import { MainLayout } from './components/layout/MainLayout';
 import LoginPage from './features/auth/pages/LoginPage';
 import DashboardPage from './features/dashboard/pages/DashboardPage';
 import BookingsPage from './features/bookings/pages/BookingsPage';
+import CalendarPage from './features/bookings/pages/CalendarPage';
 import RoomsPage from './features/rooms/pages/RoomsPage';
 import BreakfastPage from './features/breakfast/pages/BreakfastPage';
 import StaffPage from './features/staff/pages/StaffPage';
@@ -30,6 +31,7 @@ export default function App() {
 
               <Route element={<RoleGuard roles={['Reception', 'BranchManager']} />}>
                 <Route path="bookings" element={<BookingsPage />} />
+                <Route path="bookings/calendar" element={<CalendarPage />} />
                 <Route path="rooms" element={<RoomsPage />} />
               </Route>
 

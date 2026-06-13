@@ -12,6 +12,7 @@ import {
   LogOut,
   X,
   ChevronLeft,
+  CalendarFold,
 } from 'lucide-react';
 import type { UserRoleType } from '../../lib/types';
 import { cn } from '../../lib/utils';
@@ -30,6 +31,7 @@ const menuConfig: Record<UserRoleType, SidebarItem[]> = {
     { label: 'Room Types', icon: Tags, path: '/room-types' },
     { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
     { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
+    { label: 'Calendar', icon: CalendarFold, path: '/bookings/calendar' },
     { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
     { label: 'Staff', icon: Users, path: '/staff' },
     { label: 'Inventory', icon: Package, path: '/inventory' },

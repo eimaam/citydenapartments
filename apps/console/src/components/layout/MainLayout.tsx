@@ -91,44 +91,50 @@ export function MainLayout() {
 
           {/* Branch indicator */}
           <div className="ml-auto flex-shrink-0" ref={branchRef}>
-            {activeBranch && (
-              <div className="relative">
-                <button
-                  onClick={() => canSwitch && setBranchOpen(!branchOpen)}
-                  className={`flex items-center gap-2 h-8 px-3 rounded-full border text-xs font-medium transition-all ${canSwitch ? 'cursor-pointer hover:border-primary' : 'cursor-default'} border-outline-variant bg-surface-container-low text-outline`}
-                >
-                  <MapPin size={12} className="text-primary flex-shrink-0" />
-                  <span className="hidden sm:inline font-semibold text-on-surface-variant">
-                    {activeBranch.name}
-                  </span>
-                  <span className="text-[10px] font-mono text-outline">
-                    {activeBranch.code}
-                  </span>
-                  {canSwitch && <ChevronDown size={12} className={`transition-transform ${branchOpen ? 'rotate-180' : ''}`} />}
-                </button>
-
-                {canSwitch && branchOpen && (
-                  <div className="absolute right-0 top-full mt-1 w-56 rounded-lg border border-outline-variant bg-surface-container-lowest shadow-ambient z-50 py-1">
-                    <div className="px-3 py-1.5 text-[10px] font-bold tracking-[0.1em] uppercase text-outline">
-                      Switch Branch
-                    </div>
-                    {userBranches.map((b) => (
-                      <button
-                        key={b._id}
-                        onClick={() => handleSwitch(b._id)}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-on-surface-variant hover:bg-surface-container transition-colors cursor-pointer"
-                      >
-                        <span className="flex-1 text-left">{b.name}</span>
-                        <span className="text-[10px] font-mono text-outline">{b.code}</span>
-                        {b._id === activeBranch._id && (
-                          <Check size={14} className="text-primary flex-shrink-0" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
+            <div className="relative">
+              <button
+                onClick={() => (canSwitch || !activeBranch) && setBranchOpen(!branchOpen)}
+                className={`flex items-center gap-2 h-8 px-3 rounded-full border text-xs font-medium transition-all cursor-pointer ${
+                  activeBranch
+                    ? 'border-outline-variant bg-surface-container-low text-outline hover:border-primary'
+                    : 'border-primary bg-primary/5 text-primary'
+                }`}
+              >
+                <MapPin size={12} className="text-primary flex-shrink-0" />
+                {activeBranch ? (
+                  <>
+                    <span className="hidden sm:inline font-semibold text-on-surface-variant">{activeBranch.name}</span>
+                    <span className="text-[10px] font-mono text-outline">{activeBranch.code}</span>
+                  </>
+                ) : (
+                  <span className="text-xs font-semibold">Select Branch</span>
                 )}
-              </div>
-            )}
+                <ChevronDown size={12} className={`transition-transform ${branchOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {branchOpen && (
+                <div className="absolute right-0 top-full mt-1 w-56 rounded-lg border border-outline-variant bg-surface-container-lowest shadow-ambient z-50 py-1">
+                  {!activeBranch && (
+                    <div className="px-3 py-1.5 text-[10px] font-bold tracking-[0.1em] uppercase text-outline">
+                      Select a Branch
+                    </div>
+                  )}
+                  {userBranches.map((b) => (
+                    <button
+                      key={b._id}
+                      onClick={() => handleSwitch(b._id)}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-on-surface-variant hover:bg-surface-container transition-colors cursor-pointer"
+                    >
+                      <span className="flex-1 text-left">{b.name}</span>
+                      <span className="text-[10px] font-mono text-outline">{b.code}</span>
+                      {activeBranch && b._id === activeBranch._id && (
+                        <Check size={14} className="text-primary flex-shrink-0" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </header>
 

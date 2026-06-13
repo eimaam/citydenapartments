@@ -27,6 +27,32 @@ export class BookingsService {
 
   private readonly logger = new Logger(BookingsService.name);
 
+  async getCalendar(branchId: string, year: number, month: number) {
+    const startOfMonth = new Date(year, month - 1, 1);
+    const endOfMonth = new Date(year, month, 0, 23, 59, 59);
+
+    const [rooms, bookings] = await Promise.all([
+      this.roomModel
+        .find({ branchId, isActive: true })
+        .populate('roomTypeId')
+        .sort({ roomNumber: 1 })
+        .lean(),
+      this.bookingModel
+        .find({
+          branchId,
+          bookingStatus: {
+            $in: [BookingStatus.Reserved, BookingStatus.Confirmed, BookingStatus.Checked_In, BookingStatus.Checked_Out],
+          },
+          checkInDate: { $lt: endOfMonth },
+          checkOutDate: { $gt: startOfMonth },
+        })
+        .populate('roomId')
+        .lean(),
+    ]);
+
+    return { rooms, bookings };
+  }
+
   async findAll(params: {
     branchId: string;
     page: number;

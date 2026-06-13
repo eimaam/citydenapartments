@@ -1,5 +1,6 @@
 import { api } from '../../../lib/api';
 import type { BookingStatusType, PaymentMethodType, BookingSourceType, RoomStatusType } from '@citydenapartments/shared';
+import type { RoomResponse } from '../../rooms/api/rooms.api';
 
 export interface BookingResponse {
   _id: string;
@@ -86,6 +87,11 @@ export interface BookingsQuery {
   search?: string;
 }
 
+export interface CalendarData {
+  rooms: RoomResponse[];
+  bookings: BookingResponse[];
+}
+
 export const bookingsApi = {
   list: (query: BookingsQuery = {}) => {
     const params = new URLSearchParams();
@@ -101,4 +107,6 @@ export const bookingsApi = {
   checkIn: (id: string) => api.post<BookingResponse>(`/bookings/${id}/check-in`),
   checkOut: (id: string) => api.post<BookingResponse>(`/bookings/${id}/check-out`),
   cancel: (id: string) => api.post<BookingResponse>(`/bookings/${id}/cancel`),
+  calendar: (year: number, month: number) =>
+    api.get<CalendarData>(`/bookings/calendar?year=${year}&month=${month}`),
 };
