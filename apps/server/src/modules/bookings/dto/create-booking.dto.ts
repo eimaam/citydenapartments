@@ -42,21 +42,26 @@ export class CreateBookingDto {
   @IsString()
   guestPhone2?: string;
 
-  @IsOptional()
   @IsString()
-  guestComingFrom?: string;
+  @IsNotEmpty()
+  guestComingFrom: string;
 
-  @IsOptional()
   @IsString()
-  guestStateOfOrigin?: string;
+  @IsNotEmpty()
+  guestStateOfOrigin: string;
 
-  @IsOptional()
   @IsString()
-  guestOccupation?: string;
+  @IsNotEmpty()
+  guestOccupation: string;
 
-  @IsOptional()
   @IsString()
-  guestNextDestination?: string;
+  @IsNotEmpty()
+  guestNextDestination: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsEnum(['male', 'female'])
+  guestGender: string;
 
   @IsOptional()
   @IsString()
@@ -100,7 +105,7 @@ export class CreateBookingDto {
   @Min(0)
   totalAmountPaid: number;
 
-  @IsEnum(['POS_Card', 'Cash', 'Bank_Transfer'])
+  @IsEnum(['cash', 'pos_card', 'bank_transfer'])
   paymentMethod: PaymentMethod;
 
   @IsOptional()
@@ -108,10 +113,10 @@ export class CreateBookingDto {
   paymentReference?: string;
 
   @IsOptional()
-  @IsEnum(['Confirmed', 'Checked_In', 'Checked_Out', 'Cancelled'])
+  @IsEnum(['confirmed', 'checked_in', 'checked_out', 'cancelled'])
   bookingStatus?: BookingStatus;
 
   @IsOptional()
-  @IsEnum(['WalkIn', 'Phone', 'Online'])
+  @IsEnum(['walk_in', 'phone', 'online'])
   bookingSource?: BookingSource;
 }

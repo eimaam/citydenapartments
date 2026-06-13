@@ -35,6 +35,12 @@ export interface ReceiptBooking {
     email?: string;
     address?: string;
     nationality?: string;
+    comingFrom?: string;
+    stateOfOrigin?: string;
+    occupation?: string;
+    nextDestination?: string;
+    gender?: string;
+    religion?: string;
   };
   roomId: {
     roomNumber: string;
@@ -131,12 +137,12 @@ function buildPrintHtml({
   booking: ReceiptBooking; branch: BranchInfo; receptionistName?: string;
   nights: number; subtotal: number; p: NonNullable<BranchInfo['policies']>;
 }) {
-  const statusClass = booking.bookingStatus === 'Checked_In' ? 'checked-in'
-    : booking.bookingStatus === 'Checked_Out' ? 'checked-out'
-    : booking.bookingStatus === 'Cancelled' ? 'cancelled' : 'confirmed';
-  const statusLabel = booking.bookingStatus === 'Checked_In' ? 'CHECKED IN'
-    : booking.bookingStatus === 'Checked_Out' ? 'CHECKED OUT'
-    : booking.bookingStatus === 'Cancelled' ? 'CANCELLED' : 'CONFIRMED';
+  const statusClass = booking.bookingStatus === 'checked_in' ? 'checked-in'
+    : booking.bookingStatus === 'checked_out' ? 'checked-out'
+    : booking.bookingStatus === 'cancelled' ? 'cancelled' : 'confirmed';
+  const statusLabel = booking.bookingStatus === 'checked_in' ? 'CHECKED IN'
+    : booking.bookingStatus === 'checked_out' ? 'CHECKED OUT'
+    : booking.bookingStatus === 'cancelled' ? 'CANCELLED' : 'CONFIRMED';
 
   return `<html><head><meta charset="utf-8"><title>Booking Receipt - ${booking.bookingReference}</title>
 <style>${PRINT_STYLES}</style></head><body>
@@ -157,7 +163,7 @@ function buildPrintHtml({
   <div><p class="receipt-label">Number of Guests</p><p class="receipt-value">${booking.numberOfGuests}</p></div>
   ${booking.guestDetails.address ? `<div><p class="receipt-label">Address</p><p class="receipt-value">${booking.guestDetails.address}</p></div>` : ''}
   ${booking.guestDetails.nationality ? `<div><p class="receipt-label">Nationality</p><p class="receipt-value">${booking.guestDetails.nationality}</p></div>` : ''}
-  <div><p class="receipt-label">Booking Source</p><p class="receipt-value">${booking.bookingSource === 'WalkIn' ? 'Walk-in' : booking.bookingSource}</p></div>
+  <div><p class="receipt-label">Booking Source</p><p class="receipt-value">${booking.bookingSource === 'walk_in' ? 'Walk-in' : booking.bookingSource}</p></div>
 </div>
 <div class="receipt-section-title">Stay Details</div>
 <div class="receipt-grid-3">
@@ -282,8 +288,8 @@ export function BookingReceipt({ booking, branch, receptionistName }: BookingRec
           <p className="receipt-ref">{booking.bookingReference}</p>
           <p style={{ margin: '0.2rem 0 0', fontSize: '0.65rem', color: '#888' }}>
             Status:{' '}
-            <span className={`receipt-badge receipt-badge-${booking.bookingStatus === 'Checked_In' ? 'checked-in' : booking.bookingStatus === 'Checked_Out' ? 'checked-out' : booking.bookingStatus === 'Cancelled' ? 'cancelled' : 'confirmed'}`}>
-              {booking.bookingStatus === 'Checked_In' ? 'CHECKED IN' : booking.bookingStatus === 'Checked_Out' ? 'CHECKED OUT' : booking.bookingStatus === 'Cancelled' ? 'CANCELLED' : 'CONFIRMED'}
+            <span className={`receipt-badge receipt-badge-${booking.bookingStatus === 'checked_in' ? 'checked-in' : booking.bookingStatus === 'checked_out' ? 'checked-out' : booking.bookingStatus === 'cancelled' ? 'cancelled' : 'confirmed'}`}>
+              {booking.bookingStatus === 'checked_in' ? 'CHECKED IN' : booking.bookingStatus === 'checked_out' ? 'CHECKED OUT' : booking.bookingStatus === 'cancelled' ? 'CANCELLED' : 'CONFIRMED'}
             </span>
           </p>
         </div>
@@ -322,7 +328,7 @@ export function BookingReceipt({ booking, branch, receptionistName }: BookingRec
           )}
           <div>
             <p className="receipt-label">Booking Source</p>
-            <p className="receipt-value">{booking.bookingSource === 'WalkIn' ? 'Walk-in' : booking.bookingSource}</p>
+            <p className="receipt-value">{booking.bookingSource === 'walk_in' ? 'Walk-in' : booking.bookingSource}</p>
           </div>
         </div>
 

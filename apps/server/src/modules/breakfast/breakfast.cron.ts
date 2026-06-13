@@ -31,7 +31,7 @@ export class BreakfastCron {
         const checkedInBookings = await this.bookingModel.find(
           {
             branchId: branch._id,
-            bookingStatus: 'Checked_In',
+            bookingStatus: 'checked_in',
           },
           '_id',
         ).lean();

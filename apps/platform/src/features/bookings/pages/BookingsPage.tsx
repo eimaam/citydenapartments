@@ -80,7 +80,7 @@ export default function BookingsPage() {
     roomId: string; guestName: string; guestPhone: string; guestEmail: string;
     guestAddress: string; guestNationality: string; guestDob: string; guestPhone2: string;
     guestComingFrom: string; guestStateOfOrigin: string; guestOccupation: string;
-    guestNextDestination: string; guestReligion: string;
+    guestNextDestination: string; guestGender: string; guestReligion: string;
     numberOfGuests: number; checkInDate: string; nights: number; checkOutDate: string;
     useNights: boolean; actualPricePerNight: number; discount: number; discountType: 'fixed' | 'percentage';
     discountPercentage: number; totalAmountPaid: number;
@@ -89,7 +89,7 @@ export default function BookingsPage() {
     roomId: '', guestName: '', guestPhone: '', guestEmail: '',
     guestAddress: '', guestNationality: '', guestDob: '', guestPhone2: '',
     guestComingFrom: '', guestStateOfOrigin: '', guestOccupation: '',
-    guestNextDestination: '', guestReligion: '',
+    guestNextDestination: '', guestGender: '', guestReligion: '',
     numberOfGuests: 1,
     checkInDate: todayStr(), nights: 1, checkOutDate: tomorrowStr(), useNights: true,
     actualPricePerNight: 0, discount: 0, discountType: 'fixed', discountPercentage: 0, totalAmountPaid: 0,
@@ -185,6 +185,11 @@ export default function BookingsPage() {
 
     const phoneErr = validatePhone(form.guestPhone);
     if (phoneErr) { setPhoneError(phoneErr); return; }
+    if (!form.guestGender) { toast('error', 'Gender is required.'); return; }
+    if (!form.guestComingFrom.trim()) { toast('error', 'Coming from is required.'); return; }
+    if (!form.guestStateOfOrigin.trim()) { toast('error', 'State of origin is required.'); return; }
+    if (!form.guestOccupation.trim()) { toast('error', 'Occupation is required.'); return; }
+    if (!form.guestNextDestination.trim()) { toast('error', 'Next destination is required.'); return; }
     const price = Number(form.actualPricePerNight) || basePrice;
     if (price < minPrice) { setPriceError(`Price must be at least ₦${minPrice.toLocaleString()}/night.`); return; }
     if (Number(form.totalAmountPaid) <= 0) { toast('error', 'Total amount paid must be greater than zero.'); return; }
@@ -194,9 +199,9 @@ export default function BookingsPage() {
         roomId: form.roomId, guestName: form.guestName, guestPhone: form.guestPhone, guestEmail: form.guestEmail || undefined,
         guestAddress: form.guestAddress, guestNationality: form.guestNationality,
         guestDob: form.guestDob || undefined, guestPhone2: form.guestPhone2 || undefined,
-        guestComingFrom: form.guestComingFrom || undefined, guestStateOfOrigin: form.guestStateOfOrigin || undefined,
-        guestOccupation: form.guestOccupation || undefined, guestNextDestination: form.guestNextDestination || undefined,
-        guestReligion: form.guestReligion || undefined,
+        guestComingFrom: form.guestComingFrom, guestStateOfOrigin: form.guestStateOfOrigin,
+        guestOccupation: form.guestOccupation, guestNextDestination: form.guestNextDestination,
+        guestGender: form.guestGender, guestReligion: form.guestReligion || undefined,
         numberOfGuests: Number(form.numberOfGuests) || 1, checkInDate: form.checkInDate, checkOutDate: form.checkOutDate,
         actualPricePerNight: price, discount: Number(form.discount) || 0, discountType: form.discountType,
         discountPercentage: form.discountType === 'percentage' ? Number(form.discountPercentage) || 0 : 0,
@@ -300,26 +305,30 @@ export default function BookingsPage() {
             </Select>
           </div>
           <div className="grid grid-cols-2 gap-4 mb-5">
-            <Input size="lg" placeholder="Guest Name" value={form.guestName} onChange={(e) => updateField('guestName', e.target.value)} required />
-            <Input size="lg" placeholder="Guest Phone" value={form.guestPhone} onChange={(e) => onPhoneChange(e.target.value)} status={phoneError ? 'error' : undefined} required />
+            <div><label className="text-[10px] text-outline uppercase tracking-wide">Guest Name</label><Input size="lg" placeholder="e.g. John Doe" value={form.guestName} onChange={(e) => updateField('guestName', e.target.value)} required /></div>
+            <div><label className="text-[10px] text-outline uppercase tracking-wide">Phone Number</label><Input size="lg" placeholder="e.g. 0803xxxxxxx" value={form.guestPhone} onChange={(e) => onPhoneChange(e.target.value)} status={phoneError ? 'error' : undefined} required /></div>
             {phoneError && <p className="col-span-2 -mt-2 text-xs text-error">{phoneError}</p>}
-            <Input size="lg" type="email" placeholder="Email (optional)" value={form.guestEmail} onChange={(e) => updateField('guestEmail', e.target.value)} />
-            <Input size="lg" type="number" min={1} placeholder="Number of Guests" value={form.numberOfGuests} onChange={(e) => updateField('numberOfGuests', Number(e.target.value))} />
+            <div><label className="text-[10px] text-outline uppercase tracking-wide">Email</label><Input size="lg" type="email" placeholder="(optional)" value={form.guestEmail} onChange={(e) => updateField('guestEmail', e.target.value)} /></div>
+            <div><label className="text-[10px] text-outline uppercase tracking-wide">Number of Guests</label><Input size="lg" type="number" min={1} placeholder="e.g. 2" value={form.numberOfGuests} onChange={(e) => updateField('numberOfGuests', Number(e.target.value))} /></div>
           </div>
           <div className="mb-5"><label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Additional Guest Info</label>
             <div className="mt-2 space-y-3">
-              <Input size="lg" placeholder="Address *" value={form.guestAddress} onChange={(e) => { updateField('guestAddress', e.target.value); setFormErrors((prev) => ({ ...prev, guestAddress: '' })); }} status={formErrors.guestAddress ? 'error' : undefined} />
+              <div><label className="text-[10px] text-outline uppercase tracking-wide">Address</label><Input size="lg" placeholder="e.g. 12 Main Street" value={form.guestAddress} onChange={(e) => { updateField('guestAddress', e.target.value); setFormErrors((prev) => ({ ...prev, guestAddress: '' })); }} status={formErrors.guestAddress ? 'error' : undefined} /></div>
               {formErrors.guestAddress && <p className="text-xs text-error">{formErrors.guestAddress}</p>}
-              <Input size="lg" placeholder="Nationality *" value={form.guestNationality} onChange={(e) => { updateField('guestNationality', e.target.value); setFormErrors((prev) => ({ ...prev, guestNationality: '' })); }} status={formErrors.guestNationality ? 'error' : undefined} />
+              <div><label className="text-[10px] text-outline uppercase tracking-wide">Nationality</label><Input size="lg" placeholder="e.g. Nigerian" value={form.guestNationality} onChange={(e) => { updateField('guestNationality', e.target.value); setFormErrors((prev) => ({ ...prev, guestNationality: '' })); }} status={formErrors.guestNationality ? 'error' : undefined} /></div>
               {formErrors.guestNationality && <p className="text-xs text-error">{formErrors.guestNationality}</p>}
               <div className="grid grid-cols-2 gap-3">
-                <Input size="lg" type="date" placeholder="Date of Birth" value={form.guestDob} onChange={(e) => updateField('guestDob', e.target.value)} />
-                <Input size="lg" placeholder="Phone 2 (optional)" value={form.guestPhone2} onChange={(e) => updateField('guestPhone2', e.target.value)} />
-                <Input size="lg" placeholder="Coming From" value={form.guestComingFrom} onChange={(e) => updateField('guestComingFrom', e.target.value)} />
-                <Input size="lg" placeholder="State of Origin" value={form.guestStateOfOrigin} onChange={(e) => updateField('guestStateOfOrigin', e.target.value)} />
-                <Input size="lg" placeholder="Occupation" value={form.guestOccupation} onChange={(e) => updateField('guestOccupation', e.target.value)} />
-                <Input size="lg" placeholder="Next Destination" value={form.guestNextDestination} onChange={(e) => updateField('guestNextDestination', e.target.value)} />
-                <Input size="lg" placeholder="Religion" value={form.guestReligion} onChange={(e) => updateField('guestReligion', e.target.value)} />
+                <div><label className="text-[10px] text-outline uppercase tracking-wide">Date of Birth</label><Input size="lg" type="date" value={form.guestDob} onChange={(e) => updateField('guestDob', e.target.value)} /></div>
+                <div><label className="text-[10px] text-outline uppercase tracking-wide">Gender</label><Select size="lg" className="w-full" placeholder="Select gender" value={form.guestGender || undefined} onChange={(v) => updateField('guestGender', v)}>
+                  <Option value="male">Male</Option>
+                  <Option value="female">Female</Option>
+                </Select></div>
+                <div><label className="text-[10px] text-outline uppercase tracking-wide">Phone 2</label><Input size="lg" placeholder="(optional)" value={form.guestPhone2} onChange={(e) => updateField('guestPhone2', e.target.value)} /></div>
+                <div><label className="text-[10px] text-outline uppercase tracking-wide">Coming From</label><Input size="lg" placeholder="e.g. Lagos" value={form.guestComingFrom} onChange={(e) => updateField('guestComingFrom', e.target.value)} /></div>
+                <div><label className="text-[10px] text-outline uppercase tracking-wide">State of Origin</label><Input size="lg" placeholder="e.g. Enugu" value={form.guestStateOfOrigin} onChange={(e) => updateField('guestStateOfOrigin', e.target.value)} /></div>
+                <div><label className="text-[10px] text-outline uppercase tracking-wide">Occupation</label><Input size="lg" placeholder="e.g. Engineer" value={form.guestOccupation} onChange={(e) => updateField('guestOccupation', e.target.value)} /></div>
+                <div><label className="text-[10px] text-outline uppercase tracking-wide">Next Destination</label><Input size="lg" placeholder="e.g. Abuja" value={form.guestNextDestination} onChange={(e) => updateField('guestNextDestination', e.target.value)} /></div>
+                <div><label className="text-[10px] text-outline uppercase tracking-wide">Religion</label><Input size="lg" placeholder="(optional)" value={form.guestReligion} onChange={(e) => updateField('guestReligion', e.target.value)} /></div>
               </div>
             </div>
           </div>
@@ -344,6 +353,7 @@ export default function BookingsPage() {
           <div className="pt-2 border-t border-outline-variant"><p className="text-xs font-bold tracking-[0.1em] uppercase text-outline mb-2">Guest Info</p><div className="grid grid-cols-2 gap-3 text-sm">{[
             ['Address', showDetail.guestDetails.address],
             ['Nationality', showDetail.guestDetails.nationality],
+            ['Gender', showDetail.guestDetails.gender],
             ['DOB', showDetail.guestDetails.dob ? format(new Date(showDetail.guestDetails.dob), 'd MMM yyyy') : null],
             ['Phone 2', showDetail.guestDetails.phone2],
             ['Coming From', showDetail.guestDetails.comingFrom],

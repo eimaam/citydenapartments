@@ -1,9 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
 
-export type BookingStatus = 'Confirmed' | 'Checked_In' | 'Checked_Out' | 'Cancelled';
-export type PaymentMethod = 'POS_Card' | 'Cash' | 'Bank_Transfer';
-export type BookingSource = 'WalkIn' | 'Phone' | 'Online';
+export type BookingStatus = 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled';
+export type PaymentMethod = 'pos_card' | 'cash' | 'bank_transfer';
+export type BookingSource = 'walk_in' | 'phone' | 'online';
 
 @Schema({ timestamps: true })
 export class Booking extends Document {
@@ -25,10 +25,11 @@ export class Booking extends Document {
       nationality: { type: String, required: true },
       dob: Date,
       phone2: String,
-      comingFrom: String,
-      stateOfOrigin: String,
-      occupation: String,
-      nextDestination: String,
+      comingFrom: { type: String, required: true },
+      stateOfOrigin: { type: String, required: true },
+      occupation: { type: String, required: true },
+      nextDestination: { type: String, required: true },
+      gender: { type: String, required: true, enum: ['male', 'female'] },
       religion: String,
     },
     required: true,
@@ -41,10 +42,11 @@ export class Booking extends Document {
     nationality: string;
     dob?: Date;
     phone2?: string;
-    comingFrom?: string;
-    stateOfOrigin?: string;
-    occupation?: string;
-    nextDestination?: string;
+    comingFrom: string;
+    stateOfOrigin: string;
+    occupation: string;
+    nextDestination: string;
+    gender: string;
     religion?: string;
   };
 
@@ -75,7 +77,7 @@ export class Booking extends Document {
   @Prop({ required: true })
   totalAmountPaid: number;
 
-  @Prop({ type: String, enum: ['POS_Card', 'Cash', 'Bank_Transfer'], required: true })
+  @Prop({ type: String, enum: ['pos_card', 'cash', 'bank_transfer'], required: true })
   paymentMethod: string;
 
   @Prop()
@@ -83,15 +85,15 @@ export class Booking extends Document {
 
   @Prop({
     type: String,
-    enum: ['Confirmed', 'Checked_In', 'Checked_Out', 'Cancelled'],
-    default: 'Confirmed',
+    enum: ['confirmed', 'checked_in', 'checked_out', 'cancelled'],
+    default: 'checked_in',
   })
   bookingStatus: BookingStatus;
 
   @Prop({
     type: String,
-    enum: ['WalkIn', 'Phone', 'Online'],
-    default: 'WalkIn',
+    enum: ['walk_in', 'phone', 'online'],
+    default: 'walk_in',
   })
   bookingSource: BookingSource;
 

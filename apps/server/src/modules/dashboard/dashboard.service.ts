@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { BookingStatus } from '@citydenapartments/shared';
 import { Booking } from '../bookings/booking.schema';
 import { Room, RoomStatusEnum } from '../rooms/room.schema';
 import { Branch } from '../branches/branch.schema';
@@ -65,8 +66,8 @@ export class DashboardService {
           $group: {
             _id: null,
             total: { $sum: 1 },
-            checkedIn: { $sum: { $cond: [{ $eq: ['$bookingStatus', 'Checked_In'] }, 1, 0] } },
-            pending: { $sum: { $cond: [{ $eq: ['$bookingStatus', 'Confirmed'] }, 1, 0] } },
+            checkedIn: { $sum: { $cond: [{ $eq: ['$bookingStatus', BookingStatus.Checked_In] }, 1, 0] } },
+            pending: { $sum: { $cond: [{ $eq: ['$bookingStatus', BookingStatus.Confirmed] }, 1, 0] } },
             todayArrivals: {
               $sum: {
                 $cond: [
@@ -77,7 +78,7 @@ export class DashboardService {
             },
             revenue: {
               $sum: {
-                $cond: [{ $ne: ['$bookingStatus', 'Cancelled'] }, '$totalAmountPaid', 0],
+                $cond: [{ $ne: ['$bookingStatus', BookingStatus.Cancelled] }, '$totalAmountPaid', 0],
               },
             },
           },
@@ -85,7 +86,7 @@ export class DashboardService {
       ]),
 
       this.bookingModel.aggregate([
-        { $match: { bookingStatus: 'Checked_In', ...branchMatch } },
+        { $match: { bookingStatus: BookingStatus.Checked_In, ...branchMatch } },
         {
           $lookup: {
             from: 'breakfastlogs',
@@ -192,7 +193,7 @@ export class DashboardService {
                   $filter: {
                     input: '$branchBookings',
                     as: 'b',
-                    cond: { $ne: ['$$b.bookingStatus', 'Cancelled'] },
+                    cond: { $ne: ['$$b.bookingStatus', BookingStatus.Cancelled] },
                   },
                 },
                 initialValue: 0,

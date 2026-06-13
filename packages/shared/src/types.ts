@@ -13,10 +13,10 @@ export type UserRoleType = (typeof UserRole)[keyof typeof UserRole];
 
 // ── Booking Statuses ────────────────────────────────────────────
 export const BookingStatus = {
-  Confirmed: 'Confirmed',
-  Checked_In: 'Checked_In',
-  Checked_Out: 'Checked_Out',
-  Cancelled: 'Cancelled',
+  Confirmed: 'confirmed',
+  Checked_In: 'checked_in',
+  Checked_Out: 'checked_out',
+  Cancelled: 'cancelled',
 } as const;
 export type BookingStatusType = (typeof BookingStatus)[keyof typeof BookingStatus];
 
@@ -29,9 +29,9 @@ export const RoomStatus = {
 export type RoomStatusType = (typeof RoomStatus)[keyof typeof RoomStatus];
 
 export const PaymentMethod = {
-  Cash: 'Cash',
-  POS_Card: 'POS_Card',
-  Bank_Transfer: 'Bank_Transfer',
+  Cash: 'cash',
+  POS_Card: 'pos_card',
+  Bank_Transfer: 'bank_transfer',
 } as const;
 export type PaymentMethodType = (typeof PaymentMethod)[keyof typeof PaymentMethod];
 
@@ -42,11 +42,17 @@ export const DiscountType = {
 export type DiscountTypeType = (typeof DiscountType)[keyof typeof DiscountType];
 
 export const BookingSource = {
-  WalkIn: 'WalkIn',
-  Phone: 'Phone',
-  Online: 'Online',
+  WalkIn: 'walk_in',
+  Phone: 'phone',
+  Online: 'online',
 } as const;
 export type BookingSourceType = (typeof BookingSource)[keyof typeof BookingSource];
+
+export const Gender = {
+  Male: 'male',
+  Female: 'female',
+} as const;
+export type GenderType = (typeof Gender)[keyof typeof Gender];
 
 // ── Departments ────────────────────────────────────────────────
 export const Departments = [

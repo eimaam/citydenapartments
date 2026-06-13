@@ -137,7 +137,7 @@ export class BookingsService {
       const dateConflict = await this.bookingModel
         .findOne({
           roomId: dto.roomId,
-          bookingStatus: { $in: ['Confirmed', 'Checked_In'] },
+          bookingStatus: { $in: ['confirmed', 'checked_in'] },
           $or: [
             { checkInDate: { $lt: new Date(dto.checkOutDate) }, checkOutDate: { $gt: new Date(dto.checkInDate) } },
           ],
@@ -169,6 +169,7 @@ export class BookingsService {
               stateOfOrigin: dto.guestStateOfOrigin,
               occupation: dto.guestOccupation,
               nextDestination: dto.guestNextDestination,
+              gender: dto.guestGender,
               religion: dto.guestReligion,
             },
             numberOfGuests: dto.numberOfGuests || 1,
@@ -182,8 +183,8 @@ export class BookingsService {
             totalAmountPaid: dto.totalAmountPaid,
             paymentMethod: dto.paymentMethod,
             paymentReference: dto.paymentReference,
-            bookingStatus: 'Checked_In',
-            bookingSource: dto.bookingSource || 'WalkIn',
+            bookingStatus: 'checked_in',
+            bookingSource: dto.bookingSource || 'walk_in',
             bookedBy: actorId,
             checkedInBy: actorId,
           },
@@ -213,7 +214,7 @@ export class BookingsService {
       this.logger.warn(`Check-in failed — booking ${id} not found in branch ${branchId}`);
       throw new NotFoundException('Booking not found.');
     }
-    if (booking.bookingStatus !== 'Confirmed') {
+    if (booking.bookingStatus !== 'confirmed') {
       this.logger.warn(`Check-in failed — booking #${booking.bookingReference} has status "${booking.bookingStatus}", cannot check in`);
       throw new BadRequestException(`Cannot check in a ${booking.bookingStatus} booking.`);
     }
@@ -232,7 +233,7 @@ export class BookingsService {
     session.startTransaction();
 
     try {
-      booking.bookingStatus = 'Checked_In';
+      booking.bookingStatus = 'checked_in';
       booking.checkedInBy = actorId as any;
       await booking.save({ session });
 
@@ -258,7 +259,7 @@ export class BookingsService {
       this.logger.warn(`Check-out failed — booking ${id} not found in branch ${branchId}`);
       throw new NotFoundException('Booking not found.');
     }
-    if (booking.bookingStatus !== 'Checked_In') {
+    if (booking.bookingStatus !== 'checked_in') {
       this.logger.warn(`Check-out failed — booking #${booking.bookingReference} has status "${booking.bookingStatus}", cannot check out`);
       throw new BadRequestException(`Cannot check out a ${booking.bookingStatus} booking.`);
     }
@@ -277,7 +278,7 @@ export class BookingsService {
     session.startTransaction();
 
     try {
-      booking.bookingStatus = 'Checked_Out';
+      booking.bookingStatus = 'checked_out';
       booking.checkedOutBy = actorId as any;
       await booking.save({ session });
 
@@ -303,12 +304,12 @@ export class BookingsService {
       this.logger.warn(`Cancel failed — booking ${id} not found in branch ${branchId}`);
       throw new NotFoundException('Booking not found.');
     }
-    if (['Checked_Out', 'Cancelled'].includes(booking.bookingStatus)) {
+    if (['checked_out', 'cancelled'].includes(booking.bookingStatus)) {
       this.logger.warn(`Cancel failed — booking #${booking.bookingReference} has status "${booking.bookingStatus}", cannot cancel`);
       throw new BadRequestException(`Cannot cancel a ${booking.bookingStatus} booking.`);
     }
 
-    const wasCheckedIn = booking.bookingStatus === 'Checked_In';
+    const wasCheckedIn = booking.bookingStatus === 'checked_in';
     let room: Room | null = null;
     if (wasCheckedIn) {
       room = await this.roomModel.findById(booking.roomId);
@@ -326,7 +327,7 @@ export class BookingsService {
     session.startTransaction();
 
     try {
-      booking.bookingStatus = 'Cancelled';
+      booking.bookingStatus = 'cancelled';
       booking.checkedOutBy = actorId as any;
       await booking.save({ session });
 

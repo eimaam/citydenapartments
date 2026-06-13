@@ -34,50 +34,58 @@ const lastNames = [
   'Taiwo', 'Onyeka', 'Idris', 'Ojo', 'Balogun', 'Nwosu', 'Yakubu', 'Ogunleye',
 ];
 
-const paymentMethods: Array<'Cash' | 'POS_Card' | 'Bank_Transfer'> = ['Cash', 'POS_Card', 'Bank_Transfer'];
-const bookingSources: Array<'WalkIn' | 'Phone' | 'Online'> = ['WalkIn', 'Phone', 'Online'];
+const genders = ['male', 'female'];
+
+const cities = ['Abuja', 'Kaduna', 'Lagos', 'Port Harcourt', 'Enugu', 'Kano', 'Ibadan', 'Maiduguri', 'Jos', 'Calabar'];
+
+const states = ['Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara'];
+
+const occupations = ['Civil Servant', 'Business Owner', 'Teacher', 'Engineer', 'Doctor', 'Lawyer', 'Accountant', 'Student', 'Trader', 'Journalist', 'Nurse', 'Driver', 'NGO Worker', 'IT Professional', 'Military', 'Police', 'Consultant', 'Artist', 'Farmer', 'Pastor'];
+
+const paymentMethods: Array<'cash' | 'pos_card' | 'bank_transfer'> = ['cash', 'pos_card', 'bank_transfer'];
+const bookingSources: Array<'walk_in' | 'phone' | 'online'> = ['walk_in', 'phone', 'online'];
 
 // ── scenario presets: [status, checkInOffset, checkOutOffset, nights] ─
 type Scenario = [string, number, number, number];
 
 const scenarios: Scenario[] = [
   // Checked_In — paid = checked in. Future or past.
-  ['Checked_In', 0, 2, 2],
-  ['Checked_In', 1, 3, 2],
-  ['Checked_In', 2, 5, 3],
-  ['Checked_In', 5, 8, 3],
-  ['Checked_In', 0, 1, 1],
-  ['Checked_In', 3, 5, 2],
-  ['Checked_In', 7, 10, 3],
-  ['Checked_In', 1, 4, 3],
+  ['checked_in', 0, 2, 2],
+  ['checked_in', 1, 3, 2],
+  ['checked_in', 2, 5, 3],
+  ['checked_in', 5, 8, 3],
+  ['checked_in', 0, 1, 1],
+  ['checked_in', 3, 5, 2],
+  ['checked_in', 7, 10, 3],
+  ['checked_in', 1, 4, 3],
 
   // Checked_In — check-in in the past, check-out in the future
-  ['Checked_In', -1, 2, 3],
-  ['Checked_In', -2, 1, 3],
-  ['Checked_In', -3, 2, 5],
-  ['Checked_In', 0, 3, 3],
-  ['Checked_In', -1, 0, 1],
-  ['Checked_In', -4, 1, 5],
-  ['Checked_In', -2, 3, 5],
-  ['Checked_In', -1, 4, 5],
+  ['checked_in', -1, 2, 3],
+  ['checked_in', -2, 1, 3],
+  ['checked_in', -3, 2, 5],
+  ['checked_in', 0, 3, 3],
+  ['checked_in', -1, 0, 1],
+  ['checked_in', -4, 1, 5],
+  ['checked_in', -2, 3, 5],
+  ['checked_in', -1, 4, 5],
 
   // Checked_Out — both dates in the past
-  ['Checked_Out', -5, -3, 2],
-  ['Checked_Out', -7, -5, 2],
-  ['Checked_Out', -10, -7, 3],
-  ['Checked_Out', -3, -1, 2],
-  ['Checked_Out', -14, -12, 2],
-  ['Checked_Out', -8, -6, 2],
-  ['Checked_Out', -6, -3, 3],
-  ['Checked_Out', -2, 0, 2],
+  ['checked_out', -5, -3, 2],
+  ['checked_out', -7, -5, 2],
+  ['checked_out', -10, -7, 3],
+  ['checked_out', -3, -1, 2],
+  ['checked_out', -14, -12, 2],
+  ['checked_out', -8, -6, 2],
+  ['checked_out', -6, -3, 3],
+  ['checked_out', -2, 0, 2],
 
   // Cancelled — various offsets
-  ['Cancelled', 2, 4, 2],
-  ['Cancelled', -3, 1, 4],
-  ['Cancelled', 5, 8, 3],
-  ['Cancelled', -1, 2, 3],
-  ['Cancelled', 10, 12, 2],
-  ['Cancelled', -6, -4, 2],
+  ['cancelled', 2, 4, 2],
+  ['cancelled', -3, 1, 4],
+  ['cancelled', 5, 8, 3],
+  ['cancelled', -1, 2, 3],
+  ['cancelled', 10, 12, 2],
+  ['cancelled', -6, -4, 2],
 ];
 
 @Injectable()
@@ -114,7 +122,7 @@ export class SeedService {
           lateCheckOut: 'Late check-out is subject to availability. A fee may apply for check-out after 12:00 PM.',
           cancellation: 'Cancellations made by guests for reserved dates: refunds cannot be issued; however, the payment will be credited to the guests account for use towards a future reservation.',
           houseRules: [
-            'Smoking is strictly prohibited in all rooms. Default attracts a fine of ₦200,000. Designated smoking areas are available.',
+            'Smoking is strictly prohibited in all rooms. Default attracts a fine of ₦200,000 (or equivalent in Dollars (USD). Designated smoking areas are available.',
             'Guests must have deposit at the front office before bills can be charged to room.',
             'The Hotel will not be liable for loss of valuables left in the rooms or public area of the Hotel.',
             'Children and babies are allowed in the rooms.',
@@ -123,7 +131,7 @@ export class SeedService {
             'Guests are responsible for any damage to hotel property.',
           ],
           paymentInfo: 'Cash and card payments are accepted. A security deposit is required at check-in.',
-          breakfastInfo: 'Complimentary continental breakfast served from 7:00 AM to 10:30 AM in the dining area.',
+          breakfastInfo: 'Complimentary continental breakfast served from 7:00 AM to 10:30 AM',
           contactPhone: '+234 809 000 1234',
           contactEmail: 'abuja@citydenapartments.com',
           additionalNotes: 'Free WiFi is available throughout the property.',
@@ -137,7 +145,7 @@ export class SeedService {
           lateCheckOut: 'Late check-out is subject to availability. A fee may apply for check-out after 12:00 PM.',
           cancellation: 'Cancellations made by guests for reserved dates: refunds cannot be issued; however, the payment will be credited to the guests account for use towards a future reservation.',
           houseRules: [
-            'Smoking is strictly prohibited in all rooms. Default attracts a fine of ₦200,000. Designated smoking areas are available.',
+            'Smoking is strictly prohibited in all rooms. Default attracts a fine of ₦200,000 (or equivalent in Dollars (USD). Designated smoking areas are available.',
             'Guests must have deposit at the front office before bills can be charged to room.',
             'The Hotel will not be liable for loss of valuables left in the rooms or public area of the Hotel.',
             'Children and babies are allowed in the rooms.',
@@ -146,7 +154,7 @@ export class SeedService {
             'Guests are responsible for any damage to hotel property.',
           ],
           paymentInfo: 'Cash and card payments are accepted. A security deposit is required at check-in.',
-          breakfastInfo: 'Complimentary continental breakfast served from 7:00 AM to 10:30 AM in the dining area.',
+          breakfastInfo: 'Complimentary continental breakfast served from 7:00 AM to 10:30 AM',
           contactPhone: '+234 809 000 5678',
           contactEmail: 'kaduna@citydenapartments.com',
           additionalNotes: 'Free WiFi is available throughout the property.',
@@ -160,7 +168,7 @@ export class SeedService {
           lateCheckOut: 'Late check-out is subject to availability. A fee may apply for check-out after 12:00 PM.',
           cancellation: 'Cancellations made by guests for reserved dates: refunds cannot be issued; however, the payment will be credited to the guests account for use towards a future reservation.',
           houseRules: [
-            'Smoking is strictly prohibited in all rooms. Default attracts a fine of ₦200,000. Designated smoking areas are available.',
+            'Smoking is strictly prohibited in all rooms. Default attracts a fine of ₦200,000 (or equivalent in Dollars (USD). Designated smoking areas are available.',
             'Guests must have deposit at the front office before bills can be charged to room.',
             'The Hotel will not be liable for loss of valuables left in the rooms or public area of the Hotel.',
             'Children and babies are allowed in the rooms.',
@@ -169,7 +177,7 @@ export class SeedService {
             'Guests are responsible for any damage to hotel property.',
           ],
           paymentInfo: 'Cash and card payments are accepted. A security deposit is required at check-in.',
-          breakfastInfo: 'Complimentary breakfast served from 7:00 AM to 10:30 AM in the dining area.',
+          breakfastInfo: 'Complimentary breakfast served from 7:00 AM to 10:30 AM',
           contactPhone: '+234 809 000 9012',
           contactEmail: 'maiduguri@citydenapartments.com',
           additionalNotes: 'Free WiFi is available throughout the property.',
@@ -333,6 +341,11 @@ export class SeedService {
           phone: guestPhone,
           address: pick(['12 Ahmadu Bello Way', 'Plot 5 Lugard Avenue', '23 Tafawa Balewa Road', '8 Yakubu Gowon Crescent', '45 Obafemi Awolowo Street']),
           nationality: 'Nigeria',
+          comingFrom: pick(cities),
+          stateOfOrigin: pick(states),
+          occupation: pick(occupations),
+          nextDestination: pick(cities),
+          gender: pick(genders),
           ...(hasEmail ? { email: `${guestName.toLowerCase().replace(/\s/g, '.')}@email.com` } : {}),
         },
         numberOfGuests: randInt(1, room.maxGuests),
@@ -350,11 +363,11 @@ export class SeedService {
       });
 
       // track room status — last booking per room wins
-      if (status === 'Checked_Out') {
+      if (status === 'checked_out') {
         roomsToUpdate[room._id.toString()] = RoomStatusEnum.DIRTY;
-      } else if (status === 'Checked_In' && roomsToUpdate[room._id.toString()] !== RoomStatusEnum.DIRTY) {
+      } else if (status === 'checked_in' && roomsToUpdate[room._id.toString()] !== RoomStatusEnum.DIRTY) {
         roomsToUpdate[room._id.toString()] = RoomStatusEnum.OCCUPIED;
-      } else if (status === 'Cancelled' && !roomsToUpdate[room._id.toString()]) {
+      } else if (status === 'cancelled' && !roomsToUpdate[room._id.toString()]) {
         roomsToUpdate[room._id.toString()] = RoomStatusEnum.AVAILABLE;
       }
     }

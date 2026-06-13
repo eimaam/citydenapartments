@@ -35,7 +35,7 @@ export class BreakfastService {
       {
         $match: {
           branchId: new mongoose.Types.ObjectId(branchId),
-          bookingStatus: 'Checked_In',
+          bookingStatus: 'checked_in',
         },
       },
       {
@@ -112,7 +112,7 @@ export class BreakfastService {
       this.logger.warn(`Booking not found — id: ${dto.bookingId}`);
       throw new NotFoundException('Booking not found.');
     }
-    if (booking.bookingStatus !== 'Checked_In') {
+    if (booking.bookingStatus !== 'checked_in') {
       this.logger.warn(`Breakfast denied — Guest ${booking.guestDetails.name} | booking not checked in`);
       throw new BadRequestException('Booking is not checked in.');
     }
