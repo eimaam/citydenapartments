@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
+import { BookingStatus as BookingStatusEnum, Gender as GenderEnum, PaymentMethod as PaymentMethodEnum, BookingSource as BookingSourceEnum, DiscountType as DiscountTypeEnum } from '@citydenapartments/shared';
 
 export type BookingStatus = 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled';
 export type PaymentMethod = 'pos_card' | 'cash' | 'bank_transfer';
@@ -29,7 +30,7 @@ export class Booking extends Document {
       stateOfOrigin: { type: String, required: true },
       occupation: { type: String, required: true },
       nextDestination: { type: String, required: true },
-      gender: { type: String, required: true, enum: ['male', 'female'] },
+      gender: { type: String, required: true, lowercase: true, enum: Object.values(GenderEnum) },
       religion: String,
     },
     required: true,
@@ -65,7 +66,7 @@ export class Booking extends Document {
   @Prop({ default: 0 })
   discount: number;
 
-  @Prop({ type: String, enum: ['fixed', 'percentage'], lowercase: true, default: 'fixed' })
+  @Prop({ type: String, enum: Object.values(DiscountTypeEnum), lowercase: true, default: 'fixed' })
   discountType: string;
 
   @Prop({ default: 0 })
@@ -77,7 +78,7 @@ export class Booking extends Document {
   @Prop({ required: true })
   totalAmountPaid: number;
 
-  @Prop({ type: String, enum: ['pos_card', 'cash', 'bank_transfer'], lowercase: true, required: true })
+  @Prop({ type: String, enum: Object.values(PaymentMethodEnum), lowercase: true, required: true })
   paymentMethod: string;
 
   @Prop()
@@ -86,16 +87,16 @@ export class Booking extends Document {
   @Prop({
     type: String,
     lowercase: true,
-    enum: ['confirmed', 'checked_in', 'checked_out', 'cancelled'],
-    default: 'checked_in',
+    enum: Object.values(BookingStatusEnum),
+    default: BookingStatusEnum.Checked_In,
   })
   bookingStatus: BookingStatus;
 
   @Prop({
     type: String,
     lowercase: true,
-    enum: ['walk_in', 'phone', 'online'],
-    default: 'walk_in',
+    enum: Object.values(BookingSourceEnum),
+    default: BookingSourceEnum.WalkIn,
   })
   bookingSource: BookingSource;
 

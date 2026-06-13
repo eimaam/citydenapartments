@@ -26,6 +26,7 @@ export class Room extends Document {
 
   @Prop({
     type: String,
+    lowercase: true,
     enum: RoomStatusEnum,
     default: RoomStatusEnum.AVAILABLE,
   })

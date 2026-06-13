@@ -1,6 +1,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
 
+export const BreakfastStatus = {
+  Served: 'served',
+  Expired: 'expired',
+} as const;
+export type BreakfastStatusType = (typeof BreakfastStatus)[keyof typeof BreakfastStatus];
+
 @Schema({ timestamps: true })
 export class BreakfastLog extends Document {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Branch', required: true })
@@ -24,7 +30,7 @@ export class BreakfastLog extends Document {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
   servedBy: MongooseSchema.Types.ObjectId;
 
-  @Prop({ type: String, enum: ['served', 'expired'], default: 'served' })
+  @Prop({ type: String, lowercase: true, enum: Object.values(BreakfastStatus), default: BreakfastStatus.Served })
   status: string;
 }
 

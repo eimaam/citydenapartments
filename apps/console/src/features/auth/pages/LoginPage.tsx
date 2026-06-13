@@ -52,7 +52,7 @@ export default function LoginPage() {
             <h1 className="font-serif text-5xl leading-tight text-inverse-on-surface mb-6">
               Urban<br />Sanctuary
             </h1>
-            <p className="text-lg leading-relaxed text-inverse-on-surface opacity-60 max-w-sm">
+            <p className="text-lg leading-relaxed text-inverse-on-surface opacity-60">
               Premium residential management redefined. Elevate your living experience.
             </p>
           </div>

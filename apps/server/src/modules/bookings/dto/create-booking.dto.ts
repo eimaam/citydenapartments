@@ -11,6 +11,7 @@ import {
   Max,
 } from 'class-validator';
 import { PaymentMethod, BookingStatus, BookingSource } from '../booking.schema';
+import { Gender, BookingStatus as BookingStatusEnum, PaymentMethod as PaymentMethodEnum, BookingSource as BookingSourceEnum } from '@citydenapartments/shared';
 
 export class CreateBookingDto {
   @IsMongoId()
@@ -60,7 +61,7 @@ export class CreateBookingDto {
 
   @IsString()
   @IsNotEmpty()
-  @IsEnum(['male', 'female'])
+  @IsEnum(Gender)
   guestGender: string;
 
   @IsOptional()
@@ -105,7 +106,7 @@ export class CreateBookingDto {
   @Min(0)
   totalAmountPaid: number;
 
-  @IsEnum(['cash', 'pos_card', 'bank_transfer'])
+  @IsEnum(PaymentMethodEnum)
   paymentMethod: PaymentMethod;
 
   @IsOptional()
@@ -113,10 +114,10 @@ export class CreateBookingDto {
   paymentReference?: string;
 
   @IsOptional()
-  @IsEnum(['confirmed', 'checked_in', 'checked_out', 'cancelled'])
+  @IsEnum(BookingStatusEnum)
   bookingStatus?: BookingStatus;
 
   @IsOptional()
-  @IsEnum(['walk_in', 'phone', 'online'])
+  @IsEnum(BookingSourceEnum)
   bookingSource?: BookingSource;
 }

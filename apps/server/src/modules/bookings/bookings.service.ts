@@ -13,6 +13,7 @@ import { RoomType } from '../room-types/room-type.schema';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { RedisService } from '../redis/redis.service';
 import { escapeRegex } from '../../common/utils/escape-regex';
+import { BookingStatus, BookingSource, Gender } from '@citydenapartments/shared';
 
 @Injectable()
 export class BookingsService {
@@ -137,7 +138,7 @@ export class BookingsService {
       const dateConflict = await this.bookingModel
         .findOne({
           roomId: dto.roomId,
-          bookingStatus: { $in: ['confirmed', 'checked_in'] },
+          bookingStatus: { $in: [BookingStatus.Confirmed, BookingStatus.Checked_In] },
           $or: [
             { checkInDate: { $lt: new Date(dto.checkOutDate) }, checkOutDate: { $gt: new Date(dto.checkInDate) } },
           ],
@@ -183,8 +184,8 @@ export class BookingsService {
             totalAmountPaid: dto.totalAmountPaid,
             paymentMethod: dto.paymentMethod,
             paymentReference: dto.paymentReference,
-            bookingStatus: 'checked_in',
-            bookingSource: dto.bookingSource || 'walk_in',
+            bookingStatus: BookingStatus.Checked_In,
+            bookingSource: dto.bookingSource || BookingSource.WalkIn,
             bookedBy: actorId,
             checkedInBy: actorId,
           },
@@ -214,7 +215,7 @@ export class BookingsService {
       this.logger.warn(`Check-in failed — booking ${id} not found in branch ${branchId}`);
       throw new NotFoundException('Booking not found.');
     }
-    if (booking.bookingStatus !== 'confirmed') {
+    if (booking.bookingStatus !== BookingStatus.Confirmed) {
       this.logger.warn(`Check-in failed — booking #${booking.bookingReference} has status "${booking.bookingStatus}", cannot check in`);
       throw new BadRequestException(`Cannot check in a ${booking.bookingStatus} booking.`);
     }
@@ -233,7 +234,7 @@ export class BookingsService {
     session.startTransaction();
 
     try {
-      booking.bookingStatus = 'checked_in';
+      booking.bookingStatus = BookingStatus.Checked_In;
       booking.checkedInBy = actorId as any;
       await booking.save({ session });
 
@@ -259,7 +260,7 @@ export class BookingsService {
       this.logger.warn(`Check-out failed — booking ${id} not found in branch ${branchId}`);
       throw new NotFoundException('Booking not found.');
     }
-    if (booking.bookingStatus !== 'checked_in') {
+    if (booking.bookingStatus !== BookingStatus.Checked_In) {
       this.logger.warn(`Check-out failed — booking #${booking.bookingReference} has status "${booking.bookingStatus}", cannot check out`);
       throw new BadRequestException(`Cannot check out a ${booking.bookingStatus} booking.`);
     }
@@ -278,7 +279,7 @@ export class BookingsService {
     session.startTransaction();
 
     try {
-      booking.bookingStatus = 'checked_out';
+      booking.bookingStatus = BookingStatus.Checked_Out;
       booking.checkedOutBy = actorId as any;
       await booking.save({ session });
 
@@ -304,12 +305,12 @@ export class BookingsService {
       this.logger.warn(`Cancel failed — booking ${id} not found in branch ${branchId}`);
       throw new NotFoundException('Booking not found.');
     }
-    if (['checked_out', 'cancelled'].includes(booking.bookingStatus)) {
+    if (booking.bookingStatus === BookingStatus.Checked_Out || booking.bookingStatus === BookingStatus.Cancelled) {
       this.logger.warn(`Cancel failed — booking #${booking.bookingReference} has status "${booking.bookingStatus}", cannot cancel`);
       throw new BadRequestException(`Cannot cancel a ${booking.bookingStatus} booking.`);
     }
 
-    const wasCheckedIn = booking.bookingStatus === 'checked_in';
+    const wasCheckedIn = booking.bookingStatus === BookingStatus.Checked_In;
     let room: Room | null = null;
     if (wasCheckedIn) {
       room = await this.roomModel.findById(booking.roomId);
@@ -327,7 +328,7 @@ export class BookingsService {
     session.startTransaction();
 
     try {
-      booking.bookingStatus = 'cancelled';
+      booking.bookingStatus = BookingStatus.Cancelled;
       booking.checkedOutBy = actorId as any;
       await booking.save({ session });
 
