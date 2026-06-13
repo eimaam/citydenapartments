@@ -49,6 +49,14 @@ const bookingSources: Array<'walk_in' | 'phone' | 'online'> = ['walk_in', 'phone
 type Scenario = [string, number, number, number];
 
 const scenarios: Scenario[] = [
+  // Reserved — future call-in reservations, no payment, room stays available
+  ['reserved', 1, 3, 2],
+  ['reserved', 2, 5, 3],
+  ['reserved', 4, 7, 3],
+  ['reserved', 3, 5, 2],
+  ['reserved', 0, 2, 2],
+  ['reserved', 1, 4, 3],
+
   // Checked_In — paid = checked in. Future or past.
   ['checked_in', 0, 2, 2],
   ['checked_in', 1, 3, 2],
@@ -367,6 +375,8 @@ export class SeedService {
         roomsToUpdate[room._id.toString()] = RoomStatusEnum.DIRTY;
       } else if (status === 'checked_in' && roomsToUpdate[room._id.toString()] !== RoomStatusEnum.DIRTY) {
         roomsToUpdate[room._id.toString()] = RoomStatusEnum.OCCUPIED;
+      } else if (status === 'reserved' && !roomsToUpdate[room._id.toString()]) {
+        roomsToUpdate[room._id.toString()] = RoomStatusEnum.AVAILABLE;
       } else if (status === 'cancelled' && !roomsToUpdate[room._id.toString()]) {
         roomsToUpdate[room._id.toString()] = RoomStatusEnum.AVAILABLE;
       }

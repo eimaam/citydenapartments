@@ -90,9 +90,14 @@ export class BookingsService {
         this.logger.warn(`Room not found or inactive — roomId: ${dto.roomId}`);
         throw new BadRequestException('Room not found or inactive.');
       }
-      if ((room.status as string) !== RoomStatusEnum.AVAILABLE) {
-        this.logger.warn(`Room status mismatch — room ${room.roomNumber} is "${room.status}", cannot book`);
-        throw new BadRequestException(`Room is currently "${room.status}" — cannot book.`);
+      const targetStatus = dto.bookingStatus || BookingStatus.Checked_In;
+      const isImmediateCheckIn = targetStatus === BookingStatus.Checked_In;
+
+      if (isImmediateCheckIn) {
+        if ((room.status as string) !== RoomStatusEnum.AVAILABLE) {
+          this.logger.warn(`Room status mismatch — room ${room.roomNumber} is "${room.status}", cannot book`);
+          throw new BadRequestException(`Room is currently "${room.status}" — cannot book.`);
+        }
       }
 
       const typeConfig = await this.roomTypeModel.findById(room.roomTypeId).session(session);
@@ -138,7 +143,7 @@ export class BookingsService {
       const dateConflict = await this.bookingModel
         .findOne({
           roomId: dto.roomId,
-          bookingStatus: { $in: [BookingStatus.Confirmed, BookingStatus.Checked_In] },
+          bookingStatus: { $in: [BookingStatus.Reserved, BookingStatus.Confirmed, BookingStatus.Checked_In] },
           $or: [
             { checkInDate: { $lt: new Date(dto.checkOutDate) }, checkOutDate: { $gt: new Date(dto.checkInDate) } },
           ],
@@ -184,18 +189,20 @@ export class BookingsService {
             totalAmountPaid: dto.totalAmountPaid,
             paymentMethod: dto.paymentMethod,
             paymentReference: dto.paymentReference,
-            bookingStatus: BookingStatus.Checked_In,
+            bookingStatus: targetStatus,
             bookingSource: dto.bookingSource || BookingSource.WalkIn,
             bookedBy: actorId,
-            checkedInBy: actorId,
+            checkedInBy: isImmediateCheckIn ? actorId : undefined,
           },
         ],
         { session },
       );
 
-      room.status = RoomStatusEnum.OCCUPIED as any;
-      room.updatedBy = actorId as any;
-      await room.save({ session });
+      if (isImmediateCheckIn) {
+        room.status = RoomStatusEnum.OCCUPIED as any;
+        room.updatedBy = actorId as any;
+        await room.save({ session });
+      }
 
       await session.commitTransaction();
       await this.redis.invalidateDashboardCache(branchId);
@@ -215,7 +222,8 @@ export class BookingsService {
       this.logger.warn(`Check-in failed — booking ${id} not found in branch ${branchId}`);
       throw new NotFoundException('Booking not found.');
     }
-    if (booking.bookingStatus !== BookingStatus.Confirmed) {
+    // only allow bookings that got payment... reserved or confirmed signals that
+    if (booking.bookingStatus !== BookingStatus.Reserved && booking.bookingStatus !== BookingStatus.Confirmed) {
       this.logger.warn(`Check-in failed — booking #${booking.bookingReference} has status "${booking.bookingStatus}", cannot check in`);
       throw new BadRequestException(`Cannot check in a ${booking.bookingStatus} booking.`);
     }

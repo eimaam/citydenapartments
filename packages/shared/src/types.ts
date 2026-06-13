@@ -13,6 +13,7 @@ export type UserRoleType = (typeof UserRole)[keyof typeof UserRole];
 
 // ── Booking Statuses ────────────────────────────────────────────
 export const BookingStatus = {
+  Reserved: 'reserved',
   Confirmed: 'confirmed',
   Checked_In: 'checked_in',
   Checked_Out: 'checked_out',

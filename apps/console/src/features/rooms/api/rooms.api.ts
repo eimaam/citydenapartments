@@ -22,5 +22,7 @@ export const roomsApi = {
     const params = status ? `?status=${status}` : '';
     return api.get<{ items: RoomResponse[] }>(`/rooms${params}`).then((r) => r.items);
   },
+  available: (checkIn: string, checkOut: string) =>
+    api.get<RoomResponse[]>(`/rooms/available?checkIn=${encodeURIComponent(checkIn)}&checkOut=${encodeURIComponent(checkOut)}`),
   get: (id: string) => api.get<RoomResponse>(`/rooms/${id}`),
 };

@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
 import { BookingStatus as BookingStatusEnum, Gender as GenderEnum, PaymentMethod as PaymentMethodEnum, BookingSource as BookingSourceEnum, DiscountType as DiscountTypeEnum } from '@citydenapartments/shared';
 
-export type BookingStatus = 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled';
+export type BookingStatus = 'reserved' | 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled';
 export type PaymentMethod = 'pos_card' | 'cash' | 'bank_transfer';
 export type BookingSource = 'walk_in' | 'phone' | 'online';
 

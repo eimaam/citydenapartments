@@ -10,6 +10,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { UpdateRoomStatusDto } from './dto/update-room-status.dto';
 import { QueryRoomsDto } from './dto/room-query.dto';
+import { AvailableRoomsDto } from './dto/available-rooms.dto';
 
 @Controller('rooms')
 @UseGuards(JwtAuthGuard, WorkspaceAuthGuard)
@@ -21,6 +22,15 @@ export class RoomsController {
   @Get()
   findAll(@ActiveUser() user: any, @Query() query: QueryRoomsDto) {
     return this.roomsService.findAll({ branchId: user.activeBranchId, page: query.page, limit: query.limit, search: query.search, status: query.status as any });
+  }
+
+  @Get('available')
+  findAvailable(@ActiveUser() user: any, @Query() query: AvailableRoomsDto) {
+    return this.roomsService.findAvailable(
+      new Date(query.checkIn),
+      new Date(query.checkOut),
+      user.activeBranchId,
+    );
   }
 
   @Get(':id')

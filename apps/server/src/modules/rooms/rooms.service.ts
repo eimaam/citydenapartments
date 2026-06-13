@@ -2,10 +2,12 @@ import { Injectable, BadRequestException, NotFoundException, Logger } from '@nes
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Room, RoomStatus, RoomStatusEnum } from './room.schema';
+import { Booking } from '../bookings/booking.schema';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { escapeRegex } from '../../common/utils/escape-regex';
 import { RedisService } from '../redis/redis.service';
+import { BookingStatus } from '@citydenapartments/shared';
 
 @Injectable()
 export class RoomsService {
@@ -13,8 +15,33 @@ export class RoomsService {
 
   constructor(
     @InjectModel(Room.name) private roomModel: Model<Room>,
+    @InjectModel(Booking.name) private bookingModel: Model<Booking>,
     private readonly redis: RedisService,
   ) {}
+
+  async findAvailable(checkIn: Date, checkOut: Date, branchId: string) {
+    const conflictRoomIds = await this.bookingModel
+      .find({
+        branchId,
+        bookingStatus: {
+          $in: [BookingStatus.Reserved, BookingStatus.Confirmed, BookingStatus.Checked_In],
+        },
+        $or: [
+          { checkInDate: { $lt: checkOut }, checkOutDate: { $gt: checkIn } },
+        ],
+      })
+      .distinct('roomId');
+
+    return this.roomModel
+      .find({
+        branchId,
+        isActive: true,
+        status: { $in: [RoomStatusEnum.AVAILABLE, RoomStatusEnum.DIRTY] },
+        _id: { $nin: conflictRoomIds },
+      })
+      .populate('roomTypeId')
+      .lean();
+  }
 
   async findAll(params: { branchId: string; page?: number; limit?: number; search?: string; status?: RoomStatus }) {
     const { branchId, page = 1, limit = 20, search, status } = params;

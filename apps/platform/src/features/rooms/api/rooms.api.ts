@@ -41,6 +41,8 @@ export const roomsApi = {
     const qs = params.toString();
     return api.get<PaginatedRooms>(`/rooms${qs ? `?${qs}` : ''}`);
   },
+  available: (checkIn: string, checkOut: string) =>
+    api.get<RoomResponse[]>(`/rooms/available?checkIn=${encodeURIComponent(checkIn)}&checkOut=${encodeURIComponent(checkOut)}`),
   get: (id: string) => api.get<RoomResponse>(`/rooms/${id}`),
   updateStatus: (id: string, status: string) => api.patch<RoomResponse>(`/rooms/${id}/status`, { status }),
 };
