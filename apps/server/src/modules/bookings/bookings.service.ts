@@ -31,12 +31,12 @@ export class BookingsService {
   private readonly logger = new Logger(BookingsService.name);
 
   private async expireBreakfastIfNeeded(booking: Booking, actorId: string) {
-    const hasDiscount = booking.discount > 0;
+    const hasDiscount = (booking.discountPercentage || 0) >= 15;
     const pastCutoff = isPastBreakfastCutoff();
     if (!hasDiscount && !pastCutoff) return;
 
     this.logger.log(
-      `Breakfast expired — Booking #${booking.bookingReference} | reason: ${hasDiscount ? 'discount' : ''}${hasDiscount && pastCutoff ? ' + ' : ''}${pastCutoff ? 'past cutoff' : ''}`,
+      `Breakfast expired — Booking #${booking.bookingReference} | reason: ${hasDiscount ? 'discount>=15%' : ''}${hasDiscount && pastCutoff ? ' + ' : ''}${pastCutoff ? 'past cutoff' : ''}`,
     );
 
     await this.breakfastLogModel.create({
@@ -174,19 +174,16 @@ export class BookingsService {
       }
 
       const subtotal = dto.actualPricePerNight * nights;
-      let computedDiscount = dto.discount || 0;
-      if (dto.discountType === 'percentage') {
-        const pct = dto.discountPercentage || 0;
-        if (pct < 0 || pct > 100) {
-          throw new BadRequestException('Discount percentage must be between 0 and 100.');
-        }
-        computedDiscount = Math.round((subtotal * pct) / 100);
+      const pct = dto.discountPercentage || 0;
+      if (pct < 0 || pct > 100) {
+        throw new BadRequestException('Discount percentage must be between 0 and 100.');
       }
+      const computedDiscount = Math.round((subtotal * pct) / 100);
       const computedTotal = subtotal - computedDiscount;
 
       if (Math.abs(dto.totalAmountPaid - computedTotal) > 1) {
         throw new BadRequestException(
-          `Price mismatch. Expected ₦${computedTotal} (₦${dto.actualPricePerNight} × ${nights} nights${dto.discount ? ` − ₦${computedDiscount} discount` : ''}), got ₦${dto.totalAmountPaid}`,
+          `Price mismatch. Expected ₦${computedTotal} (₦${dto.actualPricePerNight} × ${nights} nights${pct > 0 ? ` − ${pct}% discount` : ''}), got ₦${dto.totalAmountPaid}`,
         );
       }
 
@@ -232,9 +229,9 @@ export class BookingsService {
             checkInDate: new Date(dto.checkInDate),
             checkOutDate: new Date(dto.checkOutDate),
             actualPricePerNight: dto.actualPricePerNight,
-            discount: dto.discount || 0,
-            discountType: dto.discountType || 'fixed',
-            discountPercentage: dto.discountPercentage || 0,
+            discount: computedDiscount,
+            discountType: 'percentage',
+            discountPercentage: pct,
             discountReason: dto.discountReason,
             totalAmountPaid: dto.totalAmountPaid,
             paymentMethod: dto.paymentMethod,

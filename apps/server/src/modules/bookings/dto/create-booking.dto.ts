@@ -83,14 +83,14 @@ export class CreateBookingDto {
   @Min(0)
   actualPricePerNight: number;
 
-  @IsNumber()
-  @Min(0)
-  @IsOptional()
-  discount?: number;
+  // @IsNumber()
+  // @Min(0)
+  // @IsOptional()
+  // discount?: number;
 
-  @IsOptional()
-  @IsString()
-  discountType?: 'fixed' | 'percentage';
+  // @IsOptional()
+  // @IsString()
+  // discountType?: 'fixed' | 'percentage';
 
   @IsOptional()
   @IsNumber()
