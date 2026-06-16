@@ -111,3 +111,4 @@ export class Booking extends Document {
 }
 
 export const BookingSchema = SchemaFactory.createForClass(Booking);
+BookingSchema.index({ branchId: 1, bookingStatus: 1 });

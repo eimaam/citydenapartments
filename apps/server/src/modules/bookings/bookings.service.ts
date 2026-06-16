@@ -14,6 +14,8 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { RedisService } from '../redis/redis.service';
 import { escapeRegex } from '../../common/utils/escape-regex';
 import { BookingStatus, BookingSource, Gender } from '@citydenapartments/shared';
+import { BreakfastLog } from '../breakfast/breakfast-log.schema';
+import { isPastBreakfastCutoff } from '../breakfast/breakfast.constants';
 
 @Injectable()
 export class BookingsService {
@@ -21,11 +23,33 @@ export class BookingsService {
     @InjectModel(Booking.name) private bookingModel: Model<Booking>,
     @InjectModel(Room.name) private roomModel: Model<Room>,
     @InjectModel(RoomType.name) private roomTypeModel: Model<RoomType>,
+    @InjectModel(BreakfastLog.name) private breakfastLogModel: Model<BreakfastLog>,
     @InjectConnection() private readonly connection: Connection,
     private readonly redis: RedisService,
   ) {}
 
   private readonly logger = new Logger(BookingsService.name);
+
+  private async expireBreakfastIfNeeded(booking: Booking, actorId: string) {
+    const hasDiscount = booking.discount > 0;
+    const pastCutoff = isPastBreakfastCutoff();
+    if (!hasDiscount && !pastCutoff) return;
+
+    this.logger.log(
+      `Breakfast expired — Booking #${booking.bookingReference} | reason: ${hasDiscount ? 'discount' : ''}${hasDiscount && pastCutoff ? ' + ' : ''}${pastCutoff ? 'past cutoff' : ''}`,
+    );
+
+    await this.breakfastLogModel.create({
+      branchId: booking.branchId,
+      bookingId: booking._id,
+      roomId: booking.roomId,
+      guestName: booking.guestDetails.name,
+      dateServed: new Date(),
+      servingsClaimed: 0,
+      servedBy: actorId,
+      status: 'expired',
+    });
+  }
 
   async getCalendar(branchId: string, year: number, month: number) {
     const startOfMonth = new Date(year, month - 1, 1);
@@ -232,6 +256,11 @@ export class BookingsService {
 
       await session.commitTransaction();
       await this.redis.invalidateDashboardCache(branchId);
+
+      if (isImmediateCheckIn) {
+        await this.expireBreakfastIfNeeded(newBooking, actorId);
+      }
+
       this.logger.log(`Booking created — #${newBooking.bookingReference} | Room ${room.roomNumber} | Guest ${dto.guestName} | by ${actorId}`);
       return newBooking;
     } catch (error) {
@@ -278,6 +307,9 @@ export class BookingsService {
 
       await session.commitTransaction();
       await this.redis.invalidateDashboardCache(branchId);
+
+      await this.expireBreakfastIfNeeded(booking, actorId);
+
       this.logger.log(`Check-in — #${booking.bookingReference} | Room ${room.roomNumber} | Guest ${booking.guestDetails.name} | by ${actorId}`);
       return booking;
     } catch (error) {

@@ -6,8 +6,10 @@ import * as mongoose from 'mongoose';
 import { startOfDay, endOfDay } from 'date-fns';
 import { BreakfastLog } from './breakfast-log.schema';
 import { Booking } from '../bookings/booking.schema';
-import { Branch } from '../branches/branch.schema';
 import { BookingStatus } from '@citydenapartments/shared';
+import { BREAKFAST_CUTOFF_HOUR, BREAKFAST_CUTOFF_MINUTE } from './breakfast.constants';
+
+const SYSTEM_USER_ID = new mongoose.Types.ObjectId('000000000000000000000000');
 
 @Injectable()
 export class BreakfastCron {
@@ -16,78 +18,88 @@ export class BreakfastCron {
   constructor(
     @InjectModel(BreakfastLog.name) private breakfastLogModel: Model<BreakfastLog>,
     @InjectModel(Booking.name) private bookingModel: Model<Booking>,
-    @InjectModel(Branch.name) private branchModel: Model<Branch>,
   ) {}
 
-  @Cron('30 10 * * *')
+  @Cron(`${BREAKFAST_CUTOFF_MINUTE} ${BREAKFAST_CUTOFF_HOUR} * * *`)
   async autoExpireBreakfast() {
-    this.logger.log('Breakfast auto-expire triggered at 10:30');
+    this.logger.log('Breakfast auto-expire triggered');
 
     try {
-      const branches = await this.branchModel.find({}, '_id name code').lean();
       const todayStart = startOfDay(new Date());
       const todayEnd = endOfDay(new Date());
 
-      for (const branch of branches) {
-        const checkedInBookings = await this.bookingModel.find(
-          {
-            branchId: branch._id,
-            bookingStatus: BookingStatus.Checked_In,
+      const unservedByBranch = await this.bookingModel.aggregate<{
+        _id: mongoose.Types.ObjectId;
+        bookings: Array<{
+          _id: mongoose.Types.ObjectId;
+          roomId: mongoose.Types.ObjectId;
+          guestName: string;
+        }>;
+      }>([
+        { $match: { bookingStatus: BookingStatus.Checked_In } },
+        {
+          $lookup: {
+            from: 'breakfastlogs',
+            let: { bId: '$_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$bookingId', '$$bId'] },
+                      { $gte: ['$dateServed', todayStart] },
+                      { $lte: ['$dateServed', todayEnd] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'servingRecord',
           },
-          '_id',
-        ).lean();
-
-        if (!checkedInBookings.length) continue;
-
-        const bookingIds = checkedInBookings.map((b) => b._id);
-
-        const servedToday = await this.breakfastLogModel.find(
-          {
-            bookingId: { $in: bookingIds },
-            dateServed: { $gte: todayStart, $lte: todayEnd },
+        },
+        { $match: { servingRecord: { $size: 0 } } },
+        {
+          $group: {
+            _id: '$branchId',
+            bookings: {
+              $push: {
+                _id: '$_id',
+                roomId: '$roomId',
+                guestName: { $ifNull: ['$guestDetails.name', 'Unknown'] },
+              },
+            },
           },
-          'bookingId',
-        ).lean();
+        },
+      ]);
 
-        const servedIds = new Set(servedToday.map((s) => s.bookingId.toString()));
-
-        const toExpire = checkedInBookings.filter(
-          (b) => !servedIds.has(b._id.toString()),
-        );
-
-        if (!toExpire.length) continue;
-
-        const bookingDetails = await this.bookingModel.find(
-          { _id: { $in: toExpire.map((b) => b._id) } },
-          'roomId guestDetails',
-        ).lean();
-
-        const detailsMap = new Map(
-          bookingDetails.map((bd) => [bd._id.toString(), bd]),
-        );
-
-        const enrichedLogs = toExpire.map((b) => {
-          const details = detailsMap.get(b._id.toString());
-          return {
-            branchId: branch._id,
-            bookingId: b._id,
-            roomId: details?.roomId || new mongoose.Types.ObjectId(),
-            guestName: (details?.guestDetails as { name?: string })?.name || 'Unknown',
-            dateServed: new Date(),
-            servingsClaimed: 0,
-            servedBy: new mongoose.Types.ObjectId('000000000000000000000000'),
-            status: 'expired',
-          };
-        });
-
-        await this.breakfastLogModel.insertMany(enrichedLogs);
-
-        this.logger.log(
-          `Branch ${branch.code} — Expired ${enrichedLogs.length} breakfast(s)`,
-        );
+      if (!unservedByBranch.length) {
+        this.logger.log('No unserved bookings to expire');
+        return;
       }
 
-      this.logger.log('Breakfast auto-expire completed');
+      let totalExpired = 0;
+      const batchSize = 500;
+
+      for (const group of unservedByBranch) {
+        const logs = group.bookings.map((b) => ({
+          branchId: group._id,
+          bookingId: b._id,
+          roomId: b.roomId,
+          guestName: b.guestName,
+          dateServed: new Date(),
+          servingsClaimed: 0,
+          servedBy: SYSTEM_USER_ID,
+          status: 'expired',
+        }));
+
+        for (let i = 0; i < logs.length; i += batchSize) {
+          await this.breakfastLogModel.insertMany(logs.slice(i, i + batchSize), { ordered: false });
+        }
+
+        totalExpired += logs.length;
+      }
+
+      this.logger.log(`Breakfast auto-expire completed — expired ${totalExpired} breakfast(s) across ${unservedByBranch.length} branch(es)`);
     } catch (error) {
       this.logger.error(`Breakfast auto-expire failed: ${(error as Error).message}`);
     }

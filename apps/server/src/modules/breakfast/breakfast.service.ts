@@ -118,6 +118,11 @@ export class BreakfastService {
       throw new BadRequestException('Booking is not checked in.');
     }
 
+    if (booking.discount > 0) {
+      this.logger.warn(`Breakfast denied — Guest ${booking.guestDetails.name} | booking has discount`);
+      throw new BadRequestException('Discounted bookings are not eligible for complimentary breakfast.');
+    }
+
     if (dto.roomId !== booking.roomId.toString()) {
       this.logger.warn(`Room mismatch — Guest ${booking.guestDetails.name} | expected ${booking.roomId}, received ${dto.roomId}`);
     }

@@ -36,3 +36,4 @@ export class BreakfastLog extends Document {
 
 export const BreakfastLogSchema = SchemaFactory.createForClass(BreakfastLog);
 BreakfastLogSchema.index({ bookingId: 1, dateServed: 1 });
+BreakfastLogSchema.index({ branchId: 1, dateServed: 1, status: 1 });
