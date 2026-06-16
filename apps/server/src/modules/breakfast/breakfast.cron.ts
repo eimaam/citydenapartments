@@ -78,7 +78,9 @@ export class BreakfastCron {
       }
 
       let totalExpired = 0;
+      let totalFailed = 0;
       const batchSize = 500;
+      const maxRetries = 3;
 
       for (const group of unservedByBranch) {
         const logs = group.bookings.map((b) => ({
@@ -93,13 +95,34 @@ export class BreakfastCron {
         }));
 
         for (let i = 0; i < logs.length; i += batchSize) {
-          await this.breakfastLogModel.insertMany(logs.slice(i, i + batchSize), { ordered: false });
+          const batch = logs.slice(i, i + batchSize);
+
+          for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+              await this.breakfastLogModel.insertMany(batch, { ordered: false });
+              break;
+            } catch (err) {
+              if (attempt === maxRetries) {
+                this.logger.warn(
+                  `Batch write failed after ${maxRetries} attempts for batch ${i / batchSize + 1} of branch ${group._id}: ${(err as Error).message}`,
+                );
+                totalFailed += batch.length;
+              } else {
+                this.logger.warn(
+                  `Batch write attempt ${attempt}/${maxRetries} failed for batch ${i / batchSize + 1} of branch ${group._id}, retrying...`,
+                );
+                await new Promise((r) => setTimeout(r, attempt * 1000));
+              }
+            }
+          }
         }
 
         totalExpired += logs.length;
       }
 
-      this.logger.log(`Breakfast auto-expire completed — expired ${totalExpired} breakfast(s) across ${unservedByBranch.length} branch(es)`);
+      this.logger.log(
+        `Breakfast auto-expire completed — expired ${totalExpired} breakfast(s) across ${unservedByBranch.length} branch(es)${totalFailed > 0 ? ` (${totalFailed} failed after retries)` : ''}`,
+      );
     } catch (error) {
       this.logger.error(`Breakfast auto-expire failed: ${(error as Error).message}`);
     }
