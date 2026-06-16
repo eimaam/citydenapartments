@@ -36,9 +36,6 @@ interface BookingCalendarProps {
   bookings: CalendarBooking[];
   selectedDate: Date;
   searchQuery?: string;
-  onPrevMonth: () => void;
-  onNextMonth: () => void;
-  onToday: () => void;
   onCellClick?: (date: Date, room: CalendarRoom, booking?: CalendarBooking) => void;
   onSelectDate?: (date: Date) => void;
 }
@@ -62,7 +59,7 @@ const STATUS_ICONS: Record<string, React.ElementType> = {
 export function BookingCalendar({
   year, month, rooms, bookings,
   selectedDate, searchQuery = '',
-  onPrevMonth, onNextMonth, onToday, onCellClick, onSelectDate,
+  onCellClick, onSelectDate,
 }: BookingCalendarProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -193,9 +190,9 @@ export function BookingCalendar({
               cells.push(
                 <div
                   key={`bg-${room._id}-${day.toISOString()}`}
-                  onClick={() => onCellClick?.(day, room)}
-                  className={`border-r border-b border-outline-variant/30 transition-colors cursor-pointer ${
-                    dayPast ? 'bg-surface-container-low/10' : 'hover:bg-surface-container/30'
+                  onClick={() => !dayPast && onCellClick?.(day, room)}
+                  className={`border-r border-b border-outline-variant/30 transition-colors ${
+                    dayPast ? 'bg-surface-container-low/10 cursor-default' : 'hover:bg-surface-container/30 cursor-pointer'
                   } ${
                     isSelected ? 'bg-[#5c4c23]/[0.03] border-l border-r border-[#5c4c23]/25' : ''
                   }`}

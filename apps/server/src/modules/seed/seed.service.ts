@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
@@ -97,7 +97,7 @@ const scenarios: Scenario[] = [
 ];
 
 @Injectable()
-export class SeedService {
+export class SeedService  {
   private readonly logger = new Logger(SeedService.name);
 
   constructor(
@@ -416,4 +416,13 @@ export class SeedService {
       },
     };
   }
+
+  // async onModuleInit(){
+  //   try {
+  //     await this.seed()
+  //     this.logger.log("seeding done ✅")
+  //   } catch (error) {
+  //     this.logger.error("error seeding")
+  //   }
+  // }
 }

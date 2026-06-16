@@ -524,7 +524,7 @@ export default function CalendarPage() {
       {/* ── Title & Filter Header ── */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-6">
         <div>
-          <h1 className="font-serif text-3xl sm:text-4xl text-on-surface">Booking Timeline</h1>
+          <h1 className="font-serif text-2xl sm:text-3xl text-on-surface">Booking Calendar</h1>
         </div>
 
         {/* Date Navigation & Filters */}
@@ -558,48 +558,36 @@ export default function CalendarPage() {
           </div>
 
           {/* Branch Dropdown Selector */}
-          <div className="flex flex-col">
-            <span className="text-[9px] font-bold text-outline uppercase tracking-wider mb-0.5">Branch</span>
-            <select
-              value={user?.activeBranchId || ''}
-              onChange={(e) => handleBranchSwitch(e.target.value)}
-              className="h-9 px-3 text-xs font-medium rounded-lg border border-outline-variant/60 bg-surface-container-lowest hover:border-primary cursor-pointer focus:outline-none"
-            >
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[9px] font-bold text-outline uppercase tracking-wider">Branch</span>
+            <Select size="sm" className="!w-40" value={user?.activeBranchId || undefined} onChange={(v) => handleBranchSwitch(v)}>
               {userBranches.map((b) => (
-                <option key={b._id} value={b._id}>
-                  {b.name}
-                </option>
+                <Option key={b._id} value={b._id}>{b.name}</Option>
               ))}
-            </select>
+            </Select>
           </div>
 
           {/* Room Type Selector */}
-          <div className="flex flex-col">
-            <span className="text-[9px] font-bold text-outline uppercase tracking-wider mb-0.5">Room Type</span>
-            <select
-              value={roomTypeFilter}
-              onChange={(e) => setRoomTypeFilter(e.target.value)}
-              className="h-9 px-3 text-xs font-medium rounded-lg border border-outline-variant/60 bg-surface-container-lowest hover:border-primary cursor-pointer focus:outline-none"
-            >
-              <option value="all">All Types</option>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[9px] font-bold text-outline uppercase tracking-wider">Room Type</span>
+            <Select size="sm" className="!w-40" value={roomTypeFilter} onChange={(v) => setRoomTypeFilter(v)}>
+              <Option value="all">All Types</Option>
               {roomTypes.map((t) => (
-                <option key={t._id} value={t._id}>
-                  {t.name}
-                </option>
+                <Option key={t._id} value={t._id}>{t.name}</Option>
               ))}
-            </select>
+            </Select>
           </div>
 
-          {/* Legend indicator */}
+          {/* Legend */}
           <div className="flex items-center gap-3 bg-surface-container-lowest px-4 h-9 rounded-lg border border-outline-variant/60 text-[10px] text-outline font-bold select-none">
             <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#5c4c23]" /> IN
+              <span className="w-2 h-2 rounded-full bg-[#5c4c23]" /> Checked In
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#e0ba4d]" /> CONFIRMED
+              <span className="w-2 h-2 rounded-full bg-[#e0ba4d]" /> Reserved
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#a6a6a6]" /> OUT
+              <span className="w-2 h-2 rounded-full bg-[#a6a6a6]" /> Checked Out
             </span>
           </div>
         </div>
@@ -640,9 +628,6 @@ export default function CalendarPage() {
           bookings={data.bookings}
           selectedDate={selectedDate}
           searchQuery={searchQuery}
-          onPrevMonth={onPrevMonth}
-          onNextMonth={onNextMonth}
-          onToday={onToday}
           onCellClick={onCellClick}
           onSelectDate={setSelectedDate}
         />
