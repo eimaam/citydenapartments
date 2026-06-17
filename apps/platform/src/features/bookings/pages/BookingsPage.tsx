@@ -16,6 +16,7 @@ import { useAuth } from '../../../contexts/auth';
 import { api } from '../../../lib/api';
 import { bookingsApi, type BookingResponse, type CreateBookingPayload } from '../api/bookings.api';
 import { roomsApi, type RoomResponse } from '../../rooms/api/rooms.api';
+import { customersApi, type CustomerResponse } from '../api/customers.api';
 
 const LIMIT = 20;
 
@@ -101,6 +102,11 @@ export default function BookingsPage() {
   const [priceError, setPriceError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
+  const [customerSearchPhone, setCustomerSearchPhone] = useState('');
+  const [customerResults, setCustomerResults] = useState<CustomerResponse[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerResponse | null>(null);
+  const [searchingCustomer, setSearchingCustomer] = useState(false);
+
   const selectedRoom = useMemo(() => rooms.find((r) => r._id === form.roomId), [rooms, form.roomId]);
   const computedNights = useMemo(() => {
     if (!form.checkInDate || !form.checkOutDate) return 1;
@@ -130,12 +136,33 @@ export default function BookingsPage() {
     searchTimer.current = setTimeout(() => setSearch(val), 400);
   };
 
+  useEffect(() => {
+    if (!customerSearchPhone || customerSearchPhone.length < 4) {
+      setCustomerResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setSearchingCustomer(true);
+      try {
+        setCustomerResults(await customersApi.search(customerSearchPhone));
+      } catch {
+        // silently fail
+      } finally {
+        setSearchingCustomer(false);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [customerSearchPhone]);
+
   const openCreate = async () => {
     const ci = todayStr();
     const co = tomorrowStr();
     updateField('checkInDate', ci);
     updateField('checkOutDate', co);
     updateField('nights', 1);
+    setCustomerSearchPhone('');
+    setCustomerResults([]);
+    setSelectedCustomer(null);
     try { setRooms(await roomsApi.available(ci, co)); } catch { toast('error', 'Failed to load rooms.'); }
     setShowCreate(true);
   };
@@ -174,6 +201,31 @@ export default function BookingsPage() {
   };
   const onPhoneChange = (phone: string) => { updateField('guestPhone', phone); setPhoneError(validatePhone(phone)); };
 
+  const onCustomerSearchPhoneChange = (phone: string) => {
+    setCustomerSearchPhone(phone);
+    setSelectedCustomer(null);
+  };
+
+  const selectCustomer = (c: CustomerResponse) => {
+    setSelectedCustomer(c);
+    setCustomerResults([]);
+    setCustomerSearchPhone(c.phone);
+    updateField('guestName', c.name);
+    updateField('guestPhone', c.phone);
+    updateField('guestEmail', c.email || '');
+    updateField('guestAddress', c.address);
+    updateField('guestNationality', c.nationality);
+    updateField('guestDob', c.dob || '');
+    updateField('guestPhone2', c.phone2 || '');
+    updateField('guestComingFrom', c.comingFrom);
+    updateField('guestStateOfOrigin', c.stateOfOrigin);
+    updateField('guestOccupation', c.occupation);
+    updateField('guestNextDestination', c.nextDestination);
+    updateField('guestGender', c.gender);
+    updateField('guestReligion', c.religion || '');
+    setPhoneError(null);
+  };
+
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
     const errors: Record<string, string> = {};
@@ -195,7 +247,8 @@ export default function BookingsPage() {
     try {
       const bookingStatus = form.bookingSource === BookingSource.WalkIn ? BookingStatus.Checked_In : BookingStatus.Reserved;
       const created = await bookingsApi.create({
-        roomId: form.roomId, guestName: form.guestName, guestPhone: form.guestPhone, guestEmail: form.guestEmail || undefined,
+        roomId: form.roomId, customerId: selectedCustomer?._id || undefined, customerPhone: form.guestPhone,
+        guestName: form.guestName, guestPhone: form.guestPhone, guestEmail: form.guestEmail || undefined,
         guestAddress: form.guestAddress, guestNationality: form.guestNationality,
         guestDob: form.guestDob || undefined, guestPhone2: form.guestPhone2 || undefined,
         guestComingFrom: form.guestComingFrom, guestStateOfOrigin: form.guestStateOfOrigin,
@@ -309,6 +362,39 @@ export default function BookingsPage() {
             <Select showSearch optionFilterProp="label" size="lg" className="w-full mt-1" placeholder="Search room..." value={form.roomId || undefined} onChange={(v) => onRoomChange(v)}>
               {rooms.map((r) => (<Option key={r._id} value={r._id} label={`${r.roomNumber} — ${r.roomTypeId?.name}`}>{r.roomNumber} — {r.roomTypeId?.name}</Option>))}
             </Select>
+          </div>
+          {/* ── Customer Lookup ── */}
+          <div className="mb-5 p-4 rounded-lg border border-outline-variant/60 bg-surface-container-low/30">
+            <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline flex items-center gap-2 mb-2"><Users size={12} /> Returning Customer?</label>
+            <div className="relative">
+              <Input size="lg" placeholder="Search by phone number (min 4 digits)" value={customerSearchPhone} onChange={(e) => onCustomerSearchPhoneChange(e.target.value)} suffix={searchingCustomer ? <Spinner size={14} /> : undefined} />
+            </div>
+            {customerResults.length > 0 && !selectedCustomer && (
+              <div className="mt-2 space-y-1.5">
+                {customerResults.map((c) => (
+                  <button key={c._id} type="button" onClick={() => selectCustomer(c)}
+                    className="w-full text-left p-2.5 rounded-lg border border-outline-variant/40 hover:border-primary bg-surface-container-lowest hover:bg-surface-container-high transition-all cursor-pointer">
+                    <div className="flex items-center justify-between">
+                      <div><p className="text-sm font-medium">{c.name}</p><p className="text-xs text-outline">{c.phone}</p></div>
+                      <div className="text-right text-[10px] text-outline"><p>{c.totalVisits} visit{c.totalVisits !== 1 ? 's' : ''}</p>{c.lastVisitDate && <p>Last: {format(new Date(c.lastVisitDate), 'd MMM yyyy')}</p>}</div>
+                    </div>
+                    <p className="text-[10px] text-outline mt-1">{c.address} · {c.nationality}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+            {customerSearchPhone.length >= 4 && customerResults.length === 0 && !searchingCustomer && !selectedCustomer && (
+              <p className="mt-2 text-xs text-outline">No records found. Fill out the form below to register a new customer.</p>
+            )}
+            {selectedCustomer && (
+              <div className="mt-2 p-2.5 rounded-lg border border-primary/40 bg-primary-container/10">
+                <div className="flex items-center justify-between">
+                  <div><p className="text-sm font-medium text-on-surface">{selectedCustomer.name}</p><p className="text-xs text-outline">{selectedCustomer.phone}</p></div>
+                  <button type="button" onClick={() => { setSelectedCustomer(null); setCustomerSearchPhone(''); }}
+                    className="text-xs text-primary underline cursor-pointer bg-transparent border-none">Change</button>
+                </div>
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-4 mb-5">
             <div><label className="text-[10px] text-outline uppercase tracking-wide">Guest Name</label><Input size="lg" placeholder="e.g. John Doe" value={form.guestName} onChange={(e) => updateField('guestName', e.target.value)} required /></div>

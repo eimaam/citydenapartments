@@ -10,6 +10,7 @@ import { Model, Connection } from 'mongoose';
 import { Booking } from './booking.schema';
 import { Room, RoomStatusEnum } from '../rooms/room.schema';
 import { RoomType } from '../room-types/room-type.schema';
+import { Customer } from '../customers/customer.schema';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { RedisService } from '../redis/redis.service';
 import { escapeRegex } from '../../common/utils/escape-regex';
@@ -24,6 +25,7 @@ export class BookingsService {
     @InjectModel(Room.name) private roomModel: Model<Room>,
     @InjectModel(RoomType.name) private roomTypeModel: Model<RoomType>,
     @InjectModel(BreakfastLog.name) private breakfastLogModel: Model<BreakfastLog>,
+    @InjectModel(Customer.name) private customerModel: Model<Customer>,
     @InjectConnection() private readonly connection: Connection,
     private readonly redis: RedisService,
   ) {}
@@ -204,27 +206,97 @@ export class BookingsService {
 
       const ref = `CDA-${branchId.slice(-4).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
 
+      let customerId: string | undefined = dto.customerId;
+      let guestDetails: {
+        name: string; phone: string; email?: string; address: string;
+        nationality: string; dob?: Date; phone2?: string;
+        comingFrom: string; stateOfOrigin: string; occupation: string;
+        nextDestination: string; gender: string; religion?: string;
+      };
+
+      if (customerId) {
+        const customer = await this.customerModel.findById(customerId).session(session);
+        if (!customer) throw new BadRequestException('Customer not found.');
+        guestDetails = {
+          name: customer.name,
+          phone: customer.phone,
+          email: customer.email,
+          address: customer.address,
+          nationality: customer.nationality,
+          dob: customer.dob,
+          phone2: customer.phone2,
+          comingFrom: customer.comingFrom,
+          stateOfOrigin: customer.stateOfOrigin,
+          occupation: customer.occupation,
+          nextDestination: customer.nextDestination,
+          gender: customer.gender,
+          religion: customer.religion,
+        };
+      } else {
+        const phone = dto.customerPhone || dto.guestPhone;
+        const existing = await this.customerModel.findOne({ phone }).session(session);
+        if (existing) {
+          customerId = existing._id.toString();
+          guestDetails = {
+            name: existing.name,
+            phone: existing.phone,
+            email: existing.email,
+            address: existing.address,
+            nationality: existing.nationality,
+            dob: existing.dob,
+            phone2: existing.phone2,
+            comingFrom: existing.comingFrom,
+            stateOfOrigin: existing.stateOfOrigin,
+            occupation: existing.occupation,
+            nextDestination: existing.nextDestination,
+            gender: existing.gender,
+            religion: existing.religion,
+          };
+        } else {
+          const [created] = await this.customerModel.create([{
+            name: dto.guestName,
+            phone,
+            email: dto.guestEmail,
+            address: dto.guestAddress,
+            nationality: dto.guestNationality,
+            dob: dto.guestDob ? new Date(dto.guestDob) : undefined,
+            phone2: dto.guestPhone2,
+            comingFrom: dto.guestComingFrom,
+            stateOfOrigin: dto.guestStateOfOrigin,
+            occupation: dto.guestOccupation,
+            nextDestination: dto.guestNextDestination,
+            gender: dto.guestGender,
+            religion: dto.guestReligion,
+            firstBranchId: branchId,
+          }], { session });
+          this.logger.log(`Customer created from booking — ${created.name} (${phone})`);
+          customerId = created._id.toString();
+          guestDetails = {
+            name: created.name,
+            phone: created.phone,
+            email: created.email,
+            address: created.address,
+            nationality: created.nationality,
+            dob: created.dob,
+            phone2: created.phone2,
+            comingFrom: created.comingFrom,
+            stateOfOrigin: created.stateOfOrigin,
+            occupation: created.occupation,
+            nextDestination: created.nextDestination,
+            gender: created.gender,
+            religion: created.religion,
+          };
+        }
+      }
+
       const [newBooking] = await this.bookingModel.create(
         [
           {
             bookingReference: ref,
             branchId,
             roomId: dto.roomId,
-            guestDetails: {
-              name: dto.guestName,
-              phone: dto.guestPhone,
-              email: dto.guestEmail,
-              address: dto.guestAddress,
-              nationality: dto.guestNationality,
-              dob: dto.guestDob ? new Date(dto.guestDob) : undefined,
-              phone2: dto.guestPhone2,
-              comingFrom: dto.guestComingFrom,
-              stateOfOrigin: dto.guestStateOfOrigin,
-              occupation: dto.guestOccupation,
-              nextDestination: dto.guestNextDestination,
-              gender: dto.guestGender,
-              religion: dto.guestReligion,
-            },
+            customerId,
+            guestDetails,
             numberOfGuests: dto.numberOfGuests || 1,
             checkInDate: new Date(dto.checkInDate),
             checkOutDate: new Date(dto.checkOutDate),
@@ -250,6 +322,14 @@ export class BookingsService {
         await room.save({ session });
       }
 
+      await this.customerModel.updateOne(
+        { _id: customerId },
+        {
+          $inc: { totalVisits: 1, totalSpent: dto.totalAmountPaid },
+          $set: { lastVisitDate: new Date() },
+        },
+      ).session(session);
+
       await session.commitTransaction();
       await this.redis.invalidateDashboardCache(branchId);
 
@@ -257,7 +337,7 @@ export class BookingsService {
         await this.expireBreakfastIfNeeded(newBooking, actorId);
       }
 
-      this.logger.log(`Booking created — #${newBooking.bookingReference} | Room ${room.roomNumber} | Guest ${dto.guestName} | by ${actorId}`);
+      this.logger.log(`Booking created — #${newBooking.bookingReference} | Room ${room.roomNumber} | Guest ${guestDetails.name} | by ${actorId}`);
       return newBooking;
     } catch (error) {
       await session.abortTransaction();

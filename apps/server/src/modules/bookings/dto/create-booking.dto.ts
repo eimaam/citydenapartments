@@ -17,6 +17,14 @@ export class CreateBookingDto {
   @IsMongoId()
   roomId: string;
 
+  @IsOptional()
+  @IsMongoId()
+  customerId?: string;
+
+  @IsOptional()
+  @IsString()
+  customerPhone?: string;
+
   @IsString()
   guestName: string;
 

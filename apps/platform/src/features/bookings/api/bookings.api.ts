@@ -6,6 +6,7 @@ export interface BookingResponse {
   _id: string;
   bookingReference: string;
   branchId: string;
+  customerId?: string;
   roomId: {
     _id: string;
     roomNumber: string;
@@ -44,6 +45,8 @@ export interface BookingResponse {
 
 export interface CreateBookingPayload {
   roomId: string;
+  customerId?: string;
+  customerPhone?: string;
   guestName: string;
   guestPhone: string;
   guestEmail?: string;

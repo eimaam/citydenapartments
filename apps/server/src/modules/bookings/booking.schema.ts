@@ -97,6 +97,9 @@ export class Booking extends Document {
   })
   bookingSource: BookingSource;
 
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Customer' })
+  customerId?: MongooseSchema.Types.ObjectId;
+
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
   bookedBy: MongooseSchema.Types.ObjectId;
 

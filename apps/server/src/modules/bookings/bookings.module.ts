@@ -6,6 +6,7 @@ import { BookingsService } from './bookings.service';
 import { Room, RoomSchema } from '../rooms/room.schema';
 import { RoomType, RoomTypeSchema } from '../room-types/room-type.schema';
 import { BreakfastLog, BreakfastLogSchema } from '../breakfast/breakfast-log.schema';
+import { Customer, CustomerSchema } from '../customers/customer.schema';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { BreakfastLog, BreakfastLogSchema } from '../breakfast/breakfast-log.sch
       { name: Room.name, schema: RoomSchema },
       { name: RoomType.name, schema: RoomTypeSchema },
       { name: BreakfastLog.name, schema: BreakfastLogSchema },
+      { name: Customer.name, schema: CustomerSchema },
     ]),
   ],
   controllers: [BookingsController],

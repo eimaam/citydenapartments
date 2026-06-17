@@ -19,6 +19,7 @@ import { ConfigModule } from '@nestjs/config';
 import { RedisModule } from './modules/redis/redis.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { HealthModule } from './modules/health/health.module';
+import { CustomersModule } from './modules/customers/customers.module';
 import mongoose from 'mongoose';
 
 if (AppConfig.NODE_ENV === 'development') {
@@ -59,6 +60,7 @@ if (AppConfig.NODE_ENV === 'development') {
     DashboardModule,
     HealthModule,
     InventoryModule,
+    CustomersModule,
     RedisModule,
   ],
   
