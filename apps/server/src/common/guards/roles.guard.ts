@@ -1,10 +1,12 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { UserRole } from '../../modules/users/user.schema';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
+  private readonly logger = new Logger(RolesGuard.name);
+
   constructor(
     private reflector: Reflector
   ) {}
@@ -16,8 +18,10 @@ export class RolesGuard implements CanActivate {
     ]);
     if (!requiredRoles) return true;
 
-    const { user } = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest();
+    const { user } = request;
     if (!requiredRoles.includes(user.role)) {
+      this.logger.warn(`Role denied — ${user.email} needs ${requiredRoles.join(', ')}, has ${user.role} — ${request.method} ${request.url}`);
       throw new ForbiddenException('You do not have permission for this action.');
     }
     return true;

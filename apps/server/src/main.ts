@@ -3,6 +3,7 @@ import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { AppConfig } from './config/app.config';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -41,7 +42,7 @@ async function bootstrap() {
   );
 
   app.useGlobalFilters(new AllExceptionsFilter());
-  app.useGlobalInterceptors(new ResponseInterceptor());
+  app.useGlobalInterceptors(new LoggingInterceptor(), new ResponseInterceptor());
 
   await app.listen(AppConfig.PORT);
   console.log(`Server running on http://localhost:${AppConfig.PORT}/api/v1`);

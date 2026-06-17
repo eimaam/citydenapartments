@@ -13,18 +13,8 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
-
-  mongo-express:
-    image: mongo-express:latest
-    container_name: cityden-mongo-ui
-    ports:
-      - "8081:8081"
-    environment:
-      ME_CONFIG_MONGODB_URL: mongodb://mongodb:27017/cityden?replicaSet=rs0
-    depends_on:
-      mongodb:
-        condition: service_healthy
-    restart: unless-stopped
+    networks:
+      - cityden
 
   mongo-setup:
     image: mongo:7
@@ -42,10 +32,44 @@ services:
           rs.initiate({
             _id: "rs0",
             version: 1,
-            members: [{ _id: 0, host: "localhost:27017" }]
+            members: [{ _id: 0, host: "mongodb:27017" }]
           });
         ' &&
         echo "Replica set initialized."
+    networks:
+      - cityden
+
+  redis:
+    image: redis:7-alpine
+    container_name: cityden-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - cityden
+
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    container_name: cityden-server
+    ports:
+      - "3000:3000"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    env_file:
+      - .env.production
+    restart: unless-stopped
+    networks:
+      - cityden
 
 volumes:
   mongodb_data:
+  redis_data:
+
+networks:
+  cityden:
+    driver: bridge

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { BookingStatus } from '@citydenapartments/shared';
@@ -14,6 +14,8 @@ import { startOfDay, endOfDay, format, subDays } from 'date-fns';
 
 @Injectable()
 export class DashboardService {
+  private readonly logger = new Logger(DashboardService.name);
+
   constructor(
     @InjectModel(Booking.name) private bookingModel: Model<Booking>,
     @InjectModel(Room.name) private roomModel: Model<Room>,
@@ -30,7 +32,10 @@ export class DashboardService {
       : CACHE_KEYS.DASHBOARD_SUMMARY;
 
     const cached = await this.redis.get(cacheKey);
-    if (cached) return JSON.parse(cached);
+    if (cached) {
+      this.logger.log(`Summary served from cache ${branchId ? `(branch: ${branchId})` : ''}`);
+      return JSON.parse(cached);
+    }
 
     const now = new Date();
     const todayStart = startOfDay(now);
@@ -221,13 +226,17 @@ export class DashboardService {
     }
 
     await this.redis.set(cacheKey, JSON.stringify(summary), CACHE_TTL.ONE_MINUTE);
+    this.logger.log(`Summary computed and cached ${branchId ? `(branch: ${branchId})` : ''}`);
     return summary;
   }
 
   async getAccountingSummary(branchId?: string) {
     const cacheKey = `${CACHE_KEYS.DASHBOARD_SUMMARY}:accounting${branchId ? `:${branchId}` : ''}`;
     const cached = await this.redis.get(cacheKey);
-    if (cached) return JSON.parse(cached);
+    if (cached) {
+      this.logger.log(`Accounting summary served from cache ${branchId ? `(branch: ${branchId})` : ''}`);
+      return JSON.parse(cached);
+    }
 
     const now = new Date();
     const todayStart = startOfDay(now);
@@ -421,6 +430,7 @@ export class DashboardService {
     };
 
     await this.redis.set(cacheKey, JSON.stringify(accounting), CACHE_TTL.ONE_MINUTE);
+    this.logger.log(`Accounting summary computed and cached ${branchId ? `(branch: ${branchId})` : ''}`);
     return accounting;
   }
 }

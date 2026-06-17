@@ -1,16 +1,21 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException, UnauthorizedException, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { UserRoleEnum } from '../../modules/users/user.schema';
 
 @Injectable()
 export class WorkspaceAuthGuard implements CanActivate {
+  private readonly logger = new Logger(WorkspaceAuthGuard.name);
+
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
-    if (!user) throw new UnauthorizedException('No authenticated user found.');
+    if (!user) {
+      this.logger.warn(`No authenticated user — ${request.method} ${request.url}`);
+      throw new UnauthorizedException('No authenticated user found.');
+    }
 
     const headerBranchId = request.headers['x-active-branch-id'];
 
@@ -20,11 +25,13 @@ export class WorkspaceAuthGuard implements CanActivate {
         activeBranchId = headerBranchId;
         user.activeBranchId = headerBranchId;
       } else {
+        this.logger.warn(`Branch denied — ${user.email} tried branch ${headerBranchId}`);
         throw new ForbiddenException('Unauthorized workspace access context.');
       }
     }
 
     if (user.role !== UserRoleEnum.SUPER_ADMIN && !user.allowedBranches.includes(activeBranchId)) {
+      this.logger.warn(`Workspace denied — ${user.email} no access to ${activeBranchId}`);
       throw new ForbiddenException('Unauthorized workspace access context.');
     }
 
