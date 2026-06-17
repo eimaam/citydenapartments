@@ -11,6 +11,7 @@
     },
     "./types": "./src/types.ts"
   },
+  "types": "./dist/server.d.ts",
   "dependencies": {
     "antd": "^6.3.0",
     "class-variance-authority": "^0.7.1",

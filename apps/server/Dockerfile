@@ -28,6 +28,9 @@ COPY --from=builder /app/packages/shared/package.json packages/shared/
 COPY --from=builder /app/packages/shared/dist packages/shared/dist
 COPY --from=builder /app/apps/server/dist apps/server/dist
 
+# Ensure @citydenapartments/shared is resolvable at runtime
+RUN mkdir -p /app/node_modules/@citydenapartments && ln -sfn /app/packages/shared /app/node_modules/@citydenapartments/shared
+
 ENV NODE_ENV=production
 ENV PORT=3000
 EXPOSE 3000
