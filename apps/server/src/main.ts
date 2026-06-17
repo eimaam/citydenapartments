@@ -13,10 +13,19 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
 
-  const allowedOrigins = AppConfig.CORS_ORIGINS.split(',').map((o) => o.trim());
+  const allowedOrigins = AppConfig.CORS_ORIGINS.split(',').map((o: string) => o.trim());
+
+  console.log(`[CORS] Allowed origins: ${JSON.stringify(allowedOrigins)}`);
 
   app.enableCors({
-    origin: allowedOrigins,
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+        callback(null, true);
+      } else {
+        console.warn(`[CORS] Blocked origin: "${origin}" — not in allowed list: ${JSON.stringify(allowedOrigins)}`);
+        callback(new Error(`Origin "${origin}" not allowed by CORS`));
+      }
+    },
     credentials: true,
   });
 
