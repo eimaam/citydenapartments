@@ -6,7 +6,7 @@
   "exports": {
     ".": {
       "import": "./index.ts",
-      "require": "./src/server.ts",
+      "require": "./dist/server.js",
       "default": "./index.ts"
     },
     "./types": "./src/types.ts"

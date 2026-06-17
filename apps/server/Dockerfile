@@ -12,6 +12,7 @@ RUN pnpm install --frozen-lockfile --filter @citydenapartments/server --filter @
 COPY apps/server/ apps/server/
 COPY packages/shared/ packages/shared/
 
+RUN apps/server/node_modules/.bin/tsc -p packages/shared/tsconfig.build.json
 RUN pnpm --filter @citydenapartments/server build
 
 FROM node:22-alpine AS runner
@@ -23,6 +24,7 @@ COPY --from=builder /app/apps/server/package.json apps/server/
 
 RUN pnpm install --frozen-lockfile --filter @citydenapartments/server --prod
 
+COPY --from=builder /app/packages/shared/dist packages/shared/dist
 COPY --from=builder /app/apps/server/dist apps/server/dist
 
 ENV NODE_ENV=production

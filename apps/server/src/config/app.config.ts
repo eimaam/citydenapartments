@@ -39,7 +39,7 @@ const { error, value } = AppConfigValidationSchema.validate(process.env, {
 
 if (error) {
   console.error('❌ Environment validation failed:');
-  console.error(error.message);
+  console.error(`   • ${error.message}`);
   process.exit(1);
 }
 
