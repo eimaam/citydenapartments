@@ -58,7 +58,7 @@ export class BookingsService {
     const [rooms, bookings] = await Promise.all([
       this.roomModel
         .find({ branchId, isActive: true })
-        .populate('roomTypeId')
+        .populate('roomTypeId', 'name amenities')
         .sort({ roomNumber: 1 })
         .lean(),
       this.bookingModel
@@ -230,7 +230,6 @@ export class BookingsService {
             checkOutDate: new Date(dto.checkOutDate),
             actualPricePerNight: dto.actualPricePerNight,
             discount: computedDiscount,
-            discountType: 'percentage',
             discountPercentage: pct,
             discountReason: dto.discountReason,
             totalAmountPaid: dto.totalAmountPaid,

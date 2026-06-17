@@ -24,6 +24,12 @@ export class InventoryItem extends Document {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Branch', required: true })
   branchId: MongooseSchema.Types.ObjectId;
 
+  @Prop()
+  expiryDate?: Date;
+
+  @Prop()
+  costPrice?: number;
+
   @Prop({ default: true })
   isActive: boolean;
 

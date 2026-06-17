@@ -126,6 +126,12 @@ export class InventoryService {
     const item = await this.itemModel.findOne({ _id: id, branchId, isActive: true });
     if (!item) throw new NotFoundException('Item not found.');
 
+    if (item.expiryDate && new Date(item.expiryDate) <= new Date()) {
+      throw new BadRequestException(
+        `Cannot issue expired item "${item.name}" — expired on ${format(new Date(item.expiryDate), 'MMM d, yyyy')}.`,
+      );
+    }
+
     if (item.currentStock < dto.quantity) {
       throw new BadRequestException(
         `Insufficient stock. Available: ${item.currentStock} ${item.unit}, requested: ${dto.quantity}.`,

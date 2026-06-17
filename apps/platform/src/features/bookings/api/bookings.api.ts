@@ -9,7 +9,7 @@ export interface BookingResponse {
   roomId: {
     _id: string;
     roomNumber: string;
-    roomTypeId?: { _id: string; name: string; basePrice: number; minPriceAllowed: number };
+    roomTypeId?: { _id: string; name: string };
     status: RoomStatusType;
   };
   guestDetails: {
@@ -32,7 +32,6 @@ export interface BookingResponse {
   checkOutDate: string;
   actualPricePerNight: number;
   discount: number;
-  discountType: 'fixed' | 'percentage';
   discountPercentage: number;
   discountReason?: string;
   totalAmountPaid: number;

@@ -7,9 +7,10 @@ import { Room, RoomStatusEnum } from '../rooms/room.schema';
 import { Branch } from '../branches/branch.schema';
 import { BreakfastLog } from '../breakfast/breakfast-log.schema';
 import { User } from '../users/user.schema';
+import { InventoryItem } from '../inventory/inventory-item.schema';
 import { RedisService } from '../redis/redis.service';
 import { CACHE_KEYS, CACHE_TTL } from '../../config/cache.constants';
-import { startOfDay, endOfDay, format } from 'date-fns';
+import { startOfDay, endOfDay, format, subDays } from 'date-fns';
 
 @Injectable()
 export class DashboardService {
@@ -19,6 +20,7 @@ export class DashboardService {
     @InjectModel(Branch.name) private branchModel: Model<Branch>,
     @InjectModel(BreakfastLog.name) private breakfastModel: Model<BreakfastLog>,
     @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(InventoryItem.name) private inventoryModel: Model<InventoryItem>,
     private readonly redis: RedisService,
   ) {}
 
@@ -220,5 +222,205 @@ export class DashboardService {
 
     await this.redis.set(cacheKey, JSON.stringify(summary), CACHE_TTL.ONE_MINUTE);
     return summary;
+  }
+
+  async getAccountingSummary(branchId?: string) {
+    const cacheKey = `${CACHE_KEYS.DASHBOARD_SUMMARY}:accounting${branchId ? `:${branchId}` : ''}`;
+    const cached = await this.redis.get(cacheKey);
+    if (cached) return JSON.parse(cached);
+
+    const now = new Date();
+    const todayStart = startOfDay(now);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const branchMatch = branchId
+      ? { branchId: new Types.ObjectId(branchId) }
+      : {};
+
+    const activeBookingMatch = {
+      ...branchMatch,
+      bookingStatus: { $ne: BookingStatus.Cancelled },
+    };
+
+    const [
+      revenueResult,
+      todayRevenueResult,
+      monthRevenueResult,
+      discountResult,
+      bookingCountsResult,
+      dailyRevenueResult,
+      inventoryCountResult,
+      inventoryAggResult,
+    ] = await Promise.all([
+      this.bookingModel.aggregate([
+        { $match: { bookingStatus: { $ne: BookingStatus.Cancelled }, ...branchMatch } },
+        {
+          $group: {
+            _id: '$paymentMethod',
+            total: { $sum: '$totalAmountPaid' },
+            count: { $sum: 1 },
+          },
+        },
+      ]),
+
+      this.bookingModel.aggregate([
+        {
+          $match: {
+            ...activeBookingMatch,
+            createdAt: { $gte: todayStart },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            revenue: { $sum: '$totalAmountPaid' },
+          },
+        },
+      ]),
+
+      this.bookingModel.aggregate([
+        {
+          $match: {
+            ...activeBookingMatch,
+            createdAt: { $gte: monthStart },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            revenue: { $sum: '$totalAmountPaid' },
+            count: { $sum: 1 },
+            discountSum: { $sum: '$discount' },
+            discountCount: { $sum: { $cond: [{ $gt: ['$discount', 0] }, 1, 0] } },
+            discountPctSum: { $sum: '$discountPercentage' },
+          },
+        },
+      ]),
+
+      this.bookingModel.aggregate([
+        { $match: activeBookingMatch },
+        {
+          $group: {
+            _id: null,
+            totalDiscount: { $sum: '$discount' },
+            discountCount: { $sum: { $cond: [{ $gt: ['$discount', 0] }, 1, 0] } },
+            discountPctSum: { $sum: '$discountPercentage' },
+          },
+        },
+      ]),
+
+      this.bookingModel.aggregate([
+        { $match: branchMatch },
+        {
+          $group: {
+            _id: '$bookingStatus',
+            count: { $sum: 1 },
+          },
+        },
+      ]),
+
+      this.bookingModel.aggregate([
+        { $match: activeBookingMatch },
+        {
+          $group: {
+            _id: {
+              $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
+            },
+            revenue: { $sum: '$totalAmountPaid' },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: -1 } },
+        { $limit: 14 },
+      ]),
+
+      this.inventoryModel.countDocuments({ isActive: true, ...branchMatch }),
+
+      this.inventoryModel.aggregate([
+        { $match: { isActive: true, ...branchMatch } },
+        {
+          $group: {
+            _id: null,
+            totalValue: { $sum: { $multiply: ['$currentStock', { $ifNull: ['$costPrice', 0] }] } },
+            expiringCount: {
+              $sum: {
+                $cond: [
+                  { $and: [
+                    { $ne: ['$expiryDate', null] },
+                    { $lte: ['$expiryDate', new Date(Date.now() + 30 * 86400000)] },
+                    { $gt: ['$expiryDate', new Date()] },
+                  ]},
+                  1,
+                  0,
+                ],
+              },
+            },
+          },
+        },
+      ]),
+    ]);
+
+    const byPayment: Record<string, number> = {};
+    let totalRevenue = 0;
+    let totalCount = 0;
+    for (const r of revenueResult) {
+      byPayment[r._id] = r.total;
+      totalRevenue += r.total;
+      totalCount += r.count;
+    }
+
+    const todayRev = todayRevenueResult[0]?.revenue || 0;
+    const monthData = monthRevenueResult[0] || { revenue: 0, count: 0, discountSum: 0, discountCount: 0, discountPctSum: 0 };
+    const discData = discountResult[0] || { totalDiscount: 0, discountCount: 0, discountPctSum: 0 };
+
+    const bookingCounts: Record<string, number> = { reserved: 0, confirmed: 0, checked_in: 0, checked_out: 0, cancelled: 0 };
+    for (const b of bookingCountsResult) {
+      bookingCounts[b._id] = b.count;
+    }
+
+    const accounting = {
+      revenue: {
+        total: totalRevenue,
+        byPaymentMethod: {
+          cash: byPayment['cash'] || 0,
+          pos_card: byPayment['pos_card'] || 0,
+          bank_transfer: byPayment['bank_transfer'] || 0,
+        },
+        today: todayRev,
+        thisMonth: monthData.revenue,
+        averagePerBooking: totalCount > 0 ? Math.round(totalRevenue / totalCount) : 0,
+      },
+      discounts: {
+        totalGiven: discData.totalDiscount,
+        averagePercentage: discData.discountCount > 0
+          ? Math.round(discData.discountPctSum / discData.discountCount)
+          : 0,
+        totalBookingsWithDiscount: discData.discountCount,
+        thisMonth: {
+          totalGiven: monthData.discountSum,
+          averagePercentage: monthData.discountCount > 0
+            ? Math.round(monthData.discountPctSum / monthData.discountCount)
+            : 0,
+          bookingsWithDiscount: monthData.discountCount,
+        },
+      },
+      bookings: {
+        total: totalCount,
+        ...bookingCounts,
+      },
+      inventory: {
+        totalItems: inventoryCountResult,
+        totalValue: inventoryAggResult[0]?.totalValue || 0,
+        expiringItems: inventoryAggResult[0]?.expiringCount || 0,
+      },
+      dailyRevenue: dailyRevenueResult.map((d) => ({
+        date: d._id,
+        revenue: d.revenue,
+        count: d.count,
+      })),
+    };
+
+    await this.redis.set(cacheKey, JSON.stringify(accounting), CACHE_TTL.ONE_MINUTE);
+    return accounting;
   }
 }

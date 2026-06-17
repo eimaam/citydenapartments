@@ -16,11 +16,13 @@ export class RoomTypesController {
   constructor(private roomTypesService: RoomTypesService) {}
 
   @Get()
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.ACCOUNTANT, UserRoleEnum.IT, UserRoleEnum.RECEPTION, UserRoleEnum.FRONT_OFFICE_MANAGER)
   findAll(@ActiveUser() user: any, @Query() query: PaginatedQueryDto) {
     return this.roomTypesService.findAll({ branchId: user.activeBranchId, page: query.page, limit: query.limit, search: query.search });
   }
 
   @Get(':id')
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.ACCOUNTANT, UserRoleEnum.IT, UserRoleEnum.RECEPTION, UserRoleEnum.FRONT_OFFICE_MANAGER)
   findOne(@Param('id') id: string) {
     return this.roomTypesService.findOne(id);
   }

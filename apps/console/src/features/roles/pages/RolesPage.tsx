@@ -1,4 +1,4 @@
-import { Shield, Building2, CalendarCheck, DoorOpen, Coffee, Package, Users, Camera, Sparkles } from 'lucide-react';
+import { Shield, Building2, CalendarCheck, DoorOpen, Coffee, Package, Users, Eye, Monitor, BadgeDollarSign, ClipboardList } from 'lucide-react';
 
 interface RolePermission {
   role: string;
@@ -40,7 +40,34 @@ const roles: RolePermission[] = [
     ],
   },
   {
-    role: 'Branch Manager',
+    role: 'Group GM',
+    icon: Eye,
+    color: '#8b5cf6',
+    summary: 'Read-only oversight across all branches. Can view everything but makes no changes.',
+    pages: [
+      { name: 'Dashboard', description: 'See stats for all branches at once' },
+      { name: 'Room Types', description: 'View room categories, prices, and minimum rates' },
+      { name: 'Rooms', description: 'View all rooms across all branches' },
+      { name: 'Bookings', description: 'View all bookings in the system' },
+      { name: 'Breakfast', description: 'View breakfast logs across all branches' },
+      { name: 'Inventory', description: 'View store items, stock levels, and transactions' },
+    ],
+    can: [
+      'View reports and analytics across all branches',
+      'See all bookings, rooms, and guest data',
+      'View inventory and stock levels',
+      'Monitor branch performance metrics',
+    ],
+    cannot: [
+      'Create or manage branches',
+      'Create or delete users',
+      'Cancel bookings',
+      'Edit room types or pricing',
+      'Create or edit inventory items',
+    ],
+  },
+  {
+    role: 'Facility Manager',
     icon: Building2,
     color: '#3b82f6',
     summary: 'Runs the daily operations of their assigned branch.',
@@ -55,7 +82,7 @@ const roles: RolePermission[] = [
       'Create, check in, check out, and cancel bookings',
       'Update room statuses (e.g., mark a room as dirty or available)',
       'View breakfast manifest and mark meals as served',
-      'Create staff accounts for their branch (Reception, Kitchen, Housekeeping, Marketing)',
+      'Create staff accounts for their branch',
       'Edit staff names and reset passwords for their branch staff',
       'Deactivate staff in their branch',
       'View reports and analytics for their branch only',
@@ -63,9 +90,59 @@ const roles: RolePermission[] = [
     cannot: [
       'Create or manage other branches',
       'Create or edit room types or pricing',
-      'Create or edit Super Admin or other Branch Manager accounts',
+      'Create or edit Super Admin or other Facility Manager accounts',
       'See data from other branches',
       'Add or remove rooms',
+    ],
+  },
+  {
+    role: 'Front Office Manager',
+    icon: ClipboardList,
+    color: '#f59e0b',
+    summary: 'Manages front desk operations, bookings, and room assignments.',
+    pages: [
+      { name: 'Dashboard', description: 'See today\'s arrivals, occupancy, and breakfast counts' },
+      { name: 'Bookings', description: 'Create, check in, check out, and cancel bookings' },
+      { name: 'Rooms', description: 'View room statuses and update them' },
+    ],
+    can: [
+      'Create walk-in and phone bookings',
+      'Check guests in and out of their rooms',
+      'Cancel reservations',
+      'Update room statuses',
+      'See today\'s arrivals and current occupancy',
+    ],
+    cannot: [
+      'Create or manage staff accounts',
+      'Change room types or pricing',
+      'Access other branches or system settings',
+      'Manage inventory',
+    ],
+  },
+  {
+    role: 'Accountant',
+    icon: BadgeDollarSign,
+    color: '#06b6d4',
+    summary: 'Handles financial records, inventory valuation, and booking reconciliation.',
+    pages: [
+      { name: 'Dashboard', description: 'See branch stats and financial summaries' },
+      { name: 'Bookings', description: 'View booking records and payments (read-only)' },
+      { name: 'Rooms', description: 'View room statuses' },
+      { name: 'Inventory', description: 'Full inventory management — items, stock, and transactions' },
+      { name: 'Transactions', description: 'View stock movement history' },
+    ],
+    can: [
+      'View all booking records and payment data (read-only)',
+      'View room statuses',
+      'Full inventory management: create, edit, restock, issue items',
+      'View daily stock snapshots and close the day',
+      'View transaction history',
+    ],
+    cannot: [
+      'Create, check in, check out, or cancel bookings',
+      'Create or manage staff accounts',
+      'Change room types or pricing',
+      'Manage branches',
     ],
   },
   {
@@ -162,7 +239,7 @@ const roles: RolePermission[] = [
     ],
   },
   {
-    role: 'House Keeper',
+    role: 'HouseKeeper',
     icon: DoorOpen,
     color: '#8b5cf6',
     summary: 'Manages room cleaning and readiness.',
@@ -184,23 +261,28 @@ const roles: RolePermission[] = [
     ],
   },
   {
-    role: 'Social Media Manager',
-    icon: Camera,
-    color: '#ec4899',
-    summary: 'Monitors branch performance for content and marketing.',
+    role: 'IT',
+    icon: Monitor,
+    color: '#6366f1',
+    summary: 'Manages user accounts and system configuration.',
     pages: [
-      { name: 'Dashboard', description: 'View branch occupancy, revenue, and activity stats' },
+      { name: 'Dashboard', description: 'See system overview' },
+      { name: 'Room Types', description: 'View room categories and pricing' },
+      { name: 'Rooms', description: 'View all rooms' },
+      { name: 'Staff', description: 'Create and manage user accounts' },
+      { name: 'Roles', description: 'View role documentation' },
     ],
     can: [
-      'View branch performance metrics (occupancy, revenue, guest counts)',
-      'See which room types are most popular',
-      'Monitor daily activity for content ideas',
+      'Create and manage user accounts (except Super Admin, Group GM, Facility Manager, and other IT)',
+      'Reset passwords for non-restricted users',
+      'View room types and room configuration',
+      'Deactivate user accounts',
     ],
     cannot: [
-      'Create or manage bookings',
-      'Change room statuses',
-      'Access guest personal information beyond what\'s on the dashboard',
-      'Manage staff or system settings',
+      'Create or edit Super Admin, Group GM, Facility Manager, or IT accounts',
+      'Manage bookings, breakfast, or inventory',
+      'Change room types or pricing',
+      'Manage branches',
     ],
   },
 ];

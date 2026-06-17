@@ -9,7 +9,7 @@ export interface BookingResponse {
   roomId: {
     _id: string;
     roomNumber: string;
-    roomTypeId?: { _id: string; name: string; basePrice: number };
+    roomTypeId?: { _id: string; name: string };
     status: RoomStatusType;
   };
   guestDetails: {

@@ -40,25 +40,25 @@ export class BookingsController {
   }
 
   @Post()
-  @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.BRANCH_MANAGER)
+  @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.FRONT_OFFICE_MANAGER)
   create(@Body() dto: CreateBookingDto, @ActiveUser() user: any) {
     return this.bookingsService.createWalkInBooking(dto, user.id, user.activeBranchId);
   }
 
   @Post(':id/check-in')
-  @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.BRANCH_MANAGER)
+  @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.FRONT_OFFICE_MANAGER)
   checkIn(@Param('id') id: string, @ActiveUser() user: any) {
     return this.bookingsService.checkIn(id, user.id, user.activeBranchId);
   }
 
   @Post(':id/check-out')
-  @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.BRANCH_MANAGER)
+  @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.FRONT_OFFICE_MANAGER)
   checkOut(@Param('id') id: string, @ActiveUser() user: any) {
     return this.bookingsService.checkOut(id, user.id, user.activeBranchId);
   }
 
   @Post(':id/cancel')
-  @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.BRANCH_MANAGER)
+  @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.FRONT_OFFICE_MANAGER)
   cancel(@Param('id') id: string, @ActiveUser() user: any) {
     return this.bookingsService.cancel(id, user.id, user.activeBranchId);
   }

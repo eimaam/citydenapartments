@@ -33,7 +33,7 @@ export class UsersService {
     const { page = 1, limit = 20, search } = params || {};
     const filter: any = {};
 
-    if (caller?.role === UserRoleEnum.BRANCH_MANAGER) {
+    if (caller?.role === UserRoleEnum.FACILITY_MANAGER) {
       filter.allowedBranches = caller.activeBranchId;
     }
 
@@ -55,14 +55,14 @@ export class UsersService {
 
   async findOne(id: string, caller?: { role: string; activeBranchId: string }) {
     const cached = await this.redis.get(CACHE_KEYS.USER(id));
-    if (cached && caller?.role !== UserRoleEnum.BRANCH_MANAGER) return JSON.parse(cached);
+    if (cached && caller?.role !== UserRoleEnum.FACILITY_MANAGER) return JSON.parse(cached);
     const user = await this.userModel.findById(id).select('-password').lean();
     if (!user) {
       this.logger.warn(`User not found — id: ${id}`);
       throw new NotFoundException('User not found.');
     }
 
-    if (caller?.role === UserRoleEnum.BRANCH_MANAGER) {
+    if (caller?.role === UserRoleEnum.FACILITY_MANAGER) {
       const branchIdStr = caller.activeBranchId?.toString();
       const userBranchIds = (user.allowedBranches || []).map((b: any) => b.toString());
       if (!userBranchIds.includes(branchIdStr)) {
@@ -78,11 +78,19 @@ export class UsersService {
     dto: { email: string; name: string; role: string; allowedBranches?: string[] },
     caller?: { role: string; activeBranchId: string },
   ) {
-    if (caller?.role === UserRoleEnum.BRANCH_MANAGER) {
-      if (dto.role === UserRoleEnum.SUPER_ADMIN || dto.role === UserRoleEnum.BRANCH_MANAGER) {
+    if (caller?.role === UserRoleEnum.FACILITY_MANAGER) {
+      const restrictedRoles = [UserRoleEnum.SUPER_ADMIN, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.GROUP_GM];
+      if (restrictedRoles.includes(dto.role as any)) {
         throw new BadRequestException('Cannot create admin or manager accounts.');
       }
       dto.allowedBranches = [caller.activeBranchId];
+    }
+
+    if (caller?.role === UserRoleEnum.IT) {
+      const restrictedRoles = [UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.IT];
+      if (restrictedRoles.includes(dto.role as any)) {
+        throw new BadRequestException('Cannot create accounts with that role.');
+      }
     }
 
     const exists = await this.userModel.findOne({ email: dto.email.toLowerCase() });
@@ -129,17 +137,28 @@ export class UsersService {
       throw new NotFoundException('User not found.');
     }
 
-    if (caller?.role === UserRoleEnum.BRANCH_MANAGER) {
+    if (caller?.role === UserRoleEnum.FACILITY_MANAGER) {
       const branchIdStr = caller.activeBranchId?.toString();
       const userBranchIds = (user.allowedBranches || []).map((b: any) => b.toString());
       if (!userBranchIds.includes(branchIdStr)) {
         throw new ForbiddenException('User not in your branch.');
       }
-      if (dto.role && (dto.role === UserRoleEnum.SUPER_ADMIN || dto.role === UserRoleEnum.BRANCH_MANAGER)) {
+      const restrictedRoles = [UserRoleEnum.SUPER_ADMIN, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.GROUP_GM];
+      if (dto.role && restrictedRoles.includes(dto.role as any)) {
         throw new BadRequestException('Cannot assign admin or manager roles.');
       }
       if (dto.allowedBranches !== undefined) {
         throw new BadRequestException('Cannot change branch assignments.');
+      }
+    }
+
+    if (caller?.role === UserRoleEnum.IT) {
+      const restrictedRoles = [UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.IT];
+      if (restrictedRoles.includes(user.role as any)) {
+        throw new ForbiddenException('Cannot modify this user.');
+      }
+      if (dto.role && restrictedRoles.includes(dto.role as any)) {
+        throw new BadRequestException('Cannot assign that role.');
       }
     }
 
@@ -209,11 +228,18 @@ export class UsersService {
       throw new NotFoundException('User not found.');
     }
 
-    if (caller?.role === UserRoleEnum.BRANCH_MANAGER) {
+    if (caller?.role === UserRoleEnum.FACILITY_MANAGER) {
       const branchIdStr = caller.activeBranchId?.toString();
       const userBranchIds = (user.allowedBranches || []).map((b: any) => b.toString());
       if (!userBranchIds.includes(branchIdStr)) {
         throw new ForbiddenException('User not in your branch.');
+      }
+    }
+
+    if (caller?.role === UserRoleEnum.IT) {
+      const restrictedRoles = [UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.IT];
+      if (restrictedRoles.includes(user.role as any)) {
+        throw new ForbiddenException('Cannot reset password for this user.');
       }
     }
 

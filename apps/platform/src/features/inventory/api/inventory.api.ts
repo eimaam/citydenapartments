@@ -8,6 +8,8 @@ export interface InventoryItem {
   unit: string;
   currentStock: number;
   reorderLevel: number;
+  costPrice?: number;
+  expiryDate?: string;
   isActive: boolean;
 }
 
@@ -49,9 +51,9 @@ export const inventoryApi = {
     return api.get<PaginatedItems>(`/inventory/items?${qs}`);
   },
   getItem: (id: string) => api.get<InventoryItem>(`/inventory/items/${id}`),
-  createItem: (data: { name: string; category: string; description?: string; unit: string; currentStock: number; reorderLevel: number }) =>
+  createItem: (data: { name: string; category: string; description?: string; unit: string; currentStock: number; reorderLevel: number; costPrice?: number; expiryDate?: string }) =>
     api.post<InventoryItem>('/inventory/items', data),
-  updateItem: (id: string, data: { name?: string; category?: string; description?: string; unit?: string; reorderLevel?: number; isActive?: boolean }) =>
+  updateItem: (id: string, data: { name?: string; category?: string; description?: string; unit?: string; reorderLevel?: number; costPrice?: number; expiryDate?: string; isActive?: boolean }) =>
     api.patch<InventoryItem>(`/inventory/items/${id}`, data),
   restock: (id: string, data: { quantity: number; notes?: string }) =>
     api.post<InventoryItem>(`/inventory/items/${id}/restock`, data),

@@ -7,6 +7,7 @@ import { Room, RoomSchema } from '../rooms/room.schema';
 import { Branch, BranchSchema } from '../branches/branch.schema';
 import { BreakfastLog, BreakfastLogSchema } from '../breakfast/breakfast-log.schema';
 import { User, UserSchema } from '../users/user.schema';
+import { InventoryItem, InventoryItemSchema } from '../inventory/inventory-item.schema';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { User, UserSchema } from '../users/user.schema';
       { name: Branch.name, schema: BranchSchema },
       { name: BreakfastLog.name, schema: BreakfastLogSchema },
       { name: User.name, schema: UserSchema },
+      { name: InventoryItem.name, schema: InventoryItemSchema },
     ]),
   ],
   controllers: [DashboardController],

@@ -31,7 +31,7 @@ interface PaginatedData {
   limit: number;
 }
 
-const MANAGER_ROLES: UserRoleType[] = [UserRole.Reception, UserRole.KitchenStaff, UserRole.StoreKeeper, UserRole.StoreManager, UserRole.SocialMediaManager, UserRole.HouseKeeper];
+const MANAGER_ROLES: UserRoleType[] = [UserRole.Reception, UserRole.KitchenStaff, UserRole.StoreKeeper, UserRole.StoreManager, UserRole.HouseKeeper, UserRole.FrontOfficeManager, UserRole.Accountant];
 
 export default function StaffPage() {
   const { toast } = useToast();

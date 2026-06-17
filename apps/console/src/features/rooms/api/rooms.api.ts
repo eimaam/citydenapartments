@@ -10,8 +10,6 @@ export interface RoomResponse {
   roomTypeId: {
     _id: string;
     name: string;
-    basePrice: number;
-    minPriceAllowed: number;
     amenities: string[];
   };
   isActive: boolean;

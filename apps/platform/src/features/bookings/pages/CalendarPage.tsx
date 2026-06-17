@@ -291,8 +291,8 @@ export default function CalendarPage() {
         guestNextDestination: '', guestGender: '', guestReligion: '',
         numberOfGuests: 1,
         checkInDate: ci, nights: 1, checkOutDate: co, useNights: true,
-        actualPricePerNight: room.roomTypeId?.basePrice ?? 0, discountPercentage: 0,
-        totalAmountPaid: room.roomTypeId?.basePrice ?? 0,
+        actualPricePerNight: 0, discountPercentage: 0,
+        totalAmountPaid: 0,
         paymentMethod: PaymentMethod.Cash, bookingSource: BookingSource.WalkIn,
       });
 
@@ -340,8 +340,6 @@ export default function CalendarPage() {
   const updateField = (field: string, value: unknown) => setForm((prev) => ({ ...prev, [field]: value }));
 
   const selectedRoom = useMemo(() => availableRooms.find((r) => r._id === form.roomId), [availableRooms, form.roomId]);
-  const basePrice = selectedRoom?.roomTypeId?.basePrice ?? 0;
-  const minPrice = selectedRoom?.roomTypeId?.minPriceAllowed ?? 0;
   
   const computedNights = useMemo(() => {
     if (!form.checkInDate || !form.checkOutDate) return 1;
@@ -351,7 +349,7 @@ export default function CalendarPage() {
 
   const onRoomChange = (roomId: string) => {
     const room = availableRooms.find((r) => r._id === roomId);
-    const price = room?.roomTypeId?.basePrice ?? 0;
+    const price = 0;
     const nights = form.useNights ? form.nights : computedNights;
     updateField('roomId', roomId);
     updateField('actualPricePerNight', price);
@@ -377,7 +375,7 @@ export default function CalendarPage() {
     let co = addDays(new Date(form.checkInDate), nights);
     updateField('nights', nights);
     updateField('checkOutDate', toDateStr(co));
-    recalcTotal(Number(form.actualPricePerNight) || basePrice, form.discountPercentage, nights);
+    recalcTotal(Number(form.actualPricePerNight) || 0, form.discountPercentage, nights);
     fetchAvailableRooms(form.checkInDate, toDateStr(co));
   };
 
@@ -394,20 +392,20 @@ export default function CalendarPage() {
     updateField('useNights', false);
     const nights = Math.max(1, differenceInDays(new Date(date), new Date(form.checkInDate)));
     updateField('nights', nights);
-    recalcTotal(Number(form.actualPricePerNight) || basePrice, form.discountPercentage, nights);
+    recalcTotal(Number(form.actualPricePerNight) || 0, form.discountPercentage, nights);
     fetchAvailableRooms(form.checkInDate, date);
   };
 
   const onPriceChange = (price: number) => {
     updateField('actualPricePerNight', price);
     recalcTotal(price, form.discountPercentage, form.useNights ? form.nights : computedNights);
-    setPriceError(price < minPrice ? `Minimum allowed price is ₦${minPrice.toLocaleString()}/night.` : null);
+    setPriceError(null);
   };
 
   const onDiscountPctChange = (pct: number) => {
     updateField('discountPercentage', pct);
     const nights = form.useNights ? form.nights : computedNights;
-    const price = Number(form.actualPricePerNight) || basePrice;
+    const price = Number(form.actualPricePerNight) || 0;
     recalcTotal(price, pct, nights);
   };
 
@@ -431,8 +429,7 @@ export default function CalendarPage() {
     if (!form.guestStateOfOrigin.trim()) { toast('error', 'State of origin is required.'); return; }
     if (!form.guestOccupation.trim()) { toast('error', 'Occupation is required.'); return; }
     if (!form.guestNextDestination.trim()) { toast('error', 'Next destination is required.'); return; }
-    const price = Number(form.actualPricePerNight) || basePrice;
-    if (price < minPrice) { setPriceError(`Price must be at least ₦${minPrice.toLocaleString()}/night.`); return; }
+    const price = Number(form.actualPricePerNight) || 0;
     if (Number(form.totalAmountPaid) <= 0) { toast('error', 'Total amount paid must be greater than zero.'); return; }
 
     setSubmitting(true);
@@ -695,7 +692,7 @@ export default function CalendarPage() {
           <div className="mb-5">
             <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Room</label>
             <Select showSearch optionFilterProp="label" size="lg" className="w-full mt-1" placeholder="Search room..." value={form.roomId || undefined} onChange={(v) => onRoomChange(v)}>
-              {availableRooms.map((r) => (<Option key={r._id} value={r._id} label={`${r.roomNumber} — ${r.roomTypeId?.name}`}>{r.roomNumber} — {r.roomTypeId?.name} (₦{r.roomTypeId?.basePrice?.toLocaleString()}/night)</Option>))}
+              {availableRooms.map((r) => (<Option key={r._id} value={r._id} label={`${r.roomNumber} — ${r.roomTypeId?.name}`}>{r.roomNumber} — {r.roomTypeId?.name}</Option>))}
             </Select>
           </div>
           <div className="grid grid-cols-2 gap-4 mb-5">
@@ -728,7 +725,7 @@ export default function CalendarPage() {
               </div>
             </div>
           </div>
-          {selectedRoom && (<div className="p-4 mb-5 rounded-lg border border-outline-variant bg-surface-container"><div className="grid grid-cols-3 gap-3"><div><span className="text-[10px] text-outline uppercase tracking-wide">Price / Night</span><Input size="sm" type="number" min={minPrice} value={form.actualPricePerNight || ''} onChange={(e) => onPriceChange(Number(e.target.value))} status={priceError ? 'error' : undefined} /></div><div><span className="text-[10px] text-outline uppercase tracking-wide">Discount (%)</span><Input size="sm" type="number" min={0} max={100} step={1} value={form.discountPercentage || ''} onChange={(e) => onDiscountPctChange(Number(e.target.value))} /></div><div><span className="text-[10px] text-outline uppercase tracking-wide">Total Paid</span><Input size="sm" type="number" min={1} value={form.totalAmountPaid || ''} onChange={(e) => updateField('totalAmountPaid', Number(e.target.value))} /></div></div>{priceError && <p className="mt-2 text-xs text-error">{priceError}</p>}<div className="flex flex-wrap gap-4 mt-2 text-[10px] text-outline"><span>Base price: ₦{basePrice.toLocaleString()}</span><span>Min allowed: ₦{minPrice.toLocaleString()}</span><span>Nights: {form.useNights ? form.nights : computedNights}</span><span>Subtotal: ₦{((Number(form.actualPricePerNight) || basePrice) * (form.useNights ? form.nights : computedNights)).toLocaleString()}</span>{form.discountPercentage > 0 && <span className="text-error">Discount: {form.discountPercentage}%</span>}</div></div>)}
+          {selectedRoom && (<div className="p-4 mb-5 rounded-lg border border-outline-variant bg-surface-container"><div className="grid grid-cols-3 gap-3"><div><span className="text-[10px] text-outline uppercase tracking-wide">Price / Night</span><Input size="sm" type="number" min={0} value={form.actualPricePerNight || ''} onChange={(e) => onPriceChange(Number(e.target.value))} status={priceError ? 'error' : undefined} /></div><div><span className="text-[10px] text-outline uppercase tracking-wide">Discount (%)</span><Input size="sm" type="number" min={0} max={100} step={1} value={form.discountPercentage || ''} onChange={(e) => onDiscountPctChange(Number(e.target.value))} /></div><div><span className="text-[10px] text-outline uppercase tracking-wide">Total Paid</span><Input size="sm" type="number" min={1} value={form.totalAmountPaid || ''} onChange={(e) => updateField('totalAmountPaid', Number(e.target.value))} /></div></div>{priceError && <p className="mt-2 text-xs text-error">{priceError}</p>}<div className="flex flex-wrap gap-4 mt-2 text-[10px] text-outline"><span>Nights: {form.useNights ? form.nights : computedNights}</span><span>Subtotal: ₦{((Number(form.actualPricePerNight) || 0) * (form.useNights ? form.nights : computedNights)).toLocaleString()}</span>{form.discountPercentage > 0 && <span className="text-error">Discount: {form.discountPercentage}%</span>}</div></div>)}
           <div className="mb-5"><label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Payment Method</label><div className="grid grid-cols-3 gap-2 mt-1">{paymentMethods.map((pm) => { const Icon = pm.icon; const active = form.paymentMethod === pm.key; return (<button key={pm.key} type="button" onClick={() => updateField('paymentMethod', pm.key)} className="flex flex-col items-center gap-1 p-3 rounded-lg border text-center transition-all cursor-pointer" style={{ borderColor: active ? 'var(--color-primary)' : 'var(--color-outline-variant)', background: active ? 'var(--color-primary-container)/10' : 'var(--color-surface-container-lowest)' }}><Icon size={20} style={{ color: active ? 'var(--color-primary)' : 'var(--color-outline)' }} /><span className="text-xs font-medium" style={{ color: active ? 'var(--color-on-surface)' : 'var(--color-on-surface-variant)' }}>{pm.label}</span><span className="text-[9px] leading-tight" style={{ color: active ? 'var(--color-on-surface-variant)' : 'var(--color-outline)' }}>{pm.desc}</span></button>); })}</div></div>
           <div className="mb-5"><label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Source</label><div className="flex gap-1 mt-1">{bookingSources.map((s) => (<button key={s.key} type="button" onClick={() => updateField('bookingSource', s.key)} className="flex-1 py-2 text-xs font-medium rounded border transition-all cursor-pointer" style={{ borderColor: form.bookingSource === s.key ? 'var(--color-primary)' : 'var(--color-outline-variant)', background: form.bookingSource === s.key ? 'var(--color-primary-container)/10' : 'var(--color-surface-container-lowest)', color: form.bookingSource === s.key ? 'var(--color-on-surface)' : 'var(--color-on-surface-variant)' }}>{s.label}</button>))}</div></div>
         </form>

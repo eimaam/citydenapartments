@@ -88,10 +88,6 @@ export class CreateBookingDto {
   // @IsOptional()
   // discount?: number;
 
-  // @IsOptional()
-  // @IsString()
-  // discountType?: 'fixed' | 'percentage';
-
   @IsOptional()
   @IsNumber()
   @Min(0)

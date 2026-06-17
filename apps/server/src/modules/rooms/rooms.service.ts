@@ -39,7 +39,7 @@ export class RoomsService {
         status: { $in: [RoomStatusEnum.AVAILABLE, RoomStatusEnum.DIRTY] },
         _id: { $nin: conflictRoomIds },
       })
-      .populate('roomTypeId')
+      .populate('roomTypeId', 'name amenities')
       .lean();
   }
 
@@ -54,14 +54,14 @@ export class RoomsService {
 
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([
-      this.roomModel.find(filter).populate('roomTypeId').skip(skip).limit(limit).lean(),
+      this.roomModel.find(filter).populate('roomTypeId', 'name amenities').skip(skip).limit(limit).lean(),
       this.roomModel.countDocuments(filter),
     ]);
     return { items, total, page, limit };
   }
 
   async findOne(id: string) {
-    return this.roomModel.findById(id).populate('roomTypeId').lean();
+    return this.roomModel.findById(id).populate('roomTypeId', 'name amenities').lean();
   }
 
   async create(dto: CreateRoomDto, userId: string) {
@@ -104,6 +104,6 @@ export class RoomsService {
     await room.save();
     await this.redis.invalidateDashboardCache(room.branchId.toString());
     this.logger.log(`Room ${room.roomNumber} status changed: ${from} → ${to} by ${userId}`);
-    return room.populate('roomTypeId');
+    return room.populate('roomTypeId', 'name amenities');
   }
 }

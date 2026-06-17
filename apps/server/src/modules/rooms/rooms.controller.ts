@@ -4,6 +4,7 @@ import { CreateRoomDto } from './dto/create-room.dto';
 import { RoomStatus } from './room.schema';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { WorkspaceAuthGuard } from '../../common/guards/workspace-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
 import { ActiveUser } from '../../common/decorators/active-user.decorator';
 import { UserRoleEnum } from '../users/user.schema';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -13,7 +14,7 @@ import { QueryRoomsDto } from './dto/room-query.dto';
 import { AvailableRoomsDto } from './dto/available-rooms.dto';
 
 @Controller('rooms')
-@UseGuards(JwtAuthGuard, WorkspaceAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceAuthGuard, RolesGuard)
 export class RoomsController {
   constructor(
     private roomsService: RoomsService
@@ -51,7 +52,7 @@ export class RoomsController {
   }
 
   @Patch(':id/status')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.BRANCH_MANAGER, UserRoleEnum.HOUSE_KEEPER, UserRoleEnum.RECEPTION)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.HOUSE_KEEPER, UserRoleEnum.RECEPTION)
   updateStatus(@Param('id') id: string, @Body() body: UpdateRoomStatusDto, @ActiveUser() user: any) {
     return this.roomsService.updateStatus(id, body.status as unknown as RoomStatus, user.id);
   }

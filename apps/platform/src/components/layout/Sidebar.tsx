@@ -26,13 +26,28 @@ const menuConfig: Record<UserRoleType, SidebarItem[]> = {
   SuperAdmin: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
   ],
-  BranchManager: [
+  GroupGM: [],
+  IT: [],
+  FacilityManager: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
     { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
     { label: 'Calendar', icon: CalendarFold, path: '/bookings/calendar' },
     { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
     { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
     { label: 'Staff', icon: Users, path: '/staff' },
+  ],
+  FrontOfficeManager: [
+    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
+    { label: 'Calendar', icon: CalendarFold, path: '/bookings/calendar' },
+    { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
+  ],
+  Accountant: [
+    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
+    { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
+    { label: 'Inventory', icon: Package, path: '/inventory' },
+    { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
   ],
   StoreManager: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
@@ -53,9 +68,6 @@ const menuConfig: Record<UserRoleType, SidebarItem[]> = {
   KitchenStaff: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
     { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
-  ],
-  SocialMediaManager: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
   ],
   HouseKeeper: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },

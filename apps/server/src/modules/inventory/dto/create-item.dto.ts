@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, Min } from 'class-validator';
+import { IsString, IsNumber, IsOptional, Min, IsDateString } from 'class-validator';
 
 export class CreateItemDto {
   @IsString()
@@ -21,4 +21,13 @@ export class CreateItemDto {
   @IsNumber()
   @Min(0)
   reorderLevel: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  costPrice?: number;
+
+  @IsOptional()
+  @IsDateString()
+  expiryDate?: string;
 }

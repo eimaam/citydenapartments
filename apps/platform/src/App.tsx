@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
+import { UserRole } from '@citydenapartments/shared';
 import { AuthProvider } from './contexts/auth';
 import { ToastProvider } from './components/ui/Toast';
 import { ForcePasswordModal } from './components/ui/ForcePasswordModal';
@@ -29,25 +30,24 @@ export default function App() {
             <Route element={<MainLayout />}>
               <Route index element={<DashboardPage />} />
 
-              <Route element={<RoleGuard roles={['Reception', 'BranchManager']} />}>
+              <Route element={<RoleGuard roles={[UserRole.Reception, UserRole.FrontOfficeManager, UserRole.FacilityManager, UserRole.Accountant]} />}>
                 <Route path="bookings" element={<BookingsPage />} />
                 <Route path="bookings/calendar" element={<CalendarPage />} />
+              </Route>
+
+              <Route element={<RoleGuard roles={[UserRole.Reception, UserRole.FrontOfficeManager, UserRole.FacilityManager, UserRole.HouseKeeper]} />}>
                 <Route path="rooms" element={<RoomsPage />} />
               </Route>
 
-              <Route element={<RoleGuard roles={['KitchenStaff', 'BranchManager']} />}>
+              <Route element={<RoleGuard roles={[UserRole.KitchenStaff, UserRole.FacilityManager]} />}>
                 <Route path="breakfast" element={<BreakfastPage />} />
               </Route>
 
-              <Route element={<RoleGuard roles={['HouseKeeper']} />}>
-                <Route path="rooms" element={<RoomsPage />} />
-              </Route>
-
-              <Route element={<RoleGuard roles={['BranchManager']} />}>
+              <Route element={<RoleGuard roles={[UserRole.FacilityManager]} />}>
                 <Route path="staff" element={<StaffPage />} />
               </Route>
 
-              <Route element={<RoleGuard roles={['StoreKeeper', 'StoreManager']} />}>
+              <Route element={<RoleGuard roles={[UserRole.StoreKeeper, UserRole.StoreManager, UserRole.Accountant]} />}>
                 <Route path="inventory" element={<InventoryPage />} />
                 <Route path="inventory/transactions" element={<TransactionsPage />} />
               </Route>

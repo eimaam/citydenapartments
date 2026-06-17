@@ -20,7 +20,7 @@ export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
 
   @Get('items')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER, UserRoleEnum.ACCOUNTANT)
   findAllItems(
     @ActiveUser() user: any,
     @Query() query: QueryInventoryItemsDto,
@@ -36,37 +36,37 @@ export class InventoryController {
   }
 
   @Get('items/:id')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER, UserRoleEnum.ACCOUNTANT)
   findOneItem(@Param('id') id: string, @ActiveUser() user: any) {
     return this.inventoryService.findOneItem(id, user.activeBranchId);
   }
 
   @Post('items')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.ACCOUNTANT)
   createItem(@Body() dto: CreateItemDto, @ActiveUser() user: any) {
     return this.inventoryService.createItem(dto, user.id, user.activeBranchId);
   }
 
   @Patch('items/:id')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.ACCOUNTANT)
   updateItem(@Param('id') id: string, @Body() dto: UpdateItemDto, @ActiveUser() user: any) {
     return this.inventoryService.updateItem(id, dto, user.id, user.activeBranchId);
   }
 
   @Post('items/:id/restock')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.ACCOUNTANT)
   restock(@Param('id') id: string, @Body() dto: RestockDto, @ActiveUser() user: any) {
     return this.inventoryService.restock(id, dto, user.id, user.activeBranchId);
   }
 
   @Post('items/:id/issue')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER, UserRoleEnum.ACCOUNTANT)
   issue(@Param('id') id: string, @Body() dto: IssueDto, @ActiveUser() user: any) {
     return this.inventoryService.issue(id, dto, user.id, user.activeBranchId);
   }
 
   @Get('transactions')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER, UserRoleEnum.ACCOUNTANT)
   findTransactions(
     @ActiveUser() user: any,
     @Query() query: QueryTransactionsDto,
@@ -83,7 +83,7 @@ export class InventoryController {
   }
 
   @Get('snapshots')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.ACCOUNTANT)
   findSnapshots(
     @ActiveUser() user: any,
     @Query() query: QuerySnapshotsDto,
@@ -98,7 +98,7 @@ export class InventoryController {
   }
 
   @Post('snapshots/close')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.ACCOUNTANT)
   manualClose() {
     return this.inventoryService.autoCloseDay();
   }

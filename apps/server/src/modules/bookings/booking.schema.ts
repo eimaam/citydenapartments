@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
-import { BookingStatus as BookingStatusEnum, Gender as GenderEnum, PaymentMethod as PaymentMethodEnum, BookingSource as BookingSourceEnum, DiscountType as DiscountTypeEnum } from '@citydenapartments/shared';
+import { BookingStatus as BookingStatusEnum, Gender as GenderEnum, PaymentMethod as PaymentMethodEnum, BookingSource as BookingSourceEnum } from '@citydenapartments/shared';
 
 export type BookingStatus = 'reserved' | 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled';
 export type PaymentMethod = 'pos_card' | 'cash' | 'bank_transfer';
@@ -65,9 +65,6 @@ export class Booking extends Document {
 
   @Prop({ default: 0 })
   discount: number;
-
-  @Prop({ type: String, enum: Object.values(DiscountTypeEnum), lowercase: true, default: 'fixed' })
-  discountType: string;
 
   @Prop({ default: 0 })
   discountPercentage: number;

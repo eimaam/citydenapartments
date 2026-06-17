@@ -1,13 +1,16 @@
 // ── User Roles ──────────────────────────────────────────────────
 export const UserRole = {
   SuperAdmin: 'SuperAdmin',
-  BranchManager: 'BranchManager',
-  StoreManager: 'StoreManager',
-  StoreKeeper: 'StoreKeeper',
+  GroupGM: 'GroupGM',
+  FacilityManager: 'FacilityManager',
+  FrontOfficeManager: 'FrontOfficeManager',
+  Accountant: 'Accountant',
+  HouseKeeper: 'HouseKeeper',
   Reception: 'Reception',
   KitchenStaff: 'KitchenStaff',
-  SocialMediaManager: 'SocialMediaManager',
-  HouseKeeper: 'HouseKeeper',
+  StoreManager: 'StoreManager',
+  StoreKeeper: 'StoreKeeper',
+  IT: 'IT',
 } as const;
 export type UserRoleType = (typeof UserRole)[keyof typeof UserRole];
 

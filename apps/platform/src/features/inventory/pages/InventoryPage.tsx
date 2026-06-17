@@ -1,17 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Package, AlertTriangle, ArrowDownCircle, ArrowUpCircle, Plus } from 'lucide-react';
+import { Search, Package, AlertTriangle, ArrowDownCircle, ArrowUpCircle, Plus, Clock } from 'lucide-react';
 import { useAuth } from '../../../contexts/auth';
 import { useToast } from '../../../components/ui/Toast';
-import { Input, Select, Option, Drawer, Modal, Button } from '@citydenapartments/shared';
+import { Input, Select, Option, Drawer, Modal, Button, UserRole } from '@citydenapartments/shared';
 import { inventoryApi, type InventoryItem } from '../api/inventory.api';
 import { Departments } from '@citydenapartments/shared';
+import { format, isBefore, addDays, differenceInDays } from 'date-fns';
 
 const LIMIT = 20;
 
 export default function InventoryPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const isManager = user?.role === 'StoreManager' || user?.role === 'SuperAdmin';
+  const isManager = user?.role === UserRole.StoreManager || user?.role === UserRole.SuperAdmin;
 
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -28,7 +29,7 @@ export default function InventoryPage() {
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
-  const [createForm, setCreateForm] = useState({ name: '', category: '', description: '', unit: 'pcs', currentStock: 0, reorderLevel: 0 });
+  const [createForm, setCreateForm] = useState({ name: '', category: '', description: '', unit: 'pcs', currentStock: 0, reorderLevel: 0, costPrice: '' as string | number, expiryDate: '' });
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -88,9 +89,13 @@ export default function InventoryPage() {
     }
     setSubmitting(true);
     try {
-      await inventoryApi.createItem(createForm);
+      await inventoryApi.createItem({
+        ...createForm,
+        costPrice: createForm.costPrice ? Number(createForm.costPrice) : undefined,
+        expiryDate: createForm.expiryDate || undefined,
+      });
       setShowCreate(false);
-      setCreateForm({ name: '', category: '', description: '', unit: 'pcs', currentStock: 0, reorderLevel: 0 });
+      setCreateForm({ name: '', category: '', description: '', unit: 'pcs', currentStock: 0, reorderLevel: 0, costPrice: '', expiryDate: '' });
       toast('success', 'Item created.');
       fetchItems();
     } catch (e: any) { toast('error', e.message); }
@@ -98,7 +103,13 @@ export default function InventoryPage() {
   };
 
   const isLowStock = (item: InventoryItem) => item.currentStock <= item.reorderLevel;
+  const isExpired = (item: InventoryItem) => item.expiryDate && isBefore(new Date(item.expiryDate), new Date());
+  const isExpiringSoon = (item: InventoryItem) => {
+    if (!item.expiryDate || isExpired(item)) return false;
+    return differenceInDays(new Date(item.expiryDate), new Date()) <= 30;
+  };
   const stockColor = (item: InventoryItem) => {
+    if (isExpired(item)) return 'text-red-500';
     if (item.currentStock === 0) return 'text-red-500';
     if (isLowStock(item)) return 'text-amber-500';
     return 'text-emerald-500';
@@ -132,6 +143,30 @@ export default function InventoryPage() {
               <div className="min-w-0">
                 <p className="font-medium text-sm text-on-surface truncate">{item.name}</p>
                 <p className="text-xs text-on-surface-variant">{item.category} · {item.unit}</p>
+                {item.costPrice != null && (
+                  <p className="text-[10px] text-outline">Cost: ₦{item.costPrice.toLocaleString()}</p>
+                )}
+                <div className="flex items-center gap-2 mt-1">
+                  {item.expiryDate && (
+                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
+                      isExpired(item) ? 'bg-red-50 text-red-600' :
+                      isExpiringSoon(item) ? 'bg-amber-50 text-amber-600' :
+                      'bg-green-50 text-green-600'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${
+                        isExpired(item) || isExpiringSoon(item) ? 'animate-pulse bg-current' : 'bg-current'
+                      }`} />
+                      {isExpired(item) ? `Expired ${format(new Date(item.expiryDate), 'MMM d, yyyy')}` :
+                       `Exp ${format(new Date(item.expiryDate), 'MMM d, yyyy')}`}
+                    </span>
+                  )}
+                  {isLowStock(item) && item.currentStock > 0 && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-600">
+                      <AlertTriangle size={10} className="animate-pulse" />
+                      Low Stock
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -140,10 +175,13 @@ export default function InventoryPage() {
                 <p className={`text-lg font-bold ${stockColor(item)}`}>{item.currentStock}</p>
                 <p className="text-[10px] text-outline">Reorder at {item.reorderLevel}</p>
               </div>
-              {isLowStock(item) && item.currentStock > 0 && (
+              {isExpired(item) && (
+                <Clock size={16} className="text-red-500" />
+              )}
+              {!isExpired(item) && isLowStock(item) && item.currentStock > 0 && (
                 <AlertTriangle size={16} className="text-amber-500" />
               )}
-              {item.currentStock === 0 && (
+              {!isExpired(item) && item.currentStock === 0 && (
                 <AlertTriangle size={16} className="text-red-500" />
               )}
               <div className="flex gap-2">
@@ -240,6 +278,18 @@ export default function InventoryPage() {
             <div>
               <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Reorder Level</label>
               <Input size="lg" type="number" min={0} value={createForm.reorderLevel} onChange={(e) => setCreateForm({ ...createForm, reorderLevel: Number(e.target.value) })} className="mt-1" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Cost Price (₦)</label>
+              <Input size="lg" type="number" min={0} placeholder="Optional" value={createForm.costPrice}
+                onChange={(e) => setCreateForm({ ...createForm, costPrice: e.target.value })} className="mt-1" />
+            </div>
+            <div>
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Expiry Date</label>
+              <Input size="lg" type="date" value={createForm.expiryDate}
+                onChange={(e) => setCreateForm({ ...createForm, expiryDate: e.target.value })} className="mt-1" />
             </div>
           </div>
         </div>

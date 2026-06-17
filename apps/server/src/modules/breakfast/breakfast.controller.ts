@@ -29,14 +29,14 @@ export class BreakfastController {
 
   @Post('serve')
   @UseGuards(RolesGuard)
-  @Roles(UserRoleEnum.KITCHEN_STAFF, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.BRANCH_MANAGER)
+  @Roles(UserRoleEnum.KITCHEN_STAFF, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.FACILITY_MANAGER)
   serve(@Body() dto: ServeBreakfastDto, @ActiveUser() user: any) {
     return this.breakfastService.serve(dto, user.activeBranchId, user.id);
   }
 
   @Post(':bookingId/reset')
   @UseGuards(RolesGuard)
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.BRANCH_MANAGER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.FACILITY_MANAGER)
   reset(@Param('bookingId') bookingId: string, @ActiveUser() user: any) {
     return this.breakfastService.resetExpired(bookingId, user.activeBranchId, user.id);
   }

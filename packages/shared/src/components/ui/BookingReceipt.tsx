@@ -3,6 +3,7 @@
 import { useRef, useCallback } from 'react';
 import { Printer } from 'lucide-react';
 import { Button } from './Button';
+import { DiscountType, type DiscountTypeType } from '../../types';
 
 export interface BranchPolicies {
   checkInTime?: string;
@@ -51,7 +52,7 @@ export interface ReceiptBooking {
   checkOutDate: string;
   actualPricePerNight: number;
   discount: number;
-  discountType?: string;
+  discountType?: DiscountTypeType;
   discountPercentage?: number;
   discountReason?: string;
   totalAmountPaid: number;
@@ -176,7 +177,7 @@ function buildPrintHtml({
   <thead><tr><th>Description</th><th>Amount</th></tr></thead>
   <tbody>
     <tr><td>Room Charge (\u20A6${booking.actualPricePerNight.toLocaleString()} \u00D7 ${nights} night${nights > 1 ? 's' : ''})</td><td>\u20A6${subtotal.toLocaleString()}</td></tr>
-    ${booking.discount > 0 ? `<tr><td>Discount${booking.discountType === 'percentage' && booking.discountPercentage ? ` (${booking.discountPercentage}%)` : ''}${booking.discountReason ? ` - ${booking.discountReason}` : ''}</td><td>-\u20A6${booking.discount.toLocaleString()}</td></tr>` : ''}
+    ${booking.discount > 0 ? `<tr><td>Discount${booking.discountPercentage ? ` (${booking.discountPercentage}%)` : ''}${booking.discountReason ? ` - ${booking.discountReason}` : ''}</td><td>-\u20A6${booking.discount.toLocaleString()}</td></tr>` : ''}
     <tr class="receipt-total-row"><td>Total Paid</td><td>\u20A6${booking.totalAmountPaid.toLocaleString()}</td></tr>
   </tbody>
 </table>
@@ -368,9 +369,7 @@ export function BookingReceipt({ booking, branch, receptionistName }: BookingRec
               <tr>
                 <td>
                   Discount
-                  {booking.discountType === 'percentage' && booking.discountPercentage
-                    ? ` (${booking.discountPercentage}%)`
-                    : ''}
+                  {booking.discountPercentage ? ` (${booking.discountPercentage}%)` : ''}
                   {booking.discountReason ? ` - ${booking.discountReason}` : ''}
                 </td>
                 <td>-₦{booking.discount.toLocaleString()}</td>

@@ -2,18 +2,20 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
 
 export enum UserRoleEnum {
-  SUPER_ADMIN =  'SuperAdmin',
-  BRANCH_MANAGER = 'BranchManager',
-  STORE_MANAGER = 'StoreManager',
-  STORE_KEEPER = 'StoreKeeper',
+  SUPER_ADMIN = 'SuperAdmin',
+  GROUP_GM = 'GroupGM',
+  FACILITY_MANAGER = 'FacilityManager',
+  FRONT_OFFICE_MANAGER = 'FrontOfficeManager',
+  ACCOUNTANT = 'Accountant',
+  HOUSE_KEEPER = 'HouseKeeper',
   RECEPTION = 'Reception',
   KITCHEN_STAFF = 'KitchenStaff',
-  SOCIAL_MEDIA_MANAGER = 'SocialMediaManager',
-  HOUSE_KEEPER = 'HouseKeeper',
+  STORE_MANAGER = 'StoreManager',
+  STORE_KEEPER = 'StoreKeeper',
+  IT = 'IT',
 };
 
-
-export type UserRole = 'SuperAdmin' | 'BranchManager' | 'StoreManager' | 'StoreKeeper' | 'Reception' | 'KitchenStaff' | 'SocialMediaManager' | 'HouseKeeper';
+export type UserRole = 'SuperAdmin' | 'GroupGM' | 'FacilityManager' | 'FrontOfficeManager' | 'Accountant' | 'HouseKeeper' | 'Reception' | 'KitchenStaff' | 'StoreManager' | 'StoreKeeper' | 'IT';
 
 
 @Schema({ timestamps: true })

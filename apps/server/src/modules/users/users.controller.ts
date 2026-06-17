@@ -16,7 +16,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.BRANCH_MANAGER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.GROUP_GM, UserRoleEnum.IT)
   findAll(@Query() query: PaginatedQueryDto, @ActiveUser() user: any) {
     return this.usersService.findAll(
       { page: query.page, limit: query.limit, search: query.search },
@@ -25,25 +25,25 @@ export class UsersController {
   }
 
   @Get(':id')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.BRANCH_MANAGER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.GROUP_GM, UserRoleEnum.IT)
   findOne(@Param('id') id: string, @ActiveUser() user: any) {
     return this.usersService.findOne(id, { role: user.role, activeBranchId: user.activeBranchId });
   }
 
   @Post()
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.BRANCH_MANAGER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.IT)
   create(@Body() dto: CreateUserDto, @ActiveUser() user: any) {
     return this.usersService.create(dto, { role: user.role, activeBranchId: user.activeBranchId });
   }
 
   @Patch(':id')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.BRANCH_MANAGER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.IT)
   update(@Param('id') id: string, @Body() dto: UpdateUserDto, @ActiveUser() user: any) {
     return this.usersService.update(id, dto, { role: user.role, activeBranchId: user.activeBranchId });
   }
 
   @Post(':id/reset-password')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.BRANCH_MANAGER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.IT)
   resetPassword(@Param('id') id: string, @ActiveUser() user: any) {
     return this.usersService.resetPassword(id, { role: user.role, activeBranchId: user.activeBranchId });
   }

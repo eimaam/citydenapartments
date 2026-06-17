@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, DoorOpen, Users } from 'lucide-react';
-import { Input, Badge, RoomStatus, Table, Select, Option, type RoomStatusType } from '@citydenapartments/shared';
+import { Input, Badge, RoomStatus, Table, Select, Option, UserRole, type RoomStatusType } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
 import { useAuth } from '../../../contexts/auth';
 import { useToast } from '../../../components/ui/Toast';
@@ -31,7 +31,7 @@ export default function RoomsPage() {
   const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const canUpdateStatus = user?.role === 'SuperAdmin' || user?.role === 'BranchManager' || user?.role === 'HouseKeeper' || user?.role === 'Reception';
+  const canUpdateStatus = user?.role === UserRole.SuperAdmin || user?.role === UserRole.FacilityManager || user?.role === UserRole.FrontOfficeManager || user?.role === UserRole.HouseKeeper || user?.role === UserRole.Reception;
 
   const validTransitions: Record<string, { value: RoomStatusType; label: string }[]> = {
     [RoomStatus.Available]: [
@@ -100,7 +100,7 @@ export default function RoomsPage() {
     { title: 'Guests', dataIndex: 'maxGuests', key: 'guests', width: 80,
       render: (v: number) => <div className="flex items-center gap-1"><Users size={12} /><span>{v}</span></div> },
     { title: 'Price/Night', key: 'price', width: 130,
-      render: (_: unknown, r: RoomResponse) => <span className="font-medium">₦{r.roomTypeId?.basePrice?.toLocaleString()}</span> },
+      render: (_: unknown, r: RoomResponse) => <span className="font-medium">—</span> },
   ];
 
   if (canUpdateStatus) {

@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Coffee, Check, Calendar, Users, Search, RotateCcw, XCircle } from 'lucide-react';
-import { Button, Input, Table } from '@citydenapartments/shared';
+import { Button, Input, Table, UserRole } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
 import { useToast } from '../../../components/ui/Toast';
 import { useAuth } from '../../../contexts/auth';
@@ -23,7 +23,7 @@ export default function BreakfastPage() {
   const [search, setSearch] = useState('');
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const canReset = user?.role === 'SuperAdmin' || user?.role === 'BranchManager';
+  const canReset = user?.role === UserRole.SuperAdmin || user?.role === UserRole.FacilityManager;
 
   const fetchManifest = useCallback(async () => {
     setLoading(true);

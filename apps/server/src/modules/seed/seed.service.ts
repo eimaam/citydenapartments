@@ -1,6 +1,6 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectModel, InjectConnection } from '@nestjs/mongoose';
+import { Model, Connection } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
 import { subDays, addDays, differenceInDays } from 'date-fns';
 import { User } from '../users/user.schema';
@@ -101,6 +101,7 @@ export class SeedService  {
   private readonly logger = new Logger(SeedService.name);
 
   constructor(
+    @InjectConnection() private connection: Connection,
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(Branch.name) private branchModel: Model<Branch>,
     @InjectModel(RoomType.name) private roomTypeModel: Model<RoomType>,
@@ -113,10 +114,13 @@ export class SeedService  {
   async seed() {
     this.logger.log('Seed started');
 
-    const existingAdmin = await this.userModel.findOne({ email: 'admin@cityden.com' });
-    if (existingAdmin) {
-      return { message: 'System already seeded. Use POST /api/v1/auth/register to add users.' };
+    const db = this.connection.db;
+    if (!db) throw new Error('Database connection not available');
+    const collections = await db.listCollections().toArray();
+    for (const col of collections) {
+      if (!col.name.startsWith('system.')) await db.collection(col.name).drop();
     }
+    this.logger.log('All collections dropped');
 
     const hashedPassword = await bcrypt.hash('admin123', 12);
 
@@ -249,12 +253,20 @@ export class SeedService  {
     await this.userModel.create([
       { email: 'reception@cityden.com', password: hashedPassword, name: 'Amara Reception', role: 'Reception', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true },
       { email: 'kitchen@cityden.com', password: hashedPassword, name: 'Chef Ibrahim', role: 'KitchenStaff', allowedBranches: [branches[0]._id], activeBranchId: branches[0]._id, isActive: true },
-      { email: 'media@cityden.com', password: hashedPassword, name: 'Zara Media', role: 'SocialMediaManager', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true },
       { email: 'housekeeper@cityden.com', password: hashedPassword, name: 'Mama Bisi', role: 'HouseKeeper', allowedBranches: [branches[0]._id], activeBranchId: branches[0]._id, isActive: true },
-      { email: 'manager-abuja@cityden.com', password: hashedPassword, name: 'Chidi Manager', role: 'BranchManager', allowedBranches: [branches[0]._id], activeBranchId: branches[0]._id, isActive: true },
-      { email: 'manager-kaduna@cityden.com', password: hashedPassword, name: 'Fatima Manager', role: 'BranchManager', allowedBranches: [branches[1]._id], activeBranchId: branches[1]._id, isActive: true },
-      { email: 'manager-maiduguri@cityden.com', password: hashedPassword, name: 'Ibrahim Manager', role: 'BranchManager', allowedBranches: [branches[2]._id], activeBranchId: branches[2]._id, isActive: true },
+      { email: 'frontoffice@cityden.com', password: hashedPassword, name: 'Tunde FrontOffice', role: 'FrontOfficeManager', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true },
+      { email: 'accountant@cityden.com', password: hashedPassword, name: 'Ngozi Accountant', role: 'Accountant', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true },
+      { email: 'it@cityden.com', password: hashedPassword, name: 'Chidi IT', role: 'IT', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true },
+      { email: 'fm-abuja@cityden.com', password: hashedPassword, name: 'Chidi Facility Manager', role: 'FacilityManager', allowedBranches: [branches[0]._id], activeBranchId: branches[0]._id, isActive: true },
+      { email: 'fm-kaduna@cityden.com', password: hashedPassword, name: 'Fatima Facility Manager', role: 'FacilityManager', allowedBranches: [branches[1]._id], activeBranchId: branches[1]._id, isActive: true },
+      { email: 'fm-maiduguri@cityden.com', password: hashedPassword, name: 'Ibrahim Facility Manager', role: 'FacilityManager', allowedBranches: [branches[2]._id], activeBranchId: branches[2]._id, isActive: true },
     ]);
+
+    // ── Group GM ──
+    await this.userModel.create({
+      email: 'groupgm@cityden.com', password: hashedPassword, name: 'Dr. Okafor Group GM',
+      role: 'GroupGM', allowedBranches: branches.map((b) => b._id), activeBranchId: null, isActive: true,
+    });
 
     // ── store staff ──
     const storeKeeper = await this.userModel.create({
@@ -266,7 +278,7 @@ export class SeedService  {
       role: 'StoreManager', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true,
     });
 
-    this.logger.log(`Seed — users created: 1 admin + 4 staff + 3 branch managers + 2 store staff`);
+    this.logger.log(`Seed — users created: 1 admin + 1 group gm + 3 facility managers + 1 front office + 1 accountant + 1 it + 2 store staff + kitchen + reception + housekeeper`);
 
     // ── inventory items ─────────────────────────────────────────
     const itemDefs = [
@@ -282,17 +294,27 @@ export class SeedService  {
       { name: 'Bottled Water', category: 'Kitchen', unit: 'cartons' },
     ];
 
+    const costPrices: Record<string, number> = {
+      'Bar Soap': 350, 'Shampoo': 1200, 'Toilet Paper': 2500, 'Hand Towels': 1800,
+      'Bleach': 900, 'Floor Detergent': 1500, 'Light Bulbs': 800, 'Trash Bags': 600,
+      'Dishwashing Liquid': 1100, 'Bottled Water': 2400,
+    };
+
     const inventoryItems: Array<Record<string, unknown>> = [];
     for (const branch of branches) {
       for (const def of itemDefs) {
         const stock = 20 + Math.floor(Math.random() * 80);
         const reorder = 5 + Math.floor(Math.random() * 15);
+        const hasExpiry = Math.random() > 0.4;
+        const expDays = hasExpiry ? Math.random() > 0.2 ? randInt(30, 365) : randInt(-30, 29) : undefined;
         inventoryItems.push({
           name: def.name,
           category: def.category,
           unit: def.unit,
           currentStock: stock,
           reorderLevel: reorder,
+          costPrice: costPrices[def.name] || 500,
+          expiryDate: expDays != null ? daysFromNow(expDays) : undefined,
           branchId: branch._id,
           isActive: true,
           createdBy: storeKeeper._id,
@@ -334,7 +356,8 @@ export class SeedService  {
 
       const nights = Math.max(1, differenceInDays(co, ci));
       const pricePerNight = rt ? randNaira(rt.minPriceAllowed, rt.basePrice) : randNaira(25000, 80000);
-      const discount = Math.random() > 0.7 ? randInt(0, 10000) : 0;
+      const discountPct = Math.random() > 0.7 ? randInt(5, 30) : 0;
+      const discount = Math.round(pricePerNight * nights * discountPct / 100);
       const total = Math.max(0, pricePerNight * nights - discount);
 
       const guestName = `${pick(firstNames)} ${pick(lastNames)}`;
@@ -360,7 +383,8 @@ export class SeedService  {
         checkInDate: ci,
         checkOutDate: co,
         actualPricePerNight: pricePerNight,
-        discount,
+        discount: discount,
+        discountPercentage: discountPct,
         totalAmountPaid: total,
         paymentMethod: pick(paymentMethods),
         paymentReference: Math.random() > 0.5 ? `TXN-${Date.now().toString(36)}-${i}` : undefined,
@@ -391,7 +415,7 @@ export class SeedService  {
       await this.roomModel.findByIdAndUpdate(roomId, { status });
     }
 
-    this.logger.log(`Seed completed — users: 10, branches: ${branches.length}, roomTypes: 7, rooms: ${rooms.length}, bookings: ${bookingData.length}`);
+    this.logger.log(`Seed completed — users: 14, branches: ${branches.length}, roomTypes: 7, rooms: ${rooms.length}, bookings: ${bookingData.length}`);
 
     return {
       message: 'System seeded successfully',
@@ -399,16 +423,19 @@ export class SeedService  {
         admin: 'admin@cityden.com / admin123',
         reception: 'reception@cityden.com / admin123',
         kitchen: 'kitchen@cityden.com / admin123',
-        media: 'media@cityden.com / admin123',
         housekeeper: 'housekeeper@cityden.com / admin123',
-        'manager-abuja': 'manager-abuja@cityden.com / admin123',
-        'manager-kaduna': 'manager-kaduna@cityden.com / admin123',
-        'manager-maiduguri': 'manager-maiduguri@cityden.com / admin123',
-        'storekeeper': 'storekeeper@cityden.com / admin123',
-        'storemanager': 'storemanager@cityden.com / admin123',
+        'frontoffice': 'frontoffice@cityden.com / admin123',
+        accountant: 'accountant@cityden.com / admin123',
+        it: 'it@cityden.com / admin123',
+        'groupgm': 'groupgm@cityden.com / admin123',
+        'fm-abuja': 'fm-abuja@cityden.com / admin123',
+        'fm-kaduna': 'fm-kaduna@cityden.com / admin123',
+        'fm-maiduguri': 'fm-maiduguri@cityden.com / admin123',
+        storekeeper: 'storekeeper@cityden.com / admin123',
+        storemanager: 'storemanager@cityden.com / admin123',
       },
       stats: {
-        users: 10,
+        users: 14,
         branches: 3,
         roomTypes: 7,
         rooms: rooms.length,

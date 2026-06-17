@@ -30,8 +30,9 @@ export default function App() {
           </Route>
 
           <Route element={<AuthGuard />}>
-            <Route element={<RoleGuard roles={[UserRole.SuperAdmin]} />}>
-              <Route element={<MainLayout />}>
+            <Route element={<MainLayout />}>
+              {/* SuperAdmin — full access */}
+              <Route element={<RoleGuard roles={[UserRole.SuperAdmin]} />}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="branches" element={<BranchesPage />} />
                 <Route path="room-types" element={<RoomTypesPage />} />
@@ -42,6 +43,28 @@ export default function App() {
                 <Route path="breakfast" element={<BreakfastPage />} />
                 <Route path="inventory" element={<InventoryPage />} />
                 <Route path="inventory/transactions" element={<InventoryTransactionsPage />} />
+                <Route path="roles" element={<RolesPage />} />
+              </Route>
+
+              {/* GroupGM — read-only overview */}
+              <Route element={<RoleGuard roles={[UserRole.GroupGM]} />}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="room-types" element={<RoomTypesPage />} />
+                <Route path="rooms" element={<RoomsPage />} />
+                <Route path="bookings" element={<BookingsPage />} />
+                <Route path="bookings/calendar" element={<CalendarPage />} />
+                <Route path="breakfast" element={<BreakfastPage />} />
+                <Route path="inventory" element={<InventoryPage />} />
+                <Route path="inventory/transactions" element={<InventoryTransactionsPage />} />
+                <Route path="roles" element={<RolesPage />} />
+              </Route>
+
+              {/* IT — technical admin */}
+              <Route element={<RoleGuard roles={[UserRole.IT]} />}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="room-types" element={<RoomTypesPage />} />
+                <Route path="rooms" element={<RoomsPage />} />
+                <Route path="staff" element={<StaffPage />} />
                 <Route path="roles" element={<RolesPage />} />
               </Route>
             </Route>
