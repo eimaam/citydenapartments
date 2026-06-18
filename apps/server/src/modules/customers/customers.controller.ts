@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/co
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { SearchCustomerDto } from './dto/search-customer.dto';
+import { PaginatedQueryDto } from '../../common/dto/paginated-query.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 
@@ -9,6 +10,11 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class CustomersController {
   constructor(private customersService: CustomersService) {}
+
+  @Get()
+  findAll(@Query() query: PaginatedQueryDto) {
+    return this.customersService.findAll({ page: query.page ?? 1, limit: query.limit ?? 20, search: query.search });
+  }
 
   @Get('search')
   search(@Query() query: SearchCustomerDto) {

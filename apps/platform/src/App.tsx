@@ -15,6 +15,7 @@ import BreakfastPage from './features/breakfast/pages/BreakfastPage';
 import StaffPage from './features/staff/pages/StaffPage';
 import InventoryPage from './features/inventory/pages/InventoryPage';
 import TransactionsPage from './features/inventory/pages/TransactionsPage';
+import CustomersPage from './features/customers/pages/CustomersPage';
 
 export default function App() {
   return (
@@ -50,6 +51,10 @@ export default function App() {
               <Route element={<RoleGuard roles={[UserRole.StoreKeeper, UserRole.StoreManager, UserRole.Accountant]} />}>
                 <Route path="inventory" element={<InventoryPage />} />
                 <Route path="inventory/transactions" element={<TransactionsPage />} />
+              </Route>
+
+              <Route element={<RoleGuard roles={[UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.FrontOfficeManager, UserRole.Accountant, UserRole.IT]} />}>
+                <Route path="customers" element={<CustomersPage />} />
               </Route>
             </Route>
           </Route>

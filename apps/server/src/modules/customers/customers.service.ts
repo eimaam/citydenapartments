@@ -13,6 +13,25 @@ export class CustomersService {
     @InjectModel(Customer.name) private customerModel: Model<Customer>,
   ) {}
 
+  async findAll(params: { page: number; limit: number; search?: string }) {
+    const { page, limit, search } = params;
+    const skip = (page - 1) * limit;
+    const filter: Record<string, any> = {};
+    if (search) {
+      const escaped = escapeRegex(search);
+      filter.$or = [
+        { name: { $regex: escaped, $options: 'i' } },
+        { phone: { $regex: escaped, $options: 'i' } },
+        { email: { $regex: escaped, $options: 'i' } },
+      ];
+    }
+    const [items, total] = await Promise.all([
+      this.customerModel.find(filter).sort({ lastVisitDate: -1, createdAt: -1 }).skip(skip).limit(limit).lean(),
+      this.customerModel.countDocuments(filter),
+    ]);
+    return { items, total, page, limit };
+  }
+
   async searchByPhone(phone: string) {
     const escaped = escapeRegex(phone);
     const customers = await this.customerModel

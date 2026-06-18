@@ -217,12 +217,12 @@ export default function BookingsPage() {
     updateField('guestNationality', c.nationality);
     updateField('guestDob', c.dob || '');
     updateField('guestPhone2', c.phone2 || '');
-    updateField('guestComingFrom', c.comingFrom);
     updateField('guestStateOfOrigin', c.stateOfOrigin);
     updateField('guestOccupation', c.occupation);
-    updateField('guestNextDestination', c.nextDestination);
     updateField('guestGender', c.gender);
     updateField('guestReligion', c.religion || '');
+    updateField('guestComingFrom', '');
+    updateField('guestNextDestination', '');
     setPhoneError(null);
   };
 

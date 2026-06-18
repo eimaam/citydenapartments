@@ -11,6 +11,7 @@ import {
   X,
   ChevronLeft,
   CalendarFold,
+  BookUser,
 } from 'lucide-react';
 import type { UserRoleType } from '../../lib/types';
 import { cn } from '../../lib/utils';
@@ -25,9 +26,14 @@ interface SidebarItem {
 const menuConfig: Record<UserRoleType, SidebarItem[]> = {
   SuperAdmin: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    { label: 'Customers', icon: BookUser, path: '/customers' },
   ],
-  GroupGM: [],
-  IT: [],
+  GroupGM: [
+    { label: 'Customers', icon: BookUser, path: '/customers' },
+  ],
+  IT: [
+    { label: 'Customers', icon: BookUser, path: '/customers' },
+  ],
   FacilityManager: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
     { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
@@ -35,12 +41,14 @@ const menuConfig: Record<UserRoleType, SidebarItem[]> = {
     { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
     { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
     { label: 'Staff', icon: Users, path: '/staff' },
+    { label: 'Customers', icon: BookUser, path: '/customers' },
   ],
   FrontOfficeManager: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
     { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
     { label: 'Calendar', icon: CalendarFold, path: '/bookings/calendar' },
     { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
+    { label: 'Customers', icon: BookUser, path: '/customers' },
   ],
   Accountant: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
