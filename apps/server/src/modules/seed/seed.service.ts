@@ -10,6 +10,7 @@ import { Room, RoomStatusEnum } from '../rooms/room.schema';
 import { Booking } from '../bookings/booking.schema';
 import { InventoryItem } from '../inventory/inventory-item.schema';
 import { InventoryTransaction } from '../inventory/inventory-transaction.schema';
+import { Employee } from '../employees/employee.schema';
 
 // ── random helpers ──────────────────────────────────────────────
 const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
@@ -109,6 +110,7 @@ export class SeedService  {
     @InjectModel(Booking.name) private bookingModel: Model<Booking>,
     @InjectModel(InventoryItem.name) private inventoryItemModel: Model<InventoryItem>,
     @InjectModel(InventoryTransaction.name) private inventoryTxModel: Model<InventoryTransaction>,
+    @InjectModel(Employee.name) private employeeModel: Model<Employee>,
   ) {}
 
   async seed() {
@@ -208,9 +210,13 @@ export class SeedService  {
 
     // ── room types ──
     const abujaRT = await this.roomTypeModel.create([
-      { branchId: branches[0]._id, name: 'King Suite', basePrice: 80000, minPriceAllowed: 65000, amenities: ['King Bed', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[0]._id, name: 'Deluxe Suite', basePrice: 55000, minPriceAllowed: 45000, amenities: ['Queen Bed', 'AC', 'WiFi'], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[0]._id, name: 'Presidential Suite', basePrice: 150000, minPriceAllowed: 120000, amenities: ['King Bed', 'Living Room', 'Jacuzzi', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[0]._id, name: 'King Suite', basePrice: 60000, minPriceAllowed: 50000, amenities: ['King Bed', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[0]._id, name: 'Deluxe Suite', basePrice: 70000, minPriceAllowed: 60000, amenities: ['Queen Bed', 'AC', 'WiFi'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[0]._id, name: 'Executive Suite', basePrice: 80000, minPriceAllowed: 70000, amenities: ['King Bed', 'AC', 'WiFi', 'Work Desk', 'TV'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[0]._id, name: 'Penthouse Suite', basePrice: 120000, minPriceAllowed: 100000, amenities: ['King Bed', 'Living Room', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[0]._id, name: 'Royal Suite', basePrice: 150000, minPriceAllowed: 130000, amenities: ['King Bed', 'Living Room', 'Kitchenette', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[0]._id, name: 'Business Suite', basePrice: 160000, minPriceAllowed: 140000, amenities: ['King Bed', 'Living Room', 'Work Desk', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[0]._id, name: 'Presidential Suite', basePrice: 400000, minPriceAllowed: 350000, amenities: ['King Bed', 'Living Room', 'Dining', 'Jacuzzi', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
     ]);
     const kadunaRT = await this.roomTypeModel.create([
       { branchId: branches[1]._id, name: 'King Suite', basePrice: 70000, minPriceAllowed: 55000, amenities: ['King Bed', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
@@ -221,15 +227,32 @@ export class SeedService  {
       { branchId: branches[2]._id, name: 'Standard Room', basePrice: 30000, minPriceAllowed: 25000, amenities: ['Queen Bed', 'AC'], createdBy: admin._id, updatedBy: admin._id },
     ]);
 
-    this.logger.log(`Seed — room types created: ${abujaRT.length + kadunaRT.length + maiRT.length}`);
+    this.logger.log(`Seed — room types created: ${abujaRT.length} Abuja + ${kadunaRT.length} Kaduna + ${maiRT.length} Maiduguri`);
 
     // ── rooms (references for seeding bookings) ──
     const roomDefs = [
-      { branch: 0, rt: 0, num: 'KS-101', max: 2 }, { branch: 0, rt: 0, num: 'KS-102', max: 2 },
-      { branch: 0, rt: 1, num: 'DS-201', max: 3 }, { branch: 0, rt: 1, num: 'DS-202', max: 3 },
-      { branch: 0, rt: 1, num: 'DS-203', max: 3 }, { branch: 0, rt: 2, num: 'PS-301', max: 4 },
+      // Abuja — King Suite (rt 0)
+      { branch: 0, rt: 0, num: 'B104', max: 2 }, { branch: 0, rt: 0, num: 'B203', max: 2 },
+      // Abuja — Deluxe Suite (rt 1)
+      { branch: 0, rt: 1, num: 'A105', max: 2 }, { branch: 0, rt: 1, num: 'A204', max: 2 },
+      { branch: 0, rt: 1, num: 'B102', max: 2 }, { branch: 0, rt: 1, num: 'B103', max: 2 },
+      { branch: 0, rt: 1, num: 'B201', max: 2 }, { branch: 0, rt: 1, num: 'B204', max: 2 },
+      // Abuja — Executive Suite (rt 2)
+      { branch: 0, rt: 2, num: 'A001', max: 2 }, { branch: 0, rt: 2, num: 'A002', max: 2 },
+      { branch: 0, rt: 2, num: 'A003', max: 2 },
+      // Abuja — Penthouse Suite (rt 3)
+      { branch: 0, rt: 3, num: 'B202', max: 3 },
+      // Abuja — Royal Suite (rt 4)
+      { branch: 0, rt: 4, num: 'B101', max: 3 },
+      // Abuja — Business Suite (rt 5)
+      { branch: 0, rt: 5, num: 'A101', max: 3 },
+      // Abuja — Presidential Suite (rt 6)
+      { branch: 0, rt: 6, num: 'A102', max: 4 }, { branch: 0, rt: 6, num: 'A103', max: 4 },
+      { branch: 0, rt: 6, num: 'A104', max: 4 },
+      // Kaduna
       { branch: 1, rt: 0, num: 'KS-101', max: 2 }, { branch: 1, rt: 0, num: 'KS-102', max: 2 },
       { branch: 1, rt: 1, num: 'SR-201', max: 2 }, { branch: 1, rt: 1, num: 'SR-202', max: 2 },
+      // Maiduguri
       { branch: 2, rt: 0, num: 'DS-101', max: 3 }, { branch: 2, rt: 0, num: 'DS-102', max: 3 },
       { branch: 2, rt: 1, num: 'SR-201', max: 2 },
     ];
@@ -339,6 +362,76 @@ export class SeedService  {
 
     this.logger.log(`Seed — inventory items created: ${createdItems.length} across ${branches.length} branches`);
 
+    // ── employees ────────────────────────────────────────────────────
+    const employeeData: Array<Record<string, unknown>> = [];
+
+    const staffByBranch: Array<{ branchIdx: number; staff: Array<{ name: string; email: string; phone: string; department: string; position: string }> }> = [
+      {
+        branchIdx: 0, // Abuja
+        staff: [
+          { name: 'Adebayo Olamide', email: 'adebayo.olamide@cityden.com', phone: '08031234567', department: 'Front Office', position: 'Senior Receptionist' },
+          { name: 'Nkechi Okoro', email: 'nkechi.okoro@cityden.com', phone: '08031234568', department: 'Front Office', position: 'Receptionist' },
+          { name: 'Samuel Eze', email: 'samuel.eze@cityden.com', phone: '08031234569', department: 'Front Office', position: 'Receptionist' },
+          { name: 'Mariam Bello', email: 'mariam.bello@cityden.com', phone: '08031234570', department: 'Housekeeping', position: 'Head Housekeeper' },
+          { name: 'Grace John', email: 'grace.john@cityden.com', phone: '08031234571', department: 'Housekeeping', position: 'Housekeeper' },
+          { name: 'Patience Ali', email: 'patience.ali@cityden.com', phone: '08031234572', department: 'Housekeeping', position: 'Housekeeper' },
+          { name: 'Hauwa Yusuf', email: 'hauwa.yusuf@cityden.com', phone: '08031234573', department: 'Housekeeping', position: 'Housekeeper' },
+          { name: 'Michael Okafor', email: 'michael.okafor@cityden.com', phone: '08031234574', department: 'Kitchen', position: 'Head Chef' },
+          { name: 'Kelechi Nwosu', email: 'kelechi.nwosu@cityden.com', phone: '08031234575', department: 'Kitchen', position: 'Line Cook' },
+          { name: 'Favour Sunday', email: 'favour.sunday@cityden.com', phone: '08031234576', department: 'Kitchen', position: 'Kitchen Assistant' },
+          { name: 'Musa Ibrahim', email: 'musa.ibrahim@cityden.com', phone: '08031234577', department: 'Maintenance', position: 'Technician' },
+          { name: 'Chinedu Obi', email: 'chinedu.obi@cityden.com', phone: '08031234578', department: 'Maintenance', position: 'Electrician' },
+          { name: 'Ahmed Suleiman', email: 'ahmed.suleiman@cityden.com', phone: '08031234579', department: 'Store', position: 'Store Keeper' },
+          { name: 'Ruth David', email: 'ruth.david@cityden.com', phone: '08031234580', department: 'Store', position: 'Store Assistant' },
+          { name: 'Danjuma Garba', email: 'danjuma.garba@cityden.com', phone: '08031234581', department: 'Security', position: 'Security Officer' },
+          { name: 'Bashir Umar', email: 'bashir.umar@cityden.com', phone: '08031234582', department: 'Security', position: 'Security Officer' },
+        ],
+      },
+      {
+        branchIdx: 1, // Kaduna
+        staff: [
+          { name: 'Zainab Abubakar', email: 'zainab.abubakar@cityden.com', phone: '08031234583', department: 'Front Office', position: 'Receptionist' },
+          { name: 'Joseph Audu', email: 'joseph.audu@cityden.com', phone: '08031234584', department: 'Front Office', position: 'Receptionist' },
+          { name: 'Lami Musa', email: 'lami.musa@cityden.com', phone: '08031234585', department: 'Housekeeping', position: 'Head Housekeeper' },
+          { name: 'Rahila Yakubu', email: 'rahila.yakubu@cityden.com', phone: '08031234586', department: 'Housekeeping', position: 'Housekeeper' },
+          { name: 'Emmanuel Silas', email: 'emmanuel.silas@cityden.com', phone: '08031234587', department: 'Kitchen', position: 'Chef' },
+          { name: 'Paulina Ishaya', email: 'paulina.ishaya@cityden.com', phone: '08031234588', department: 'Kitchen', position: 'Kitchen Assistant' },
+          { name: 'Sani Abdullahi', email: 'sani.abdullahi@cityden.com', phone: '08031234589', department: 'Maintenance', position: 'Handyman' },
+          { name: 'Hassan Bello', email: 'hassan.bello@cityden.com', phone: '08031234590', department: 'Store', position: 'Store Keeper' },
+          { name: 'Nuhu Mohammed', email: 'nuhu.mohammed@cityden.com', phone: '08031234591', department: 'Security', position: 'Security Officer' },
+        ],
+      },
+      {
+        branchIdx: 2, // Maiduguri
+        staff: [
+          { name: 'Amina Bukar', email: 'amina.bukar@cityden.com', phone: '08031234592', department: 'Front Office', position: 'Receptionist' },
+          { name: 'Falmata Kyari', email: 'falmata.kyari@cityden.com', phone: '08031234593', department: 'Housekeeping', position: 'Head Housekeeper' },
+          { name: 'Yagana Usman', email: 'yagana.usman@cityden.com', phone: '08031234594', department: 'Housekeeping', position: 'Housekeeper' },
+          { name: 'Babagana Modu', email: 'babagana.modu@cityden.com', phone: '08031234595', department: 'Kitchen', position: 'Chef' },
+          { name: 'Tijjani Goni', email: 'tijjani.goni@cityden.com', phone: '08031234596', department: 'Maintenance', position: 'Technician' },
+          { name: 'Abba Mustapha', email: 'abba.mustapha@cityden.com', phone: '08031234597', department: 'Store', position: 'Store Keeper' },
+          { name: 'Umar Kaka', email: 'umar.kaka@cityden.com', phone: '08031234598', department: 'Security', position: 'Security Officer' },
+        ],
+      },
+    ];
+
+    for (const { branchIdx, staff } of staffByBranch) {
+      for (const s of staff) {
+        employeeData.push({
+          name: s.name,
+          email: s.email,
+          phone: s.phone,
+          department: s.department,
+          position: s.position,
+          branchId: branches[branchIdx]._id,
+          isActive: true,
+        });
+      }
+    }
+
+    await this.employeeModel.create(employeeData);
+    this.logger.log(`Seed — employees created: ${employeeData.length} across ${branches.length} branches`);
+
     // ── 30 bookings ─────────────────────────────────────────────────
     const bookingData: Array<Record<string, unknown>> = [];
     const roomsToUpdate: Record<string, string> = {}; // roomId -> status
@@ -415,7 +508,7 @@ export class SeedService  {
       await this.roomModel.findByIdAndUpdate(roomId, { status });
     }
 
-    this.logger.log(`Seed completed — users: 14, branches: ${branches.length}, roomTypes: 7, rooms: ${rooms.length}, bookings: ${bookingData.length}`);
+    this.logger.log(`Seed completed — users: 14, employees: ${employeeData.length}, branches: ${branches.length}, roomTypes: ${abujaRT.length + kadunaRT.length + maiRT.length}, rooms: ${rooms.length}, bookings: ${bookingData.length}`);
 
     return {
       message: 'System seeded successfully',
@@ -436,8 +529,9 @@ export class SeedService  {
       },
       stats: {
         users: 14,
+        employees: employeeData.length,
         branches: 3,
-        roomTypes: 7,
+        roomTypes: abujaRT.length + kadunaRT.length + maiRT.length,
         rooms: rooms.length,
         bookings: bookingData.length,
       },

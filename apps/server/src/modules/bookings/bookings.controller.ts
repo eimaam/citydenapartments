@@ -16,11 +16,13 @@ export class BookingsController {
   constructor(private bookingsService: BookingsService) {}
 
   @Get('calendar')
+  @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.ACCOUNTANT, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM)
   getCalendar(@ActiveUser() user: any, @Query() query: CalendarQueryDto) {
     return this.bookingsService.getCalendar(user.activeBranchId, query.year, query.month);
   }
 
   @Get()
+  @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.ACCOUNTANT, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM)
   findAll(
     @ActiveUser() user: any,
     @Query() query: QueryBookingsDto,
@@ -35,6 +37,7 @@ export class BookingsController {
   }
 
   @Get(':id')
+  @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.ACCOUNTANT, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM)
   findOne(@Param('id') id: string, @ActiveUser() user: any) {
     return this.bookingsService.findOne(id, user.activeBranchId);
   }

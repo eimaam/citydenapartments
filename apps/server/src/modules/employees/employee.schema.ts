@@ -27,4 +27,3 @@ export class Employee extends Document {
 
 export const EmployeeSchema = SchemaFactory.createForClass(Employee);
 EmployeeSchema.index({ branchId: 1, name: 1 });
-EmployeeSchema.index({ email: 1 }, { unique: true });

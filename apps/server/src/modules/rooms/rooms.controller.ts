@@ -21,11 +21,13 @@ export class RoomsController {
   ) { }
 
   @Get()
+  @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.HOUSE_KEEPER, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM)
   findAll(@ActiveUser() user: any, @Query() query: QueryRoomsDto) {
     return this.roomsService.findAll({ branchId: user.activeBranchId, page: query.page, limit: query.limit, search: query.search, status: query.status as any });
   }
 
   @Get('available')
+  @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM)
   findAvailable(@ActiveUser() user: any, @Query() query: AvailableRoomsDto) {
     return this.roomsService.findAvailable(
       new Date(query.checkIn),
@@ -35,6 +37,7 @@ export class RoomsController {
   }
 
   @Get(':id')
+  @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.HOUSE_KEEPER, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM)
   findOne(@Param('id') id: string) {
     return this.roomsService.findOne(id);
   }
