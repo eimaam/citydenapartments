@@ -389,9 +389,15 @@ export default function CalendarPage() {
     setPriceError(null);
   };
 
-  const fetchAvailableRooms = useCallback(async (ci: string, co: string) => {
+  const fetchAvailableRooms = useCallback(async (ci: string, co: string, currentRoomId?: string) => {
     try {
-      setAvailableRooms(await roomsApi.available(ci, co));
+      const fetched = await roomsApi.available(ci, co);
+      setAvailableRooms(fetched);
+      if (currentRoomId && !fetched.find((r) => r._id === currentRoomId)) {
+        updateField('roomId', '');
+        updateField('actualPricePerNight', 0);
+        updateField('totalAmountPaid', 0);
+      }
     } catch {
       toast('error', 'Failed to load rooms.');
     }
@@ -408,7 +414,7 @@ export default function CalendarPage() {
     updateField('nights', nights);
     updateField('checkOutDate', toDateStr(co));
     recalcTotal(Number(form.actualPricePerNight) || 0, form.discountPercentage, nights);
-    fetchAvailableRooms(form.checkInDate, toDateStr(co));
+    fetchAvailableRooms(form.checkInDate, toDateStr(co), form.roomId);
   };
 
   const onCheckInChange = (date: string) => {
@@ -416,7 +422,7 @@ export default function CalendarPage() {
     const nights = form.useNights ? form.nights : computedNights;
     let co = addDays(new Date(date), nights);
     updateField('checkOutDate', toDateStr(co));
-    fetchAvailableRooms(date, toDateStr(co));
+    fetchAvailableRooms(date, toDateStr(co), form.roomId);
   };
 
   const onCheckOutChange = (date: string) => {
@@ -425,7 +431,7 @@ export default function CalendarPage() {
     const nights = Math.max(1, differenceInDays(new Date(date), new Date(form.checkInDate)));
     updateField('nights', nights);
     recalcTotal(Number(form.actualPricePerNight) || 0, form.discountPercentage, nights);
-    fetchAvailableRooms(form.checkInDate, date);
+    fetchAvailableRooms(form.checkInDate, date, form.roomId);
   };
 
   const onPriceChange = (price: number) => {

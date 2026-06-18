@@ -66,6 +66,7 @@ export class AuthService {
 
   async login({ email, password}: LoginDto) {
     const user = await this.userModel.findOne({ email: email.toLowerCase() }).select('+password');
+    this.logger.debug(`User is ==>${user}`);
     if (!user) {
       this.logger.warn(`Login failed — unknown email: ${email}`);
       throw new UnauthorizedException('Invalid email or password.');

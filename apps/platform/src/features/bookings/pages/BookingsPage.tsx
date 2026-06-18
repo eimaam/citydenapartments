@@ -180,13 +180,21 @@ export default function BookingsPage() {
     setPriceError(null);
   };
 
-  const fetchAvailableRooms = useCallback(async (ci: string, co: string) => {
-    try { setRooms(await roomsApi.available(ci, co)); } catch { toast('error', 'Failed to load rooms.'); }
+  const fetchAvailableRooms = useCallback(async (ci: string, co: string, currentRoomId?: string) => {
+    try {
+      const fetched = await roomsApi.available(ci, co);
+      setRooms(fetched);
+      if (currentRoomId && !fetched.find((r) => r._id === currentRoomId)) {
+        updateField('roomId', '');
+        updateField('actualPricePerNight', 0);
+        updateField('totalAmountPaid', 0);
+      }
+    } catch { toast('error', 'Failed to load rooms.'); }
   }, [toast]);
 
-  const onNightsChange = (n: number) => { const nights = Math.max(1, n); let co = addDays(new Date(form.checkInDate), nights); updateField('nights', nights); updateField('checkOutDate', toDateStr(co)); recalcTotal(Number(form.actualPricePerNight) || 0, form.discountPercentage, nights); fetchAvailableRooms(form.checkInDate, toDateStr(co)); };
-  const onCheckInChange = (date: string) => { updateField('checkInDate', date); const nights = form.useNights ? form.nights : computedNights; let co = addDays(new Date(date), nights); updateField('checkOutDate', toDateStr(co)); fetchAvailableRooms(date, toDateStr(co)); };
-  const onCheckOutChange = (date: string) => { updateField('checkOutDate', date); updateField('useNights', false); const nights = Math.max(1, differenceInDays(new Date(date), new Date(form.checkInDate))); updateField('nights', nights); recalcTotal(Number(form.actualPricePerNight) || 0, form.discountPercentage, nights); fetchAvailableRooms(form.checkInDate, date); };
+  const onNightsChange = (n: number) => { const nights = Math.max(1, n); let co = addDays(new Date(form.checkInDate), nights); updateField('nights', nights); updateField('checkOutDate', toDateStr(co)); recalcTotal(Number(form.actualPricePerNight) || 0, form.discountPercentage, nights); fetchAvailableRooms(form.checkInDate, toDateStr(co), form.roomId); };
+  const onCheckInChange = (date: string) => { updateField('checkInDate', date); const nights = form.useNights ? form.nights : computedNights; let co = addDays(new Date(date), nights); updateField('checkOutDate', toDateStr(co)); fetchAvailableRooms(date, toDateStr(co), form.roomId); };
+  const onCheckOutChange = (date: string) => { updateField('checkOutDate', date); updateField('useNights', false); const nights = Math.max(1, differenceInDays(new Date(date), new Date(form.checkInDate))); updateField('nights', nights); recalcTotal(Number(form.actualPricePerNight) || 0, form.discountPercentage, nights); fetchAvailableRooms(form.checkInDate, date, form.roomId); };
 
   const recalcTotal = (price: number, pct: number, nights: number) => {
     const discountAmt = Math.round((price * nights * pct) / 100);

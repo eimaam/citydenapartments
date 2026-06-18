@@ -11,6 +11,7 @@ import { Booking } from '../bookings/booking.schema';
 import { InventoryItem } from '../inventory/inventory-item.schema';
 import { InventoryTransaction } from '../inventory/inventory-transaction.schema';
 import { Employee } from '../employees/employee.schema';
+import { Customer } from '../customers/customer.schema';
 
 // ── random helpers ──────────────────────────────────────────────
 const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
@@ -111,6 +112,7 @@ export class SeedService  {
     @InjectModel(InventoryItem.name) private inventoryItemModel: Model<InventoryItem>,
     @InjectModel(InventoryTransaction.name) private inventoryTxModel: Model<InventoryTransaction>,
     @InjectModel(Employee.name) private employeeModel: Model<Employee>,
+    @InjectModel(Customer.name) private customerModel: Model<Customer>,
   ) {}
 
   async seed() {
@@ -205,7 +207,7 @@ export class SeedService  {
     const admin = await this.userModel.create({
       email: 'admin@cityden.com', password: hashedPassword, name: 'Super Admin',
       role: 'SuperAdmin', allowedBranches: branches.map((b) => b._id),
-      activeBranchId: null, isActive: true,
+      activeBranchId: null, isActive: true, passwordChangedAt: new Date(),
     });
 
     // ── room types ──
@@ -273,32 +275,33 @@ export class SeedService  {
     this.logger.log(`Seed — rooms created: ${rooms.length}`);
 
     // ── staff ──
+    const now = new Date();
     await this.userModel.create([
-      { email: 'reception@cityden.com', password: hashedPassword, name: 'Amara Reception', role: 'Reception', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true },
-      { email: 'kitchen@cityden.com', password: hashedPassword, name: 'Chef Ibrahim', role: 'KitchenStaff', allowedBranches: [branches[0]._id], activeBranchId: branches[0]._id, isActive: true },
-      { email: 'housekeeper@cityden.com', password: hashedPassword, name: 'Mama Bisi', role: 'HouseKeeper', allowedBranches: [branches[0]._id], activeBranchId: branches[0]._id, isActive: true },
-      { email: 'frontoffice@cityden.com', password: hashedPassword, name: 'Tunde FrontOffice', role: 'FrontOfficeManager', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true },
-      { email: 'accountant@cityden.com', password: hashedPassword, name: 'Ngozi Accountant', role: 'Accountant', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true },
-      { email: 'it@cityden.com', password: hashedPassword, name: 'Chidi IT', role: 'IT', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true },
-      { email: 'fm-abuja@cityden.com', password: hashedPassword, name: 'Chidi Facility Manager', role: 'FacilityManager', allowedBranches: [branches[0]._id], activeBranchId: branches[0]._id, isActive: true },
-      { email: 'fm-kaduna@cityden.com', password: hashedPassword, name: 'Fatima Facility Manager', role: 'FacilityManager', allowedBranches: [branches[1]._id], activeBranchId: branches[1]._id, isActive: true },
-      { email: 'fm-maiduguri@cityden.com', password: hashedPassword, name: 'Ibrahim Facility Manager', role: 'FacilityManager', allowedBranches: [branches[2]._id], activeBranchId: branches[2]._id, isActive: true },
+      { email: 'reception@cityden.com', password: hashedPassword, name: 'Amara Reception', role: 'Reception', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true, passwordChangedAt: now },
+      { email: 'kitchen@cityden.com', password: hashedPassword, name: 'Chef Ibrahim', role: 'KitchenStaff', allowedBranches: [branches[0]._id], activeBranchId: branches[0]._id, isActive: true, passwordChangedAt: now },
+      { email: 'housekeeper@cityden.com', password: hashedPassword, name: 'Mama Bisi', role: 'HouseKeeper', allowedBranches: [branches[0]._id], activeBranchId: branches[0]._id, isActive: true, passwordChangedAt: now },
+      { email: 'frontoffice@cityden.com', password: hashedPassword, name: 'Tunde FrontOffice', role: 'FrontOfficeManager', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true, passwordChangedAt: now },
+      { email: 'accountant@cityden.com', password: hashedPassword, name: 'Ngozi Accountant', role: 'Accountant', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true, passwordChangedAt: now },
+      { email: 'it@cityden.com', password: hashedPassword, name: 'Chidi IT', role: 'IT', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true, passwordChangedAt: now },
+      { email: 'fm-abuja@cityden.com', password: hashedPassword, name: 'Chidi Facility Manager', role: 'FacilityManager', allowedBranches: [branches[0]._id], activeBranchId: branches[0]._id, isActive: true, passwordChangedAt: now },
+      { email: 'fm-kaduna@cityden.com', password: hashedPassword, name: 'Fatima Facility Manager', role: 'FacilityManager', allowedBranches: [branches[1]._id], activeBranchId: branches[1]._id, isActive: true, passwordChangedAt: now },
+      { email: 'fm-maiduguri@cityden.com', password: hashedPassword, name: 'Ibrahim Facility Manager', role: 'FacilityManager', allowedBranches: [branches[2]._id], activeBranchId: branches[2]._id, isActive: true, passwordChangedAt: now },
     ]);
 
     // ── Group GM ──
     await this.userModel.create({
       email: 'groupgm@cityden.com', password: hashedPassword, name: 'Dr. Okafor Group GM',
-      role: 'GroupGM', allowedBranches: branches.map((b) => b._id), activeBranchId: null, isActive: true,
+      role: 'GroupGM', allowedBranches: branches.map((b) => b._id), activeBranchId: null, isActive: true, passwordChangedAt: now,
     });
 
     // ── store staff ──
     const storeKeeper = await this.userModel.create({
       email: 'storekeeper@cityden.com', password: hashedPassword, name: 'Emeka Store',
-      role: 'StoreKeeper', allowedBranches: [branches[0]._id], activeBranchId: branches[0]._id, isActive: true,
+      role: 'StoreKeeper', allowedBranches: [branches[0]._id], activeBranchId: branches[0]._id, isActive: true, passwordChangedAt: now,
     });
     await this.userModel.create({
       email: 'storemanager@cityden.com', password: hashedPassword, name: 'Ngozi Store',
-      role: 'StoreManager', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true,
+      role: 'StoreManager', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true, passwordChangedAt: now,
     });
 
     this.logger.log(`Seed — users created: 1 admin + 1 group gm + 3 facility managers + 1 front office + 1 accountant + 1 it + 2 store staff + kitchen + reception + housekeeper`);
@@ -432,6 +435,33 @@ export class SeedService  {
     await this.employeeModel.create(employeeData);
     this.logger.log(`Seed — employees created: ${employeeData.length} across ${branches.length} branches`);
 
+    // ── customers ────────────────────────────────────────────────────
+    const customerData: Array<Record<string, unknown>> = [];
+    const customerPhones: string[] = [];
+    for (let i = 0; i < 20; i++) {
+      const phone = `0803${String(randInt(1000000, 9999999)).padStart(7, '0')}`;
+      customerPhones.push(phone);
+      const gender = pick(genders);
+      customerData.push({
+        name: `${pick(firstNames)} ${pick(lastNames)}`,
+        phone,
+        email: Math.random() > 0.3 ? `guest${i}@email.com` : undefined,
+        address: pick(['12 Ahmadu Bello Way', 'Plot 5 Lugard Avenue', '23 Tafawa Balewa Road', '8 Yakubu Gowon Crescent', '45 Obafemi Awolowo Street']),
+        nationality: 'Nigeria',
+        comingFrom: pick(cities),
+        stateOfOrigin: pick(states),
+        occupation: pick(occupations),
+        nextDestination: pick(cities),
+        gender,
+        totalVisits: randInt(0, 5),
+        totalSpent: randNaira(0, 500000),
+        lastVisitDate: Math.random() > 0.3 ? daysAgo(randInt(1, 60)) : undefined,
+        firstBranchId: pick(branches)._id,
+      });
+    }
+    await this.customerModel.create(customerData);
+    this.logger.log(`Seed — customers created: ${customerData.length}`);
+
     // ── 30 bookings ─────────────────────────────────────────────────
     const bookingData: Array<Record<string, unknown>> = [];
     const roomsToUpdate: Record<string, string> = {}; // roomId -> status
@@ -454,7 +484,7 @@ export class SeedService  {
       const total = Math.max(0, pricePerNight * nights - discount);
 
       const guestName = `${pick(firstNames)} ${pick(lastNames)}`;
-      const guestPhone = `0803${String(randInt(1000000, 9999999)).padStart(7, '0')}`;
+      const guestPhone = Math.random() > 0.6 ? pick(customerPhones) : `0803${String(randInt(1000000, 9999999)).padStart(7, '0')}`;
       const hasEmail = Math.random() > 0.5;
 
       bookingData.push({
@@ -508,7 +538,7 @@ export class SeedService  {
       await this.roomModel.findByIdAndUpdate(roomId, { status });
     }
 
-    this.logger.log(`Seed completed — users: 14, employees: ${employeeData.length}, branches: ${branches.length}, roomTypes: ${abujaRT.length + kadunaRT.length + maiRT.length}, rooms: ${rooms.length}, bookings: ${bookingData.length}`);
+    this.logger.log(`Seed completed — users: 14, customers: ${customerData.length}, employees: ${employeeData.length}, branches: ${branches.length}, roomTypes: ${abujaRT.length + kadunaRT.length + maiRT.length}, rooms: ${rooms.length}, bookings: ${bookingData.length}`);
 
     return {
       message: 'System seeded successfully',
@@ -529,6 +559,7 @@ export class SeedService  {
       },
       stats: {
         users: 14,
+        customers: customerData.length,
         employees: employeeData.length,
         branches: 3,
         roomTypes: abujaRT.length + kadunaRT.length + maiRT.length,

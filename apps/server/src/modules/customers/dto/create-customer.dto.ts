@@ -5,6 +5,7 @@ import {
   IsDateString,
   IsEnum,
   IsNotEmpty,
+  Matches,
 } from 'class-validator';
 import { Gender } from '@citydenapartments/shared';
 
@@ -15,6 +16,7 @@ export class CreateCustomerDto {
 
   @IsString()
   @IsNotEmpty()
+  @Matches(/^0\d{10}$/, { message: 'Phone must be a valid 11-digit Nigerian mobile number starting with 0' })
   phone: string;
 
   @IsOptional()
@@ -35,6 +37,7 @@ export class CreateCustomerDto {
 
   @IsOptional()
   @IsString()
+  @Matches(/^0\d{10}$/, { message: 'Phone must be a valid 11-digit Nigerian mobile number starting with 0' })
   phone2?: string;
 
   @IsString()
