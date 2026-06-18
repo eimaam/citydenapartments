@@ -24,6 +24,9 @@ export class DailySnapshot extends Document {
   @Prop({ default: 0 })
   totalAdjustments: number;
 
+  @Prop({ default: 0 })
+  totalSpoilage: number;
+
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Branch', required: true })
   branchId: MongooseSchema.Types.ObjectId;
 

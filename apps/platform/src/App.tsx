@@ -15,6 +15,8 @@ import BreakfastPage from './features/breakfast/pages/BreakfastPage';
 import StaffPage from './features/staff/pages/StaffPage';
 import InventoryPage from './features/inventory/pages/InventoryPage';
 import TransactionsPage from './features/inventory/pages/TransactionsPage';
+import SpoilagePage from './features/inventory/pages/SpoilagePage';
+import InventoryBookPage from './features/inventory/pages/InventoryBookPage';
 import CustomersPage from './features/customers/pages/CustomersPage';
 
 export default function App() {
@@ -51,6 +53,11 @@ export default function App() {
               <Route element={<RoleGuard roles={[UserRole.StoreKeeper, UserRole.StoreManager, UserRole.Accountant]} />}>
                 <Route path="inventory" element={<InventoryPage />} />
                 <Route path="inventory/transactions" element={<TransactionsPage />} />
+              </Route>
+
+              <Route element={<RoleGuard roles={[UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.StoreManager, UserRole.Accountant]} />}>
+                <Route path="inventory/spoilage" element={<SpoilagePage />} />
+                <Route path="inventory/book" element={<InventoryBookPage />} />
               </Route>
 
               <Route element={<RoleGuard roles={[UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.FrontOfficeManager, UserRole.Accountant, UserRole.IT]} />}>

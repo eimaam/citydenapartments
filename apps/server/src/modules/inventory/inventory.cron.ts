@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { InventoryService } from './inventory.service';
 
 @Injectable()
@@ -8,7 +8,7 @@ export class InventoryCron {
 
   constructor(private readonly inventoryService: InventoryService) {}
 
-  @Cron(CronExpression.EVERY_DAY_AT_1AM)
+  @Cron('0 0 * * *')
   async handleDailyClose() {
     this.logger.log('Daily inventory auto-close triggered');
 

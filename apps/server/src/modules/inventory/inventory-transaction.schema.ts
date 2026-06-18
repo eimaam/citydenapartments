@@ -5,8 +5,10 @@ export const TransactionTypeEnum = {
   Restock: 'restock',
   Issue: 'issue',
   Adjustment: 'adjustment',
+  Spoilage: 'spoilage',
+  Disposal: 'disposal',
 } as const;
-export type TransactionType = 'restock' | 'issue' | 'adjustment';
+export type TransactionType = 'restock' | 'issue' | 'adjustment' | 'spoilage' | 'disposal';
 
 @Schema({ timestamps: true })
 export class InventoryTransaction extends Document {

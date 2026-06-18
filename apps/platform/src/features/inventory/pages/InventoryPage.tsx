@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Package, AlertTriangle, ArrowDownCircle, ArrowUpCircle, Plus, Clock } from 'lucide-react';
+import { Search, Package, AlertTriangle, ArrowDownCircle, ArrowUpCircle, Plus, Clock, Trash2 } from 'lucide-react';
 import { useAuth } from '../../../contexts/auth';
 import { useToast } from '../../../components/ui/Toast';
 import { Input, Select, Option, Drawer, Modal, Button, UserRole } from '@citydenapartments/shared';
@@ -30,6 +30,21 @@ export default function InventoryPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState({ name: '', category: '', description: '', unit: 'pcs', currentStock: 0, reorderLevel: 0, costPrice: '' as string | number, expiryDate: '' });
+
+  const [spoilItem, setSpoilItem] = useState<InventoryItem | null>(null);
+  const [spoilQty, setSpoilQty] = useState(1);
+  const [spoilType, setSpoilType] = useState('expired');
+  const [spoilReason, setSpoilReason] = useState('');
+  const [spoilNotes, setSpoilNotes] = useState('');
+
+  const spoilTypes = [
+    { value: 'expired', label: 'Expired' },
+    { value: 'damaged', label: 'Damaged' },
+    { value: 'contaminated', label: 'Contaminated' },
+    { value: 'stolen', label: 'Stolen' },
+    { value: 'lost', label: 'Lost' },
+    { value: 'other', label: 'Other' },
+  ];
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -97,6 +112,34 @@ export default function InventoryPage() {
       setShowCreate(false);
       setCreateForm({ name: '', category: '', description: '', unit: 'pcs', currentStock: 0, reorderLevel: 0, costPrice: '', expiryDate: '' });
       toast('success', 'Item created.');
+      fetchItems();
+    } catch (e: any) { toast('error', e.message); }
+    finally { setSubmitting(false); }
+  };
+
+  const openSpoilage = (item: InventoryItem) => {
+    setSpoilItem(item);
+    setSpoilQty(1);
+    setSpoilType('expired');
+    setSpoilReason('');
+    setSpoilNotes('');
+  };
+
+  const submitSpoilage = async () => {
+    if (!spoilItem) return;
+    if (spoilQty < 1) { toast('error', 'Quantity must be at least 1.'); return; }
+    if (spoilQty > spoilItem.currentStock) { toast('error', `Only ${spoilItem.currentStock} ${spoilItem.unit} available.`); return; }
+    if (!spoilReason.trim()) { toast('error', 'Reason is required.'); return; }
+    setSubmitting(true);
+    try {
+      await inventoryApi.reportSpoilage(spoilItem._id, {
+        quantity: spoilQty,
+        spoilageType: spoilType,
+        reason: spoilReason,
+        notes: spoilNotes || undefined,
+      });
+      toast('success', 'Spoilage reported. Awaiting approval.');
+      setSpoilItem(null);
       fetchItems();
     } catch (e: any) { toast('error', e.message); }
     finally { setSubmitting(false); }
@@ -195,6 +238,12 @@ export default function InventoryPage() {
                     <ArrowUpCircle size={12} /> Restock
                   </button>
                 )}
+                {isManager && (
+                  <button onClick={() => openSpoilage(item)}
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded border border-red-200 hover:bg-red-50 cursor-pointer bg-transparent text-red-500 hover:text-red-600">
+                    <Trash2 size={12} /> Write Off
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -249,6 +298,46 @@ export default function InventoryPage() {
               <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Notes</label>
               <Input size="lg" placeholder="Optional notes" value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-1" />
             </div>
+          </div>
+        )}
+      </Drawer>
+
+      <Drawer open={!!spoilItem} onClose={() => setSpoilItem(null)} title="Report Spoilage / Write-Off" size="sm"
+        footer={<div className="flex justify-end gap-3"><Button variant="secondary" onClick={() => setSpoilItem(null)}>Cancel</Button>
+          <Button loading={submitting} onClick={submitSpoilage} variant="destructive">Submit for Approval</Button></div>}>
+        {spoilItem && (
+          <div className="space-y-4">
+            <div className="p-3 rounded-lg bg-surface-container">
+              <p className="font-medium text-sm">{spoilItem.name}</p>
+              <p className="text-xs text-outline">{spoilItem.category} · Current stock: <strong>{spoilItem.currentStock}</strong> {spoilItem.unit}</p>
+              {spoilItem.expiryDate && (
+                <p className="text-xs text-outline mt-1">Expires: {format(new Date(spoilItem.expiryDate), 'MMM d, yyyy')}</p>
+              )}
+            </div>
+            <div>
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Quantity</label>
+              <Input size="lg" type="number" min={1} max={spoilItem.currentStock}
+                value={spoilQty} onChange={(e) => setSpoilQty(Number(e.target.value))} className="mt-1" />
+            </div>
+            <div>
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Spoilage Type</label>
+              <Select size="lg" className="w-full mt-1" value={spoilType} onChange={(v) => setSpoilType(v)}>
+                {spoilTypes.map((t) => <Option key={t.value} value={t.value}>{t.label}</Option>)}
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Reason <span className="text-red-500">*</span></label>
+              <Input size="lg" placeholder="Explain why this is being written off" value={spoilReason}
+                onChange={(e) => setSpoilReason(e.target.value)} className="mt-1" />
+            </div>
+            <div>
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Additional Notes</label>
+              <Input size="lg" placeholder="Optional details" value={spoilNotes}
+                onChange={(e) => setSpoilNotes(e.target.value)} className="mt-1" />
+            </div>
+            <p className="text-xs text-outline bg-amber-50 p-2 rounded border border-amber-200">
+              This report will be sent for approval. Stock will only be deducted after a manager or GM approves.
+            </p>
           </div>
         )}
       </Drawer>

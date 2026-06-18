@@ -4,6 +4,7 @@ import { CreateItemDto } from './dto/create-item.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
 import { RestockDto } from './dto/restock.dto';
 import { IssueDto } from './dto/issue.dto';
+import { ReportSpoilageDto, QuerySpoilageDto } from './dto/spoilage.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { WorkspaceAuthGuard } from '../../common/guards/workspace-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -80,6 +81,44 @@ export class InventoryController {
       from: query.from,
       to: query.to,
     });
+  }
+
+  @Post('items/:id/spoilage')
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.ACCOUNTANT)
+  reportSpoilage(@Param('id') id: string, @Body() dto: ReportSpoilageDto, @ActiveUser() user: any) {
+    return this.inventoryService.reportSpoilage(id, dto, user.id, user.activeBranchId);
+  }
+
+  @Get('spoilage')
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.ACCOUNTANT)
+  findSpoilageReports(@ActiveUser() user: any, @Query() query: QuerySpoilageDto) {
+    return this.inventoryService.findSpoilageReports({
+      branchId: user.activeBranchId,
+      page: query.page,
+      limit: query.limit,
+      status: query.status,
+      from: query.from,
+      to: query.to,
+      itemId: query.itemId,
+    });
+  }
+
+  @Get('spoilage/:id')
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.ACCOUNTANT)
+  findOneSpoilage(@Param('id') id: string, @ActiveUser() user: any) {
+    return this.inventoryService.findOneSpoilage(id, user.activeBranchId);
+  }
+
+  @Patch('spoilage/:id/approve')
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.FACILITY_MANAGER)
+  approveSpoilage(@Param('id') id: string, @ActiveUser() user: any) {
+    return this.inventoryService.approveSpoilage(id, user.id, user.activeBranchId);
+  }
+
+  @Patch('spoilage/:id/reject')
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.FACILITY_MANAGER)
+  rejectSpoilage(@Param('id') id: string, @ActiveUser() user: any) {
+    return this.inventoryService.rejectSpoilage(id, user.id, user.activeBranchId);
   }
 
   @Get('snapshots')

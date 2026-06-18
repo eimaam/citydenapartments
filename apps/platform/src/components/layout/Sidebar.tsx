@@ -12,6 +12,8 @@ import {
   ChevronLeft,
   CalendarFold,
   BookUser,
+  AlertTriangle,
+  BookOpen,
 } from 'lucide-react';
 import type { UserRoleType } from '../../lib/types';
 import { cn } from '../../lib/utils';
@@ -26,9 +28,13 @@ interface SidebarItem {
 const menuConfig: Record<UserRoleType, SidebarItem[]> = {
   SuperAdmin: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
+    { label: 'Inventory Book', icon: BookOpen, path: '/inventory/book' },
     { label: 'Customers', icon: BookUser, path: '/customers' },
   ],
   GroupGM: [
+    { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
+    { label: 'Inventory Book', icon: BookOpen, path: '/inventory/book' },
     { label: 'Customers', icon: BookUser, path: '/customers' },
   ],
   IT: [
@@ -41,6 +47,8 @@ const menuConfig: Record<UserRoleType, SidebarItem[]> = {
     { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
     { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
     { label: 'Staff', icon: Users, path: '/staff' },
+    { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
+    { label: 'Inventory Book', icon: BookOpen, path: '/inventory/book' },
     { label: 'Customers', icon: BookUser, path: '/customers' },
   ],
   FrontOfficeManager: [
@@ -56,11 +64,15 @@ const menuConfig: Record<UserRoleType, SidebarItem[]> = {
     { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
     { label: 'Inventory', icon: Package, path: '/inventory' },
     { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
+    { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
+    { label: 'Inventory Book', icon: BookOpen, path: '/inventory/book' },
   ],
   StoreManager: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
     { label: 'Inventory', icon: Package, path: '/inventory' },
     { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
+    { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
+    { label: 'Inventory Book', icon: BookOpen, path: '/inventory/book' },
   ],
   StoreKeeper: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
