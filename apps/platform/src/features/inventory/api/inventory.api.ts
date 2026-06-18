@@ -106,7 +106,7 @@ export const inventoryApi = {
     api.patch<InventoryItem>(`/inventory/items/${id}`, data),
   restock: (id: string, data: { quantity: number; notes?: string }) =>
     api.post<InventoryItem>(`/inventory/items/${id}/restock`, data),
-  issue: (id: string, data: { quantity: number; requestedBy?: string; department?: string; notes?: string }) =>
+  issue: (id: string, data: { quantity: number; requestedBy?: string; requestedEmployeeId?: string; department?: string; notes?: string }) =>
     api.post<InventoryItem>(`/inventory/items/${id}/issue`, data),
   listTransactions: (params: { page?: number; limit?: number; itemId?: string; type?: string; from?: string; to?: string }) => {
     const qs = new URLSearchParams();

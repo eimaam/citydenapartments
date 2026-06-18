@@ -20,6 +20,7 @@ import { RedisModule } from './modules/redis/redis.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { HealthModule } from './modules/health/health.module';
 import { CustomersModule } from './modules/customers/customers.module';
+import { EmployeesModule } from './modules/employees/employees.module';
 import mongoose from 'mongoose';
 
 if (AppConfig.NODE_ENV === 'development') {
@@ -61,6 +62,7 @@ if (AppConfig.NODE_ENV === 'development') {
     HealthModule,
     InventoryModule,
     CustomersModule,
+    EmployeesModule,
     RedisModule,
   ],
   

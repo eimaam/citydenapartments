@@ -1,4 +1,4 @@
-import { IsNumber, Min, IsOptional, IsString } from 'class-validator';
+import { IsNumber, Min, IsOptional, IsString, IsMongoId } from 'class-validator';
 
 export class IssueDto {
   @IsNumber()
@@ -8,6 +8,10 @@ export class IssueDto {
   @IsOptional()
   @IsString()
   requestedBy?: string;
+
+  @IsOptional()
+  @IsMongoId()
+  requestedEmployeeId?: string;
 
   @IsOptional()
   @IsString()

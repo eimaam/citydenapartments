@@ -5,6 +5,7 @@ import { InventoryItem } from './inventory-item.schema';
 import { InventoryTransaction } from './inventory-transaction.schema';
 import { DailySnapshot } from './daily-snapshot.schema';
 import { SpoilageReport, SpoilageStatusEnum, type SpoilageStatus } from './spoilage-report.schema';
+import { Employee } from '../employees/employee.schema';
 import { CreateItemDto } from './dto/create-item.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
 import { RestockDto } from './dto/restock.dto';
@@ -23,6 +24,7 @@ export class InventoryService {
     @InjectModel(InventoryTransaction.name) private txModel: Model<InventoryTransaction>,
     @InjectModel(DailySnapshot.name) private snapshotModel: Model<DailySnapshot>,
     @InjectModel(SpoilageReport.name) private spoilageModel: Model<SpoilageReport>,
+    @InjectModel(Employee.name) private employeeModel: Model<Employee>,
     private readonly redis: RedisService,
   ) {}
 
@@ -141,6 +143,17 @@ export class InventoryService {
       );
     }
 
+    let requestedByName = dto.requestedBy;
+    if (dto.requestedEmployeeId) {
+      const employee = await this.employeeModel.findById(dto.requestedEmployeeId).lean();
+      if (employee) {
+        requestedByName = employee.name;
+        if (!dto.department && employee.department) {
+          dto.department = employee.department;
+        }
+      }
+    }
+
     const previousStock = item.currentStock;
     item.currentStock -= dto.quantity;
     item.updatedBy = userId as any;
@@ -152,7 +165,7 @@ export class InventoryService {
       quantity: -dto.quantity,
       previousStock,
       newStock: item.currentStock,
-      requestedBy: dto.requestedBy,
+      requestedBy: requestedByName,
       department: dto.department,
       notes: dto.notes,
       performedBy: userId,
@@ -160,7 +173,7 @@ export class InventoryService {
     });
 
     await this.redis.del(`inventory:items:${branchId}`);
-    this.logger.log(`Inventory issue — ${item.name} | -${dto.quantity} | to ${dto.requestedBy || dto.department || 'unspecified'} | by ${userId}`);
+    this.logger.log(`Inventory issue — ${item.name} | -${dto.quantity} | to ${requestedByName || dto.department || 'unspecified'} | by ${userId}`);
     return item;
   }
 

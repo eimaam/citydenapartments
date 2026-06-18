@@ -4,6 +4,7 @@ import { useAuth } from '../../../contexts/auth';
 import { useToast } from '../../../components/ui/Toast';
 import { Input, Select, Option, Drawer, Modal, Button, UserRole } from '@citydenapartments/shared';
 import { inventoryApi, type InventoryItem } from '../api/inventory.api';
+import { employeesApi, type Employee } from '../../employees/api/employees.api';
 import { Departments } from '@citydenapartments/shared';
 import { format, isBefore, addDays, differenceInDays } from 'date-fns';
 
@@ -13,6 +14,7 @@ export default function InventoryPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const isManager = user?.role === UserRole.StoreManager || user?.role === UserRole.SuperAdmin;
+  const canIssue = user?.role === UserRole.StoreKeeper || user?.role === UserRole.StoreManager || user?.role === UserRole.SuperAdmin;
 
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -30,6 +32,12 @@ export default function InventoryPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState({ name: '', category: '', description: '', unit: 'pcs', currentStock: 0, reorderLevel: 0, costPrice: '' as string | number, expiryDate: '' });
+
+  const [empSearch, setEmpSearch] = useState('');
+  const [empResults, setEmpResults] = useState<Employee[]>([]);
+  const [empLoading, setEmpLoading] = useState(false);
+  const [empSelectedId, setEmpSelectedId] = useState<string | null>(null);
+  const [empFocus, setEmpFocus] = useState(false);
 
   const [spoilItem, setSpoilItem] = useState<InventoryItem | null>(null);
   const [spoilQty, setSpoilQty] = useState(1);
@@ -59,6 +67,30 @@ export default function InventoryPage() {
   useEffect(() => { fetchItems(); }, [fetchItems]);
   useEffect(() => { setPage(1); }, [search]);
 
+  const empTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!empSearch.trim() || empSelectedId) { setEmpResults([]); return; }
+    setEmpLoading(true);
+    clearTimeout(empTimer.current);
+    empTimer.current = setTimeout(async () => {
+      try {
+        const res = await employeesApi.search(empSearch);
+        setEmpResults(res);
+      } catch { /* ignore */ }
+      finally { setEmpLoading(false); }
+    }, 300);
+    return () => clearTimeout(empTimer.current!);
+  }, [empSearch, empSelectedId]);
+
+  const selectEmployee = (emp: Employee) => {
+    setRequestedBy(emp.name);
+    setEmpSelectedId(emp._id);
+    setEmpSearch('');
+    setEmpResults([]);
+    if (emp.department && !department) setDepartment(emp.department);
+  };
+
   const onSearchChange = (val: string) => {
     setSearchInput(val);
     clearTimeout(searchTimer.current);
@@ -72,6 +104,9 @@ export default function InventoryPage() {
     setRequestedBy('');
     setDepartment('');
     setNotes('');
+    setEmpSelectedId(null);
+    setEmpSearch('');
+    setEmpResults([]);
   };
 
   const submitAction = async () => {
@@ -84,7 +119,7 @@ export default function InventoryPage() {
     setSubmitting(true);
     try {
       if (actionType === 'issue') {
-        await inventoryApi.issue(actionItem._id, { quantity: qty, requestedBy: requestedBy || undefined, department: department || undefined, notes: notes || undefined });
+        await inventoryApi.issue(actionItem._id, { quantity: qty, requestedBy: requestedBy || undefined, requestedEmployeeId: empSelectedId || undefined, department: department || undefined, notes: notes || undefined });
         toast('success', `Issued ${qty} ${actionItem.unit} of ${actionItem.name}.`);
       } else {
         await inventoryApi.restock(actionItem._id, { quantity: qty, notes: notes || undefined });
@@ -228,10 +263,12 @@ export default function InventoryPage() {
                 <AlertTriangle size={16} className="text-red-500" />
               )}
               <div className="flex gap-2">
-                <button onClick={() => openAction(item, 'issue')}
-                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded border border-outline-variant hover:bg-surface-container cursor-pointer bg-transparent text-on-surface-variant hover:text-on-surface">
-                  <ArrowDownCircle size={12} /> Issue
-                </button>
+                {canIssue && (
+                  <button onClick={() => openAction(item, 'issue')}
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded border border-outline-variant hover:bg-surface-container cursor-pointer bg-transparent text-on-surface-variant hover:text-on-surface">
+                    <ArrowDownCircle size={12} /> Issue
+                  </button>
+                )}
                 {isManager && (
                   <button onClick={() => openAction(item, 'restock')}
                     className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded border border-outline-variant hover:bg-surface-container cursor-pointer bg-transparent text-on-surface-variant hover:text-on-surface">
@@ -281,9 +318,44 @@ export default function InventoryPage() {
             </div>
             {actionType === 'issue' && (
               <>
-                <div>
-                  <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Requested By (Individual)</label>
-                  <Input size="lg" placeholder="Person's name" value={requestedBy} onChange={(e) => setRequestedBy(e.target.value)} className="mt-1" />
+                <div className="relative">
+                  <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Requested By</label>
+                  <div className="relative mt-1">
+                    <Input size="lg" placeholder="Search employee or type a name"
+                      value={empSelectedId ? requestedBy : empSearch}
+                      onChange={(e) => {
+                        setEmpSearch(e.target.value);
+                        setRequestedBy(e.target.value);
+                        setEmpSelectedId(null);
+                      }}
+                      onFocus={() => setEmpFocus(true)}
+                      onBlur={() => setTimeout(() => setEmpFocus(false), 200)} />
+                    {empSelectedId && (
+                      <button onClick={() => { setEmpSelectedId(null); setEmpSearch(''); setRequestedBy(''); }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-outline text-xs hover:text-on-surface cursor-pointer bg-transparent border-0">
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  {empFocus && empResults.length > 0 && (
+                    <div className="absolute z-10 left-0 right-0 mt-1 rounded-lg border border-outline-variant bg-surface-container-lowest shadow-lg max-h-48 overflow-y-auto">
+                      {empResults.map((emp) => (
+                        <button key={emp._id} onMouseDown={() => selectEmployee(emp)}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-surface-container transition-colors cursor-pointer border-0 bg-transparent">
+                          <p className="font-medium">{emp.name}</p>
+                          <p className="text-[10px] text-outline">{emp.position || emp.department || ''}{emp.position && emp.department ? ` · ${emp.department}` : ''}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {empFocus && empLoading && (
+                    <div className="absolute z-10 left-0 right-0 mt-1 p-3 text-center text-xs text-outline bg-surface-container-lowest rounded-lg border border-outline-variant shadow-lg">
+                      Searching...
+                    </div>
+                  )}
+                  {empSelectedId && (
+                    <input type="hidden" />
+                  )}
                 </div>
                 <div>
                   <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Or Department</label>

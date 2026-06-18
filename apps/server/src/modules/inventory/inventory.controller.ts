@@ -61,7 +61,7 @@ export class InventoryController {
   }
 
   @Post('items/:id/issue')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER, UserRoleEnum.ACCOUNTANT)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER)
   issue(@Param('id') id: string, @Body() dto: IssueDto, @ActiveUser() user: any) {
     return this.inventoryService.issue(id, dto, user.id, user.activeBranchId);
   }
