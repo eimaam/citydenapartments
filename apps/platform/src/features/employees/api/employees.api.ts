@@ -3,8 +3,8 @@ import { api } from '../../../lib/api';
 export interface Employee {
   _id: string;
   name: string;
-  email?: string;
-  phone?: string;
+  email: string;
+  phone: string;
   department?: string;
   position?: string;
   branchId: string;

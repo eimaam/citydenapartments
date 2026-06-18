@@ -1,6 +1,7 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { EmployeesService } from './employees.service';
 import { PaginatedQueryDto } from '../../common/dto/paginated-query.dto';
+import { SearchEmployeeDto } from './dto/search-employee.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { ActiveUser } from '../../common/decorators/active-user.decorator';
@@ -21,8 +22,8 @@ export class EmployeesController {
   }
 
   @Get('search')
-  search(@ActiveUser() user: any, @Query('q') q: string) {
-    return this.employeesService.searchByName(user.activeBranchId, q || '');
+  search(@ActiveUser() user: any, @Query() query: SearchEmployeeDto) {
+    return this.employeesService.searchByName(user.activeBranchId, query.q);
   }
 
   @Get(':id')

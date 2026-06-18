@@ -1,6 +1,7 @@
 import { format, getHours } from 'date-fns';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../../contexts/auth';
+import { can } from '../../../components/ui/Can';
 import { Spinner } from '../../../components/ui/Spinner';
 import { UserRole } from '@citydenapartments/shared';
 import { dashboardApi, type DashboardSummary, type AccountingSummary } from '../api/dashboard.api';
@@ -8,9 +9,9 @@ import { CalendarCheck, Users, DoorOpen, Coffee, Clock, TrendingUp, DollarSign, 
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  if (user?.role === UserRole.Reception || user?.role === UserRole.FrontOfficeManager || user?.role === UserRole.FacilityManager) return <ReceptionDashboard />;
-  if (user?.role === UserRole.KitchenStaff) return <KitchenDashboard />;
-  if (user?.role === UserRole.Accountant) return <AccountantDashboard />;
+  if (can(user, [UserRole.Reception, UserRole.FrontOfficeManager, UserRole.FacilityManager])) return <ReceptionDashboard />;
+  if (can(user, [UserRole.KitchenStaff])) return <KitchenDashboard />;
+  if (can(user, [UserRole.Accountant])) return <AccountantDashboard />;
   return <DefaultDashboard />;
 }
 

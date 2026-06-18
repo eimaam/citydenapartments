@@ -6,11 +6,11 @@ export class Employee extends Document {
   @Prop({ required: true })
   name: string;
 
-  @Prop()
-  email?: string;
+  @Prop({ required: true, unique: true, lowercase: true })
+  email: string;
 
-  @Prop()
-  phone?: string;
+  @Prop({ required: true })
+  phone: string;
 
   @Prop()
   department?: string;
@@ -27,4 +27,4 @@ export class Employee extends Document {
 
 export const EmployeeSchema = SchemaFactory.createForClass(Employee);
 EmployeeSchema.index({ branchId: 1, name: 1 });
-EmployeeSchema.index({ name: 'text' });
+EmployeeSchema.index({ email: 1 }, { unique: true });

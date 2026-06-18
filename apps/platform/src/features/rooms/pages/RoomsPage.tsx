@@ -3,6 +3,7 @@ import { Search, DoorOpen, Users } from 'lucide-react';
 import { Input, Badge, RoomStatus, Table, Select, Option, UserRole, type RoomStatusType } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
 import { useAuth } from '../../../contexts/auth';
+import { can } from '../../../components/ui/Can';
 import { useToast } from '../../../components/ui/Toast';
 import { roomsApi, type RoomResponse, type PaginatedRooms } from '../api/rooms.api';
 
@@ -31,7 +32,7 @@ export default function RoomsPage() {
   const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const canUpdateStatus = user?.role === UserRole.SuperAdmin || user?.role === UserRole.FacilityManager || user?.role === UserRole.FrontOfficeManager || user?.role === UserRole.HouseKeeper || user?.role === UserRole.Reception;
+  const canUpdateStatus = can(user, [UserRole.SuperAdmin, UserRole.FacilityManager, UserRole.FrontOfficeManager, UserRole.HouseKeeper, UserRole.Reception]);
 
   const validTransitions: Record<string, { value: RoomStatusType; label: string }[]> = {
     [RoomStatus.Available]: [

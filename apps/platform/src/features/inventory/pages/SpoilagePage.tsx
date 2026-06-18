@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { Button, Input, Select, Option, Drawer, Badge, RoomStatus } from '@citydenapartments/shared';
 import { Search, AlertTriangle, CheckCircle, XCircle, Clock, ArrowLeftRight } from 'lucide-react';
 import { useAuth } from '../../../contexts/auth';
+import { can } from '../../../components/ui/Can';
 import { useToast } from '../../../components/ui/Toast';
 import { inventoryApi, type SpoilageReportResponse } from '../api/inventory.api';
 import { UserRole } from '@citydenapartments/shared';
@@ -18,7 +19,7 @@ const statusStyles: Record<string, { label: string; color: string; bg: string }>
 export default function SpoilagePage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const canApprove = user?.role === UserRole.SuperAdmin || user?.role === UserRole.GroupGM || user?.role === UserRole.FacilityManager;
+  const canApprove = can(user, [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager]);
 
   const [items, setItems] = useState<SpoilageReportResponse[]>([]);
   const [total, setTotal] = useState(0);

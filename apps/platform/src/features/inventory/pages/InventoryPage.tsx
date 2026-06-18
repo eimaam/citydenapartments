@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, Package, AlertTriangle, ArrowDownCircle, ArrowUpCircle, Plus, Clock, Trash2 } from 'lucide-react';
 import { useAuth } from '../../../contexts/auth';
 import { useToast } from '../../../components/ui/Toast';
-import { Input, Select, Option, Drawer, Modal, Button, UserRole } from '@citydenapartments/shared';
+import { Input, Select, Option, Drawer, Modal, Button } from '@citydenapartments/shared';
+import { UserRole } from '@citydenapartments/shared';
+import { Can, can } from '../../../components/ui/Can';
 import { inventoryApi, type InventoryItem } from '../api/inventory.api';
 import { employeesApi, type Employee } from '../../employees/api/employees.api';
 import { Departments } from '@citydenapartments/shared';
@@ -13,8 +15,8 @@ const LIMIT = 20;
 export default function InventoryPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const isManager = user?.role === UserRole.StoreManager || user?.role === UserRole.SuperAdmin;
-  const canIssue = user?.role === UserRole.StoreKeeper || user?.role === UserRole.StoreManager || user?.role === UserRole.SuperAdmin;
+  const isManager = can(user, [UserRole.StoreManager, UserRole.SuperAdmin]);
+  const canIssue = can(user, [UserRole.StoreKeeper, UserRole.StoreManager, UserRole.SuperAdmin]);
 
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [total, setTotal] = useState(0);

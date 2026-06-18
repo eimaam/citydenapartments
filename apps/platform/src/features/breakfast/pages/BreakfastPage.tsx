@@ -4,6 +4,7 @@ import { Coffee, Check, Calendar, Users, Search, RotateCcw, XCircle } from 'luci
 import { Button, Input, Table, UserRole } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
 import { useToast } from '../../../components/ui/Toast';
+import { can } from '../../../components/ui/Can';
 import { useAuth } from '../../../contexts/auth';
 import { breakfastApi, type ManifestEntry, type PaginatedManifest } from '../api/breakfast.api';
 
@@ -23,7 +24,7 @@ export default function BreakfastPage() {
   const [search, setSearch] = useState('');
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const canReset = user?.role === UserRole.SuperAdmin || user?.role === UserRole.FacilityManager;
+  const canReset = can(user, [UserRole.SuperAdmin, UserRole.FacilityManager]);
 
   const fetchManifest = useCallback(async () => {
     setLoading(true);
