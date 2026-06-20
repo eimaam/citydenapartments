@@ -22,6 +22,7 @@ import { api } from '../../../lib/api';
 import { bookingsApi, type CalendarData, type BookingResponse } from '../api/bookings.api';
 import { roomsApi, type RoomResponse } from '../../rooms/api/rooms.api';
 import { customersApi, type CustomerResponse } from '../api/customers.api';
+import { roomTypesApi, type RoomTypeResponse } from '../../room-types/api/room-types.api';
 import { RoomTypeSelector } from '../../../components/ui/RoomTypeSelector';
 
 interface Branch {
@@ -87,6 +88,7 @@ export default function CalendarPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [showDetail, setShowDetail] = useState<BookingResponse | null>(null);
   const [availableRooms, setAvailableRooms] = useState<RoomResponse[]>([]);
+  const [allRoomTypes, setAllRoomTypes] = useState<RoomTypeResponse[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [actionLoading, setActionLoading] = useState('');
   const [copiedRef, setCopiedRef] = useState(false);
@@ -367,6 +369,7 @@ export default function CalendarPage() {
     } catch {
       toast('error', 'Failed to load rooms.');
     }
+    try { const res = await roomTypesApi.list(); setAllRoomTypes(res.items); } catch { /* ok */ }
     setShowCreate(true);
   };
 
@@ -762,7 +765,7 @@ export default function CalendarPage() {
           <div className="mb-5">
             <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Room</label>
             <div className="mt-2">
-              <RoomTypeSelector rooms={availableRooms} selectedRoomId={form.roomId} onSelectRoom={(id) => { onRoomChange(id); }} />
+              <RoomTypeSelector rooms={availableRooms} allTypes={allRoomTypes} selectedRoomId={form.roomId} onSelectRoom={(id) => { onRoomChange(id); }} />
             </div>
           </div>
           {/* ── Customer Lookup ── */}

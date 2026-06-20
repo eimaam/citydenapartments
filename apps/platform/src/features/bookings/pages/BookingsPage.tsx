@@ -17,6 +17,7 @@ import { api } from '../../../lib/api';
 import { bookingsApi, type BookingResponse, type CreateBookingPayload } from '../api/bookings.api';
 import { roomsApi, type RoomResponse } from '../../rooms/api/rooms.api';
 import { customersApi, type CustomerResponse } from '../api/customers.api';
+import { roomTypesApi, type RoomTypeResponse } from '../../room-types/api/room-types.api';
 import { RoomTypeSelector } from '../../../components/ui/RoomTypeSelector';
 
 const LIMIT = 20;
@@ -65,6 +66,7 @@ export default function BookingsPage() {
   const nigeriaStates = useMemo(() => getAllStates(), []);
   const [data, setData] = useState<PaginatedData>({ items: [], total: 0, page: 1, limit: LIMIT });
   const [rooms, setRooms] = useState<RoomResponse[]>([]);
+  const [roomTypes, setRoomTypes] = useState<RoomTypeResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
@@ -165,6 +167,7 @@ export default function BookingsPage() {
     setCustomerResults([]);
     setSelectedCustomer(null);
     try { setRooms(await roomsApi.available(ci, co)); } catch { toast('error', 'Failed to load rooms.'); }
+    try { const res = await roomTypesApi.list(); setRoomTypes(res.items); } catch { /* ok */ }
     setShowCreate(true);
   };
 
@@ -374,7 +377,7 @@ export default function BookingsPage() {
           <div className="mb-5">
             <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Room</label>
             <div className="mt-2">
-              <RoomTypeSelector rooms={rooms} selectedRoomId={form.roomId} onSelectRoom={(id) => { onRoomChange(id); }} />
+              <RoomTypeSelector rooms={rooms} allTypes={roomTypes} selectedRoomId={form.roomId} onSelectRoom={(id) => { onRoomChange(id); }} />
             </div>
           </div>
           {/* ── Customer Lookup ── */}

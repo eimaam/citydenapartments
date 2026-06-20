@@ -1,35 +1,37 @@
 import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronDown, DoorOpen, Users } from 'lucide-react';
 import type { RoomResponse } from '../../features/rooms/api/rooms.api';
+import type { RoomTypeResponse } from '../../features/room-types/api/room-types.api';
 
 const PER_PAGE = 5;
 
 interface RoomTypeSelectorProps {
   rooms: RoomResponse[];
+  allTypes: RoomTypeResponse[];
   selectedRoomId: string;
   onSelectRoom: (roomId: string) => void;
 }
 
-export function RoomTypeSelector({ rooms, selectedRoomId, onSelectRoom }: RoomTypeSelectorProps) {
+export function RoomTypeSelector({ rooms, allTypes, selectedRoomId, onSelectRoom }: RoomTypeSelectorProps) {
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState<Record<string, number>>({});
 
   const grouped = useMemo(() => {
     const map = new Map<string, { typeId: string; typeName: string; amenities: string[]; rooms: RoomResponse[] }>();
-    for (const r of rooms) {
-      const tid = r.roomTypeId._id;
-      if (!map.has(tid)) {
-        map.set(tid, { typeId: tid, typeName: r.roomTypeId.name, amenities: r.roomTypeId.amenities, rooms: [] });
-      }
-      map.get(tid)!.rooms.push(r);
+    for (const t of allTypes) {
+      map.set(t._id, { typeId: t._id, typeName: t.name, amenities: t.amenities, rooms: [] });
     }
-    return Array.from(map.values());
-  }, [rooms]);
+    for (const r of rooms) {
+      const entry = map.get(r.roomTypeId._id);
+      if (entry) entry.rooms.push(r);
+    }
+    return Array.from(map.values()).sort((a, b) => a.typeName.localeCompare(b.typeName));
+  }, [rooms, allTypes]);
 
   const typeCards = useMemo(() => grouped.map((g) => ({
     ...g,
     count: g.rooms.length,
-    totalVisible: visibleCount[g.typeId] ?? Math.min(PER_PAGE, g.rooms.length),
+    totalVisible: visibleCount[g.typeId] ?? Math.min(PER_PAGE, g.rooms.length || 1),
   })), [grouped, visibleCount]);
 
   const selectedGroup = useMemo(
@@ -38,16 +40,12 @@ export function RoomTypeSelector({ rooms, selectedRoomId, onSelectRoom }: RoomTy
   );
 
   const selectedVisible = selectedGroup
-    ? visibleCount[selectedGroup.typeId] ?? Math.min(PER_PAGE, selectedGroup.rooms.length)
+    ? visibleCount[selectedGroup.typeId] ?? Math.min(PER_PAGE, selectedGroup.rooms.length || 1)
     : 0;
 
   const loadMore = (typeId: string, total: number) => {
     setVisibleCount((prev) => ({ ...prev, [typeId]: Math.min(total, (prev[typeId] ?? PER_PAGE) + PER_PAGE) }));
   };
-
-  if (!rooms.length) {
-    return <p className="text-xs text-outline py-6 text-center">No rooms available for selected dates.</p>;
-  }
 
   if (selectedGroup) {
     const roomsToShow = selectedGroup.rooms.slice(0, selectedVisible);
@@ -63,44 +61,48 @@ export function RoomTypeSelector({ rooms, selectedRoomId, onSelectRoom }: RoomTy
           <ChevronLeft size={14} /> Back to room types
         </button>
         <p className="text-[10px] text-outline uppercase tracking-wide mb-2 font-semibold">{selectedGroup.typeName}</p>
-        <div className="space-y-1.5">
-          {roomsToShow.map((r) => {
-            const active = r._id === selectedRoomId;
-            return (
-              <button
-                key={r._id}
-                type="button"
-                onClick={() => onSelectRoom(r._id)}
-                className={`w-full text-left p-3 rounded-lg border transition-all cursor-pointer ${
-                  active
-                    ? 'border-primary bg-primary-container/15'
-                    : 'border-outline-variant/60 bg-surface-container-lowest hover:border-outline hover:bg-surface-container-high/50'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${active ? 'bg-primary/15' : 'bg-surface-container'}`}>
-                      <DoorOpen size={16} className={active ? 'text-primary' : 'text-outline'} />
+        {selectedGroup.rooms.length === 0 ? (
+          <p className="text-xs text-outline py-4 text-center bg-surface-container-low/40 rounded-lg border border-dashed border-outline-variant/40">No rooms available for this type on selected dates.</p>
+        ) : (
+          <div className="space-y-1.5">
+            {roomsToShow.map((r) => {
+              const active = r._id === selectedRoomId;
+              return (
+                <button
+                  key={r._id}
+                  type="button"
+                  onClick={() => onSelectRoom(r._id)}
+                  className={`w-full text-left p-3 rounded-lg border transition-all cursor-pointer ${
+                    active
+                      ? 'border-primary bg-primary-container/15'
+                      : 'border-outline-variant/60 bg-surface-container-lowest hover:border-outline hover:bg-surface-container-high/50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${active ? 'bg-primary/15' : 'bg-surface-container'}`}>
+                        <DoorOpen size={16} className={active ? 'text-primary' : 'text-outline'} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">{r.roomNumber}</p>
+                        <p className="text-[10px] text-outline">{selectedGroup.typeName}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold">{r.roomNumber}</p>
-                      <p className="text-[10px] text-outline">{selectedGroup.typeName}</p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 text-[10px] text-outline">
+                        <Users size={11} />
+                        <span>{r.maxGuests}</span>
+                      </div>
+                      {active && (
+                        <div className="w-2 h-2 rounded-full bg-primary" />
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1 text-[10px] text-outline">
-                      <Users size={11} />
-                      <span>{r.maxGuests}</span>
-                    </div>
-                    {active && (
-                      <div className="w-2 h-2 rounded-full bg-primary" />
-                    )}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
         {hasMore && (
           <button
             type="button"
@@ -119,7 +121,7 @@ export function RoomTypeSelector({ rooms, selectedRoomId, onSelectRoom }: RoomTy
       <p className="text-[10px] text-outline uppercase tracking-wide mb-2 font-semibold">Select Room Type</p>
       <div className="grid grid-cols-2 gap-2">
         {typeCards.map((t) => {
-          const active = t.typeId === selectedTypeId;
+          const hasAvailable = t.rooms.length > 0;
           const roomsToShow = t.rooms.slice(0, t.totalVisible);
           const hasMore = t.totalVisible < t.count;
 
@@ -127,20 +129,23 @@ export function RoomTypeSelector({ rooms, selectedRoomId, onSelectRoom }: RoomTy
             <div key={t.typeId} className="flex flex-col">
               <button
                 type="button"
-                onClick={() => setSelectedTypeId(t.typeId)}
+                disabled={!hasAvailable}
+                onClick={() => hasAvailable && setSelectedTypeId(t.typeId)}
                 className={`w-full text-left p-3 rounded-lg border transition-all cursor-pointer ${
-                  active
+                  !hasAvailable
+                    ? 'border-outline-variant/30 bg-surface-container-low/30 opacity-50 cursor-not-allowed'
+                    : selectedTypeId === t.typeId
                     ? 'border-primary bg-primary-container/15'
                     : 'border-outline-variant/60 bg-surface-container-lowest hover:border-outline hover:bg-surface-container-high/50'
                 }`}
               >
                 <div className="flex items-center gap-2 mb-1.5">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${active ? 'bg-primary/15' : 'bg-surface-container'}`}>
-                    <DoorOpen size={14} className={active ? 'text-primary' : 'text-outline'} />
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${selectedTypeId === t.typeId ? 'bg-primary/15' : hasAvailable ? 'bg-surface-container' : 'bg-surface-container/50'}`}>
+                    <DoorOpen size={14} className={selectedTypeId === t.typeId ? 'text-primary' : hasAvailable ? 'text-outline' : 'text-outline/40'} />
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold truncate">{t.typeName}</p>
-                    <p className="text-[10px] text-outline">{t.count} room{t.count !== 1 ? 's' : ''} · {t.amenities.length} amenit{t.amenities.length !== 1 ? 'ies' : 'y'}</p>
+                    <p className="text-[10px] text-outline">{hasAvailable ? `${t.count} room${t.count !== 1 ? 's' : ''} available` : 'No rooms available'}</p>
                   </div>
                 </div>
                 {t.amenities.length > 0 && (
@@ -154,7 +159,7 @@ export function RoomTypeSelector({ rooms, selectedRoomId, onSelectRoom }: RoomTy
                   </div>
                 )}
               </button>
-              {active && (
+              {selectedTypeId === t.typeId && hasAvailable && (
                 <div className="mt-1.5 space-y-1 pl-1">
                   {roomsToShow.map((r) => {
                     const roomActive = r._id === selectedRoomId;
