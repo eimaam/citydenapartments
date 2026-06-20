@@ -28,13 +28,13 @@ export class RoomTypesController {
   }
 
   @Post()
-  @Roles(UserRoleEnum.SUPER_ADMIN)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.IT)
   create(@Body() dto: CreateRoomTypeDto, @ActiveUser() user: any) {
     return this.roomTypesService.create(dto, user.id);
   }
 
   @Patch(':id')
-  @Roles(UserRoleEnum.SUPER_ADMIN)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.IT)
   update(@Param('id') id: string, @Body() dto: UpdateRoomTypeDto, @ActiveUser() user: any) {
     return this.roomTypesService.update(id, dto, user.id);
   }

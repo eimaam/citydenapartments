@@ -119,7 +119,7 @@ const PRINT_STYLES = `
   .receipt-policy-item::before { content: '\\2022'; position: absolute; left: 0.2rem; color: #888; }
   .receipt-policy-block { font-size: 0.7rem; line-height: 1.45; color: #333; margin-bottom: 0.3rem; }
   .receipt-footer { text-align: center; border-top: 2px solid #1a1a1a; padding-top: 0.75rem; margin-top: 1.25rem; }
-  .receipt-footer p { font-size: 0.65rem; color: #666; margin: 0.1rem 0; }
+  .receipt-footer p { font-size: 0.65rem; color: #fff; margin: 0.1rem 0; }
   .receipt-powered { font-size: 0.55rem; color: #999; margin-top: 0.4rem; }
   .receipt-badge { display: inline-block; font-size: 0.6rem; font-weight: 700; padding: 0.1rem 0.4rem; border-radius: 2px; letter-spacing: 0.05em; }
   .receipt-badge-confirmed { background: #e8f5e9; color: #2e7d32; border: 1px solid #2e7d32; }

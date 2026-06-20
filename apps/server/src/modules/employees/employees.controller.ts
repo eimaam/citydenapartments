@@ -16,7 +16,7 @@ export class EmployeesController {
   constructor(private employeesService: EmployeesService) {}
 
   @Get()
-  @Roles(UserRoleEnum.STORE_KEEPER, UserRoleEnum.STORE_MANAGER, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.ACCOUNTANT, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.GROUP_GM)
+  @Roles(UserRoleEnum.STORE_KEEPER, UserRoleEnum.STORE_MANAGER, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.ACCOUNTANT, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.GROUP_GM, UserRoleEnum.IT)
   findAll(@ActiveUser() user: any, @Query() query: PaginatedQueryDto & { includeInactive?: string }) {
     return this.employeesService.findAll({
       branchId: user.activeBranchId,
@@ -28,7 +28,7 @@ export class EmployeesController {
   }
 
   @Get('search')
-  @Roles(UserRoleEnum.STORE_KEEPER, UserRoleEnum.STORE_MANAGER, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.ACCOUNTANT, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.GROUP_GM)
+  @Roles(UserRoleEnum.STORE_KEEPER, UserRoleEnum.STORE_MANAGER, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.ACCOUNTANT, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.GROUP_GM, UserRoleEnum.IT)
   search(@ActiveUser() user: any, @Query() query: SearchEmployeeDto) {
     return this.employeesService.searchByName(user.activeBranchId, query.q);
   }

@@ -21,13 +21,13 @@ export class RoomsController {
   ) { }
 
   @Get()
-  @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.HOUSE_KEEPER, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM)
+  @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.HOUSE_KEEPER, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT)
   findAll(@ActiveUser() user: any, @Query() query: QueryRoomsDto) {
     return this.roomsService.findAll({ branchId: user.activeBranchId, page: query.page, limit: query.limit, search: query.search, status: query.status as any });
   }
 
   @Get('available')
-  @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM)
+  @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT)
   findAvailable(@ActiveUser() user: any, @Query() query: AvailableRoomsDto) {
     return this.roomsService.findAvailable(
       new Date(query.checkIn),
@@ -37,25 +37,25 @@ export class RoomsController {
   }
 
   @Get(':id')
-  @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.HOUSE_KEEPER, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM)
+  @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.HOUSE_KEEPER, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT)
   findOne(@Param('id') id: string) {
     return this.roomsService.findOne(id);
   }
 
   @Post()
-  @Roles(UserRoleEnum.SUPER_ADMIN)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.IT)
   create(@Body() dto: CreateRoomDto, @ActiveUser() user: any) {
     return this.roomsService.create(dto, user.id);
   }
 
   @Patch(':id')
-  @Roles(UserRoleEnum.SUPER_ADMIN)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.IT)
   updateRoom(@Param('id') id: string, @Body() dto: UpdateRoomDto, @ActiveUser() user: any) {
     return this.roomsService.update(id, dto, user.id);
   }
 
   @Patch(':id/status')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.HOUSE_KEEPER, UserRoleEnum.RECEPTION)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.HOUSE_KEEPER, UserRoleEnum.RECEPTION, UserRoleEnum.IT)
   updateStatus(@Param('id') id: string, @Body() body: UpdateRoomStatusDto, @ActiveUser() user: any) {
     return this.roomsService.updateStatus(id, body.status as unknown as RoomStatus, user.id);
   }

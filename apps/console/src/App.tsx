@@ -20,6 +20,7 @@ import EmployeePage from './features/employees/pages/EmployeePage';
 import BreakfastPage from './features/breakfast/pages/BreakfastPage';
 import InventoryPage from './features/inventory/pages/InventoryPage';
 import InventoryTransactionsPage from './features/inventory/pages/TransactionsPage';
+import SpoilagePage from './features/inventory/pages/SpoilagePage';
 import RolesPage from './features/roles/pages/RolesPage';
 import type { UserRoleType } from './lib/types';
 
@@ -42,6 +43,7 @@ const routeRoles: Record<string, UserRoleType[]> = {
   '/breakfast': [UserRole.SuperAdmin, UserRole.GroupGM],
   '/inventory': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.Accountant],
   '/inventory/transactions': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.Accountant],
+  '/inventory/spoilage': [UserRole.SuperAdmin, UserRole.GroupGM],
   '/roles': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
 };
 
@@ -77,6 +79,7 @@ export default function App() {
                           case '/breakfast': return <BreakfastPage />;
                           case '/inventory': return <InventoryPage />;
                           case '/inventory/transactions': return <InventoryTransactionsPage />;
+                          case '/inventory/spoilage': return <SpoilagePage />;
                           case '/roles': return <RolesPage />;
                           default: return null;
                         }

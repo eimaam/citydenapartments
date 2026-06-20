@@ -13,10 +13,13 @@ import {
   X,
   ChevronLeft,
   CalendarFold,
+  AlertTriangle,
 } from 'lucide-react';
 import type { UserRoleType } from '../../lib/types';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../contexts/auth';
+import { api } from '../../lib/api';
+import { useState, useEffect, useRef } from 'react';
 
 interface SidebarItem {
   label: string;
@@ -37,6 +40,7 @@ const menuConfig: Record<UserRoleType, SidebarItem[]> = {
     { label: 'Employees', icon: Users, path: '/employees' },
     { label: 'Inventory', icon: Package, path: '/inventory' },
     { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
+    { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
     { label: 'Roles', icon: Shield, path: '/roles' },
   ],
   GroupGM: [
@@ -49,6 +53,7 @@ const menuConfig: Record<UserRoleType, SidebarItem[]> = {
     { label: 'Employees', icon: Users, path: '/employees' },
     { label: 'Inventory', icon: Package, path: '/inventory' },
     { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
+    { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
     { label: 'Roles', icon: Shield, path: '/roles' },
   ],
   IT: [
@@ -96,6 +101,24 @@ export function Sidebar({
 }: SidebarProps) {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const [pendingSpoilageCount, setPendingSpoilageCount] = useState(0);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (!user || (user.role !== 'SuperAdmin' && user.role !== 'GroupGM')) {
+      setPendingSpoilageCount(0);
+      return;
+    }
+    const fetchCount = async () => {
+      try {
+        const res = await api.get<{ items: any[]; total: number }>('/inventory/spoilage?status=pending&limit=1');
+        setPendingSpoilageCount(res.total);
+      } catch { /* ignore */ }
+    };
+    fetchCount();
+    pollRef.current = setInterval(fetchCount, 7200000);
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, [user]);
 
   const items = user ? menuConfig[user.role] ?? [] : [];
 
@@ -151,6 +174,11 @@ export function Sidebar({
                 {!collapsed && (
                   <span className="text-sm font-medium whitespace-nowrap">
                     {item.label}
+                  </span>
+                )}
+                {!collapsed && item.path === '/inventory/spoilage' && pendingSpoilageCount > 0 && (
+                  <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500 text-white">
+                    {pendingSpoilageCount > 99 ? '99+' : pendingSpoilageCount}
                   </span>
                 )}
               </NavLink>

@@ -663,14 +663,14 @@ export const BookingPage = () => {
                 {/* Submit Action */}
                 <div className="mt-4 flex flex-col items-center">
                   <Button
-                    type="submit"
+                    htmlType="submit"
                     size="lg"
                     className="w-full !bg-[#735c00] hover:!bg-[#554300] !text-white !rounded-none !py-4 font-bold tracking-widest text-xs uppercase"
                   >
                     CONFIRM BOOKING & PAY {formatNaira(grandTotal)}
                   </Button>
                   <span className="text-[10px] font-bold tracking-wider text-[#7F7663]/60 uppercase mt-4 flex items-center gap-1.5">
-                    🛡️ SECURE TRANSACTION BY CITADEL PAY
+                    🛡️ SECURE TRANSACTION
                   </span>
                 </div>
               </form>

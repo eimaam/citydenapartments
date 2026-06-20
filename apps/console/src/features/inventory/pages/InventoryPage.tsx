@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Package, AlertTriangle, ArrowDownCircle, ArrowUpCircle, Plus } from 'lucide-react';
+import { Search, Package, AlertTriangle, ArrowDownCircle, ArrowUpCircle, Plus, Trash2 } from 'lucide-react';
+import { useAuth } from '../../../contexts/auth';
 import { useToast } from '../../../components/ui/Toast';
-import { Input, Select, Option, Drawer, Button, Table, Badge, RoomStatus } from '@citydenapartments/shared';
+import { Input, Select, Option, Drawer, Button, Table, Badge, RoomStatus, UserRole } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
 import { inventoryApi, type InventoryItem } from '../api/inventory.api';
 import { Departments } from '@citydenapartments/shared';
@@ -9,7 +10,9 @@ import { Departments } from '@citydenapartments/shared';
 const LIMIT = 20;
 
 export default function InventoryPage() {
+  const { user } = useAuth();
   const { toast } = useToast();
+  const canWrite = user ? [UserRole.SuperAdmin, UserRole.StoreManager, UserRole.Accountant].includes(user.role) : false;
 
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -27,6 +30,13 @@ export default function InventoryPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState({ name: '', category: '', description: '', unit: 'pcs', currentStock: 0, reorderLevel: 0 });
+
+  // spoilage state
+  const [spoilageItem, setSpoilageItem] = useState<InventoryItem | null>(null);
+  const [spoilageQty, setSpoilageQty] = useState<number>(1);
+  const [spoilageType, setSpoilageType] = useState<string>('damaged');
+  const [spoilageReason, setSpoilageReason] = useState<string>('');
+  const [spoilageNotes, setSpoilageNotes] = useState<string>('');
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -95,6 +105,37 @@ export default function InventoryPage() {
     finally { setSubmitting(false); }
   };
 
+  const openSpoilage = (item: InventoryItem) => {
+    setSpoilageItem(item);
+    setSpoilageQty(1);
+    setSpoilageType('damaged');
+    setSpoilageReason('');
+    setSpoilageNotes('');
+  };
+
+  const submitSpoilage = async () => {
+    if (!spoilageItem) return;
+    if (spoilageQty < 1) { toast('error', 'Quantity must be at least 1.'); return; }
+    if (spoilageQty > spoilageItem.currentStock) {
+      toast('error', `Only ${spoilageItem.currentStock} ${spoilageItem.unit} available.`);
+      return;
+    }
+    if (!spoilageReason.trim()) { toast('error', 'Reason is required.'); return; }
+    setSubmitting(true);
+    try {
+      await inventoryApi.reportSpoilage(spoilageItem._id, {
+        quantity: spoilageQty,
+        spoilageType,
+        reason: spoilageReason,
+        notes: spoilageNotes || undefined,
+      });
+      toast('success', 'Write-off reported. Awaiting approval.');
+      setSpoilageItem(null);
+      fetchItems();
+    } catch (e: any) { toast('error', e.message); }
+    finally { setSubmitting(false); }
+  };
+
   const isLowStock = (item: InventoryItem) => item.currentStock <= item.reorderLevel;
 
   const columns: TableProps<InventoryItem>['columns'] = [
@@ -113,11 +154,18 @@ export default function InventoryPage() {
       )},
     { title: 'Reorder At', dataIndex: 'reorderLevel', key: 'reorder', width: 100, align: 'right' as const,
       render: (v: number) => <span className="font-mono text-outline">{v}</span> },
-    { title: 'Actions', key: 'action', width: 200,
+    { title: 'Actions', key: 'action', width: 280,
       render: (_: unknown, r: InventoryItem) => (
         <div className="flex gap-2">
-          <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); openAction(r, 'issue'); }}>Issue</Button>
-          <Button size="sm" variant="default" onClick={(e) => { e.stopPropagation(); openAction(r, 'restock'); }}>Restock</Button>
+          {canWrite && (
+            <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); openAction(r, 'issue'); }}>Issue</Button>
+          )}
+          {canWrite && (
+            <Button size="sm" variant="default" onClick={(e) => { e.stopPropagation(); openAction(r, 'restock'); }}>Restock</Button>
+          )}
+          {canWrite && (
+            <Button size="sm" variant="destructive" onClick={(e) => { e.stopPropagation(); openSpoilage(r); }}>Write Off</Button>
+          )}
         </div>
       )},
   ];
@@ -131,7 +179,7 @@ export default function InventoryPage() {
         <div className="flex items-center gap-3">
           <Input size="sm" placeholder="Search items..." prefix={<Search size={14} className="text-outline" />}
             value={searchInput} onChange={(e) => onSearchChange(e.target.value)} className="!w-64" />
-          <Button size="sm" icon={<Plus size={14} />} onClick={() => setShowCreate(true)}>Add Item</Button>
+          {canWrite && <Button size="sm" icon={<Plus size={14} />} onClick={() => setShowCreate(true)}>Add Item</Button>}
         </div>
       </div>
 
@@ -217,6 +265,43 @@ export default function InventoryPage() {
             </div>
           </div>
         </div>
+      </Drawer>
+
+      <Drawer open={!!spoilageItem} onClose={() => setSpoilageItem(null)} title="Report Write-Off" size="sm"
+        footer={<div className="flex justify-end gap-3"><Button variant="secondary" onClick={() => setSpoilageItem(null)}>Cancel</Button>
+          <Button loading={submitting} onClick={submitSpoilage}>Report Write-Off</Button></div>}>
+        {spoilageItem && (
+          <div className="space-y-4">
+            <div className="p-3 rounded-lg bg-surface-container">
+              <p className="font-medium text-sm">{spoilageItem.name}</p>
+              <p className="text-xs text-outline">{spoilageItem.category} · Current stock: <strong>{spoilageItem.currentStock}</strong> {spoilageItem.unit}</p>
+            </div>
+            <div>
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Quantity</label>
+              <Input size="lg" type="number" min={1} max={spoilageItem.currentStock}
+                value={spoilageQty} onChange={(e) => setSpoilageQty(Number(e.target.value))} className="mt-1" />
+            </div>
+            <div>
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Type</label>
+              <Select size="lg" className="w-full mt-1" value={spoilageType} onChange={(v) => setSpoilageType(v)}>
+                <Option value="expired">Expired</Option>
+                <Option value="damaged">Damaged</Option>
+                <Option value="contaminated">Contaminated</Option>
+                <Option value="stolen">Stolen</Option>
+                <Option value="lost">Lost</Option>
+                <Option value="other">Other</Option>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Reason *</label>
+              <Input size="lg" placeholder="Why is this being written off?" value={spoilageReason} onChange={(e) => setSpoilageReason(e.target.value)} className="mt-1" />
+            </div>
+            <div>
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Notes (optional)</label>
+              <Input size="lg" placeholder="Additional notes" value={spoilageNotes} onChange={(e) => setSpoilageNotes(e.target.value)} className="mt-1" />
+            </div>
+          </div>
+        )}
       </Drawer>
     </div>
   );
