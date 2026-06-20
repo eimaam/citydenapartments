@@ -34,19 +34,19 @@ export class EmployeesController {
   }
 
   @Post()
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.FACILITY_MANAGER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT)
   create(@Body() dto: CreateEmployeeDto) {
     return this.employeesService.create(dto);
   }
 
   @Patch(':id')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.FACILITY_MANAGER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT)
   update(@Param('id') id: string, @Body() dto: UpdateEmployeeDto) {
     return this.employeesService.update(id, dto);
   }
 
   @Get(':id')
-  @Roles(UserRoleEnum.STORE_KEEPER, UserRoleEnum.STORE_MANAGER, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.ACCOUNTANT, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.GROUP_GM)
+  @Roles(UserRoleEnum.STORE_KEEPER, UserRoleEnum.STORE_MANAGER, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.ACCOUNTANT, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.GROUP_GM, UserRoleEnum.IT)
   findOne(@Param('id') id: string) {
     return this.employeesService.findById(id);
   }
