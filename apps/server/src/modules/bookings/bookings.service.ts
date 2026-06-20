@@ -353,10 +353,22 @@ export class BookingsService {
       this.logger.warn(`Check-in failed — booking ${id} not found in branch ${branchId}`);
       throw new NotFoundException('Booking not found.');
     }
-    // only allow bookings that got payment... reserved or confirmed signals that
     if (booking.bookingStatus !== BookingStatus.Reserved && booking.bookingStatus !== BookingStatus.Confirmed) {
       this.logger.warn(`Check-in failed — booking #${booking.bookingReference} has status "${booking.bookingStatus}", cannot check in`);
       throw new BadRequestException(`Cannot check in a ${booking.bookingStatus} booking.`);
+    }
+
+    const today = new Date();
+    const checkIn = new Date(booking.checkInDate);
+    const checkOut = new Date(booking.checkOutDate);
+    // normalize to start of day for fair comparison
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const checkInStart = new Date(checkIn.getFullYear(), checkIn.getMonth(), checkIn.getDate());
+    const checkOutStart = new Date(checkOut.getFullYear(), checkOut.getMonth(), checkOut.getDate());
+
+    if (todayStart < checkInStart || todayStart >= checkOutStart) {
+      this.logger.warn(`Check-in failed — booking #${booking.bookingReference} date range [${booking.checkInDate} — ${booking.checkOutDate}] does not include today`);
+      throw new BadRequestException('Booking check-in date does not match today. Cannot check in outside the booking date range.');
     }
 
     const room = await this.roomModel.findById(booking.roomId);

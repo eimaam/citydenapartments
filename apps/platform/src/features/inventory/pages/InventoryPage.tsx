@@ -15,7 +15,7 @@ const LIMIT = 20;
 export default function InventoryPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const isManager = can(user, [UserRole.StoreManager, UserRole.SuperAdmin]);
+  const isManager = can(user, [UserRole.StoreManager, UserRole.SuperAdmin, UserRole.Accountant]);
   const canIssue = can(user, [UserRole.StoreKeeper, UserRole.StoreManager, UserRole.SuperAdmin]);
 
   const [items, setItems] = useState<InventoryItem[]>([]);

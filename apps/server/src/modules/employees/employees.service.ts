@@ -1,10 +1,12 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Employee } from './employee.schema';
 import { RedisService } from '../redis/redis.service';
 import { CACHE_TTL } from '../../config/cache.constants';
 import { escapeRegex } from '../../common/utils/escape-regex';
+import type { CreateEmployeeDto } from './dto/create-employee.dto';
+import type { UpdateEmployeeDto } from './dto/update-employee.dto';
 
 @Injectable()
 export class EmployeesService {
@@ -15,16 +17,17 @@ export class EmployeesService {
     private readonly redis: RedisService,
   ) {}
 
-  async findAll(params: { branchId: string; page: number; limit: number; search?: string }) {
-    const { branchId, page, limit, search } = params;
-    const cacheKey = `employees:list:${branchId}:${page}:${limit}:${search || ''}`;
+  async findAll(params: { branchId: string; page: number; limit: number; search?: string; includeInactive?: boolean }) {
+    const { branchId, page, limit, search, includeInactive } = params;
+    const cacheKey = `employees:list:${branchId}:${page}:${limit}:${search || ''}:${includeInactive ? 'all' : 'active'}`;
     const cached = await this.redis.get(cacheKey);
     if (cached) {
       this.logger.debug(`Cache hit — ${cacheKey}`);
       return JSON.parse(cached);
     }
 
-    const filter: Record<string, any> = { branchId, isActive: true };
+    const filter: Record<string, any> = { branchId };
+    if (!includeInactive) filter.isActive = true;
     if (search) {
       const escaped = escapeRegex(search);
       filter.$or = [
@@ -43,6 +46,28 @@ export class EmployeesService {
     await this.redis.set(cacheKey, JSON.stringify(result), CACHE_TTL.ONE_HOUR);
     this.logger.log(`Employees listed — branch: ${branchId} | search: "${search || '—'}" | total: ${total}`);
     return result;
+  }
+
+  async create(dto: CreateEmployeeDto) {
+    const existing = await this.employeeModel.findOne({ email: dto.email.toLowerCase() });
+    if (existing) throw new ConflictException('An employee with this email already exists.');
+    const employee = await this.employeeModel.create(dto);
+    await this.redis.clearPattern('employees:list:*');
+    this.logger.log(`Employee created — ${employee.name} (${employee.email})`);
+    return employee;
+  }
+
+  async update(id: string, dto: UpdateEmployeeDto) {
+    if (dto.email) {
+      const dup = await this.employeeModel.findOne({ email: dto.email.toLowerCase(), _id: { $ne: id } });
+      if (dup) throw new ConflictException('An employee with this email already exists.');
+    }
+    const updated = await this.employeeModel.findByIdAndUpdate(id, dto, { new: true }).lean();
+    if (!updated) throw new NotFoundException('Employee not found.');
+    await this.redis.clearPattern('employees:list:*');
+    await this.redis.del(`employees:${id}`);
+    this.logger.log(`Employee updated — ${updated.name} (${updated.email})`);
+    return updated;
   }
 
   async searchByName(branchId: string, query: string) {

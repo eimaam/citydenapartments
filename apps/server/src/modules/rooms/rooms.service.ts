@@ -36,7 +36,7 @@ export class RoomsService {
       .find({
         branchId,
         isActive: true,
-        status: { $in: [RoomStatusEnum.AVAILABLE, RoomStatusEnum.DIRTY] },
+        status: RoomStatusEnum.AVAILABLE,
         _id: { $nin: conflictRoomIds },
       })
       .populate('roomTypeId', 'name amenities')

@@ -16,6 +16,7 @@ import RoomsPage from './features/rooms/pages/RoomsPage';
 import BookingsPage from './features/bookings/pages/BookingsPage';
 import CalendarPage from './features/bookings/pages/CalendarPage';
 import StaffPage from './features/staff/pages/StaffPage';
+import EmployeePage from './features/employees/pages/EmployeePage';
 import BreakfastPage from './features/breakfast/pages/BreakfastPage';
 import InventoryPage from './features/inventory/pages/InventoryPage';
 import InventoryTransactionsPage from './features/inventory/pages/TransactionsPage';
@@ -30,16 +31,17 @@ function ProtectedRoute({ roles, children }: { roles: UserRoleType[]; children: 
 }
 
 const routeRoles: Record<string, UserRoleType[]> = {
-  '/': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
+  '/': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.Accountant],
   '/branches': [UserRole.SuperAdmin],
   '/room-types': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/rooms': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/bookings': [UserRole.SuperAdmin, UserRole.GroupGM],
   '/bookings/calendar': [UserRole.SuperAdmin, UserRole.GroupGM],
   '/staff': [UserRole.SuperAdmin, UserRole.IT],
+  '/employees': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.FacilityManager, UserRole.Accountant, UserRole.StoreManager, UserRole.StoreKeeper],
   '/breakfast': [UserRole.SuperAdmin, UserRole.GroupGM],
-  '/inventory': [UserRole.SuperAdmin, UserRole.GroupGM],
-  '/inventory/transactions': [UserRole.SuperAdmin, UserRole.GroupGM],
+  '/inventory': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.Accountant],
+  '/inventory/transactions': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.Accountant],
   '/roles': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
 };
 
@@ -71,6 +73,7 @@ export default function App() {
                           case '/bookings': return <BookingsPage />;
                           case '/bookings/calendar': return <CalendarPage />;
                           case '/staff': return <StaffPage />;
+                          case '/employees': return <EmployeePage />;
                           case '/breakfast': return <BreakfastPage />;
                           case '/inventory': return <InventoryPage />;
                           case '/inventory/transactions': return <InventoryTransactionsPage />;
