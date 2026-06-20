@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useAuth } from '../../contexts/auth';
 import type { UserRoleType, AuthUser } from '../../lib/types';
 

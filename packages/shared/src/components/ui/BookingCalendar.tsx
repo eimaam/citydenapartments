@@ -110,7 +110,7 @@ export function BookingCalendar({
       <div
         ref={containerRef}
         className="overflow-auto border border-outline-variant/60 rounded-xl bg-surface-container-lowest shadow-sm"
-        style={{ maxHeight: 'calc(100vh - 270px)' }}
+        style={{ maxHeight: 'calc(100vh - 200px)' }}
       >
         <div
           className="grid relative"

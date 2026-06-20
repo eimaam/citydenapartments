@@ -22,6 +22,7 @@ import { api } from '../../../lib/api';
 import { bookingsApi, type CalendarData, type BookingResponse } from '../api/bookings.api';
 import { roomsApi, type RoomResponse } from '../../rooms/api/rooms.api';
 import { customersApi, type CustomerResponse } from '../api/customers.api';
+import { RoomTypeSelector } from '../../../components/ui/RoomTypeSelector';
 
 interface Branch {
   _id: string;
@@ -380,10 +381,15 @@ export default function CalendarPage() {
   }, [form.checkInDate, form.checkOutDate]);
 
   const onRoomChange = (roomId: string) => {
-    const room = availableRooms.find((r) => r._id === roomId);
+    updateField('roomId', roomId);
+    if (!roomId) {
+      updateField('actualPricePerNight', 0);
+      updateField('totalAmountPaid', 0);
+      setPriceError(null);
+      return;
+    }
     const price = 0;
     const nights = form.useNights ? form.nights : computedNights;
-    updateField('roomId', roomId);
     updateField('actualPricePerNight', price);
     updateField('totalAmountPaid', Math.max(0, (price * nights) - Math.round((price * nights * form.discountPercentage) / 100)));
     setPriceError(null);
@@ -755,9 +761,9 @@ export default function CalendarPage() {
           </div>
           <div className="mb-5">
             <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Room</label>
-            <Select showSearch optionFilterProp="label" size="lg" className="w-full mt-1" placeholder="Search room..." value={form.roomId || undefined} onChange={(v) => onRoomChange(v)}>
-              {availableRooms.map((r) => (<Option key={r._id} value={r._id} label={`${r.roomNumber} — ${r.roomTypeId?.name}`}>{r.roomNumber} — {r.roomTypeId?.name}</Option>))}
-            </Select>
+            <div className="mt-2">
+              <RoomTypeSelector rooms={availableRooms} selectedRoomId={form.roomId} onSelectRoom={(id) => { onRoomChange(id); }} />
+            </div>
           </div>
           {/* ── Customer Lookup ── */}
           <div className="mb-5 p-4 rounded-lg border border-outline-variant/60 bg-surface-container-low/30">

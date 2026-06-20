@@ -17,6 +17,7 @@ import { api } from '../../../lib/api';
 import { bookingsApi, type BookingResponse, type CreateBookingPayload } from '../api/bookings.api';
 import { roomsApi, type RoomResponse } from '../../rooms/api/rooms.api';
 import { customersApi, type CustomerResponse } from '../api/customers.api';
+import { RoomTypeSelector } from '../../../components/ui/RoomTypeSelector';
 
 const LIMIT = 20;
 
@@ -170,11 +171,16 @@ export default function BookingsPage() {
   const updateField = (field: string, value: unknown) => setForm((prev) => ({ ...prev, [field]: value }));
 
   const onRoomChange = (roomId: string) => {
-    const room = rooms.find((r) => r._id === roomId);
+    updateField('roomId', roomId);
+    if (!roomId) {
+      updateField('actualPricePerNight', 0);
+      updateField('totalAmountPaid', 0);
+      setPriceError(null);
+      return;
+    }
     const price = 0;
     const nights = form.useNights ? form.nights : computedNights;
     const pct = form.discountPercentage || 0;
-    updateField('roomId', roomId);
     updateField('actualPricePerNight', price);
     updateField('totalAmountPaid', Math.max(0, (price * nights) - Math.round((price * nights * pct) / 100)));
     setPriceError(null);
@@ -367,9 +373,9 @@ export default function BookingsPage() {
           </div>
           <div className="mb-5">
             <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Room</label>
-            <Select showSearch optionFilterProp="label" size="lg" className="w-full mt-1" placeholder="Search room..." value={form.roomId || undefined} onChange={(v) => onRoomChange(v)}>
-              {rooms.map((r) => (<Option key={r._id} value={r._id} label={`${r.roomNumber} — ${r.roomTypeId?.name}`}>{r.roomNumber} — {r.roomTypeId?.name}</Option>))}
-            </Select>
+            <div className="mt-2">
+              <RoomTypeSelector rooms={rooms} selectedRoomId={form.roomId} onSelectRoom={(id) => { onRoomChange(id); }} />
+            </div>
           </div>
           {/* ── Customer Lookup ── */}
           <div className="mb-5 p-4 rounded-lg border border-outline-variant/60 bg-surface-container-low/30">
