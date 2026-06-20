@@ -1,11 +1,13 @@
-import { Routes, Route } from 'react-router-dom';
+import { useMemo } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { UserRole } from '@citydenapartments/shared';
 import { AuthProvider } from './contexts/auth';
+import { useAuth } from './contexts/auth';
 import { ToastProvider } from './components/ui/Toast';
 import { ForcePasswordModal } from './components/ui/ForcePasswordModal';
 import { AuthGuard, GuestGuard } from './guards/AuthGuard';
-import { RoleGuard } from './guards/RoleGuard';
 import { MainLayout } from './components/layout/MainLayout';
+import { Spinner } from './components/ui/Spinner';
 import LoginPage from './features/auth/pages/LoginPage';
 import AdminDashboard from './features/dashboard/pages/DashboardPage';
 import BranchesPage from './features/branches/pages/BranchesPage';
@@ -18,6 +20,28 @@ import BreakfastPage from './features/breakfast/pages/BreakfastPage';
 import InventoryPage from './features/inventory/pages/InventoryPage';
 import InventoryTransactionsPage from './features/inventory/pages/TransactionsPage';
 import RolesPage from './features/roles/pages/RolesPage';
+import type { UserRoleType } from './lib/types';
+
+function ProtectedRoute({ roles, children }: { roles: UserRoleType[]; children: React.ReactNode }) {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return <Spinner />;
+  if (!user || !roles.includes(user.role)) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
+const routeRoles: Record<string, UserRoleType[]> = {
+  '/': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
+  '/branches': [UserRole.SuperAdmin],
+  '/room-types': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
+  '/rooms': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
+  '/bookings': [UserRole.SuperAdmin, UserRole.GroupGM],
+  '/bookings/calendar': [UserRole.SuperAdmin, UserRole.GroupGM],
+  '/staff': [UserRole.SuperAdmin, UserRole.IT],
+  '/breakfast': [UserRole.SuperAdmin, UserRole.GroupGM],
+  '/inventory': [UserRole.SuperAdmin, UserRole.GroupGM],
+  '/inventory/transactions': [UserRole.SuperAdmin, UserRole.GroupGM],
+  '/roles': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
+};
 
 export default function App() {
   return (
@@ -31,42 +55,33 @@ export default function App() {
 
           <Route element={<AuthGuard />}>
             <Route element={<MainLayout />}>
-              {/* SuperAdmin — full access */}
-              <Route element={<RoleGuard roles={[UserRole.SuperAdmin]} />}>
-                <Route index element={<AdminDashboard />} />
-                <Route path="branches" element={<BranchesPage />} />
-                <Route path="room-types" element={<RoomTypesPage />} />
-                <Route path="rooms" element={<RoomsPage />} />
-                <Route path="bookings" element={<BookingsPage />} />
-                <Route path="bookings/calendar" element={<CalendarPage />} />
-                <Route path="staff" element={<StaffPage />} />
-                <Route path="breakfast" element={<BreakfastPage />} />
-                <Route path="inventory" element={<InventoryPage />} />
-                <Route path="inventory/transactions" element={<InventoryTransactionsPage />} />
-                <Route path="roles" element={<RolesPage />} />
-              </Route>
-
-              {/* GroupGM — read-only overview */}
-              <Route element={<RoleGuard roles={[UserRole.GroupGM]} />}>
-                <Route index element={<AdminDashboard />} />
-                <Route path="room-types" element={<RoomTypesPage />} />
-                <Route path="rooms" element={<RoomsPage />} />
-                <Route path="bookings" element={<BookingsPage />} />
-                <Route path="bookings/calendar" element={<CalendarPage />} />
-                <Route path="breakfast" element={<BreakfastPage />} />
-                <Route path="inventory" element={<InventoryPage />} />
-                <Route path="inventory/transactions" element={<InventoryTransactionsPage />} />
-                <Route path="roles" element={<RolesPage />} />
-              </Route>
-
-              {/* IT — technical admin */}
-              <Route element={<RoleGuard roles={[UserRole.IT]} />}>
-                <Route index element={<AdminDashboard />} />
-                <Route path="room-types" element={<RoomTypesPage />} />
-                <Route path="rooms" element={<RoomsPage />} />
-                <Route path="staff" element={<StaffPage />} />
-                <Route path="roles" element={<RolesPage />} />
-              </Route>
+              {Object.entries(routeRoles).map(([path, roles]) => (
+                <Route
+                  key={path}
+                  index={path === '/'}
+                  path={path === '/' ? undefined : path.slice(1)}
+                  element={
+                    <ProtectedRoute roles={roles}>
+                      {(() => {
+                        switch (path) {
+                          case '/': return <AdminDashboard />;
+                          case '/branches': return <BranchesPage />;
+                          case '/room-types': return <RoomTypesPage />;
+                          case '/rooms': return <RoomsPage />;
+                          case '/bookings': return <BookingsPage />;
+                          case '/bookings/calendar': return <CalendarPage />;
+                          case '/staff': return <StaffPage />;
+                          case '/breakfast': return <BreakfastPage />;
+                          case '/inventory': return <InventoryPage />;
+                          case '/inventory/transactions': return <InventoryTransactionsPage />;
+                          case '/roles': return <RolesPage />;
+                          default: return null;
+                        }
+                      })()}
+                    </ProtectedRoute>
+                  }
+                />
+              ))}
             </Route>
           </Route>
         </Routes>

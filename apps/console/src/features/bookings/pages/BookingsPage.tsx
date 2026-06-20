@@ -16,6 +16,7 @@ import { useAuth } from '../../../contexts/auth';
 import { api } from '../../../lib/api';
 import { bookingsApi, type BookingResponse, type CreateBookingPayload } from '../api/bookings.api';
 import { roomsApi, type RoomResponse } from '../../rooms/api/rooms.api';
+import { RoomTypeSelector } from '../../../components/ui/RoomTypeSelector';
 
 const LIMIT = 20;
 
@@ -143,24 +144,37 @@ export default function BookingsPage() {
 
   const updateField = (field: string, value: unknown) => setForm((prev) => ({ ...prev, [field]: value }));
 
-  const fetchAvailableRooms = useCallback(async (ci: string, co: string) => {
-    try { setRooms(await roomsApi.available(ci, co)); } catch { toast('error', 'Failed to load rooms.'); }
+  const fetchAvailableRooms = useCallback(async (ci: string, co: string, currentRoomId?: string) => {
+    try {
+      const fetched = await roomsApi.available(ci, co);
+      setRooms(fetched);
+      if (currentRoomId && !fetched.find((r) => r._id === currentRoomId)) {
+        updateField('roomId', '');
+        updateField('actualPricePerNight', 0);
+        updateField('totalAmountPaid', 0);
+      }
+    } catch { toast('error', 'Failed to load rooms.'); }
   }, [toast]);
 
   const onRoomChange = (roomId: string) => {
-    const room = rooms.find((r) => r._id === roomId);
+    updateField('roomId', roomId);
+    if (!roomId) {
+      updateField('actualPricePerNight', 0);
+      updateField('totalAmountPaid', 0);
+      setPriceError(null);
+      return;
+    }
     const price = 0;
     const nights = form.useNights ? form.nights : computedNights;
     const pct = form.discountPercentage || 0;
-    updateField('roomId', roomId);
     updateField('actualPricePerNight', price);
     updateField('totalAmountPaid', Math.max(0, (price * nights) - Math.round((price * nights * pct) / 100)));
     setPriceError(null);
   };
 
-  const onNightsChange = (n: number) => { const nights = Math.max(1, n); let co = addDays(new Date(form.checkInDate), nights); updateField('nights', nights); updateField('checkOutDate', toDateStr(co)); recalcTotal(Number(form.actualPricePerNight) || 0, form.discountPercentage, nights); fetchAvailableRooms(form.checkInDate, toDateStr(co)); };
-  const onCheckInChange = (date: string) => { updateField('checkInDate', date); const nights = form.useNights ? form.nights : computedNights; let co = addDays(new Date(date), nights); updateField('checkOutDate', toDateStr(co)); fetchAvailableRooms(date, toDateStr(co)); };
-  const onCheckOutChange = (date: string) => { updateField('checkOutDate', date); updateField('useNights', false); const nights = Math.max(1, differenceInDays(new Date(date), new Date(form.checkInDate))); updateField('nights', nights); recalcTotal(Number(form.actualPricePerNight) || 0, form.discountPercentage, nights); fetchAvailableRooms(form.checkInDate, date); };
+  const onNightsChange = (n: number) => { const nights = Math.max(1, n); let co = addDays(new Date(form.checkInDate), nights); updateField('nights', nights); updateField('checkOutDate', toDateStr(co)); recalcTotal(Number(form.actualPricePerNight) || 0, form.discountPercentage, nights); fetchAvailableRooms(form.checkInDate, toDateStr(co), form.roomId); };
+  const onCheckInChange = (date: string) => { updateField('checkInDate', date); const nights = form.useNights ? form.nights : computedNights; let co = addDays(new Date(date), nights); updateField('checkOutDate', toDateStr(co)); fetchAvailableRooms(date, toDateStr(co), form.roomId); };
+  const onCheckOutChange = (date: string) => { updateField('checkOutDate', date); updateField('useNights', false); const nights = Math.max(1, differenceInDays(new Date(date), new Date(form.checkInDate))); updateField('nights', nights); recalcTotal(Number(form.actualPricePerNight) || 0, form.discountPercentage, nights); fetchAvailableRooms(form.checkInDate, date, form.roomId); };
 
   const recalcTotal = (price: number, pct: number, nights: number) => {
     const discountAmt = Math.round((price * nights * pct) / 100);
@@ -306,9 +320,9 @@ export default function BookingsPage() {
           </div>
           <div className="mb-5">
             <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Room</label>
-            <Select showSearch optionFilterProp="label" size="lg" className="w-full mt-1" placeholder="Search room..." value={form.roomId || undefined} onChange={(v) => onRoomChange(v)}>
-              {rooms.map((r) => (<Option key={r._id} value={r._id} label={`${r.roomNumber} — ${r.roomTypeId?.name}`}>{r.roomNumber} — {r.roomTypeId?.name}</Option>))}
-            </Select>
+            <div className="mt-2">
+              <RoomTypeSelector rooms={rooms} selectedRoomId={form.roomId} onSelectRoom={(id) => { onRoomChange(id); }} />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4 mb-5">
             <div><label className="text-[10px] text-outline uppercase tracking-wide">Guest Name</label><Input size="lg" placeholder="e.g. John Doe" value={form.guestName} onChange={(e) => updateField('guestName', e.target.value)} required /></div>
