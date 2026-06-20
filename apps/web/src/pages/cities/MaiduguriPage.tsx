@@ -168,7 +168,7 @@ export const MaiduguriPage = () => {
                   />
                 </div>
                 <Button
-                  type="submit"
+                  htmlType="submit"
                   size="lg"
                   className="w-full md:w-auto shrink-0 !bg-[#735c00] hover:!bg-[#554300] !text-white !rounded-none font-bold tracking-widest text-xs py-4 px-8"
                 >

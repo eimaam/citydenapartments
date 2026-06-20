@@ -129,7 +129,7 @@ export const BookingBar: React.FC<BookingBarProps> = ({ currentCity = 'abuja' })
         {/* Button */}
         <div className="lg:col-span-1 w-full">
           <Button
-            type="submit"
+            htmlType="submit"
             size="lg"
             className="w-full !bg-[#735c00] hover:!bg-[#554300] !text-white !rounded-none !py-4 font-bold tracking-widest text-xs border-0 outline-none flex items-center justify-center"
           >
