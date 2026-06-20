@@ -55,7 +55,7 @@ export default function App() {
                 <Route path="inventory/transactions" element={<TransactionsPage />} />
               </Route>
 
-              <Route element={<RoleGuard roles={[UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.StoreManager, UserRole.Accountant]} />}>
+              <Route element={<RoleGuard roles={[UserRole.SuperAdmin, UserRole.GroupGM, UserRole.StoreManager, UserRole.Accountant]} />}>
                 <Route path="inventory/spoilage" element={<SpoilagePage />} />
                 <Route path="inventory/book" element={<InventoryBookPage />} />
               </Route>

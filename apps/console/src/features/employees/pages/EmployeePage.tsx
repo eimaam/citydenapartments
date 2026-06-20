@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Button, Input, Select, Option, Drawer, Table, Badge, RoomStatus } from '@citydenapartments/shared';
+import { Button, Input, Select, Option, Drawer, Table, Badge, RoomStatus, UserRole } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
 import { Plus, Search } from 'lucide-react';
 import { useToast } from '../../../components/ui/Toast';
+import { useAuth } from '../../../contexts/auth';
 import { api } from '../../../lib/api';
 
 const LIMIT = 20;
@@ -33,7 +34,9 @@ interface PaginatedData {
 }
 
 export default function EmployeePage() {
+  const { user } = useAuth();
   const { toast } = useToast();
+  const isEditor = user ? user.role !== UserRole.FacilityManager : false;
   const [data, setData] = useState<PaginatedData>({ items: [], total: 0, page: 1, limit: LIMIT });
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -121,10 +124,14 @@ export default function EmployeePage() {
     { title: 'Actions', key: 'action', width: 220,
       render: (_: unknown, r: Employee) => (
         <div className="flex gap-2">
-          <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); openEdit(r); }}>Edit</Button>
-          <Button size="sm" variant={r.isActive ? 'destructive' : 'default'} onClick={(e) => { e.stopPropagation(); toggleActive(r); }}>
-            {r.isActive ? 'Deactivate' : 'Activate'}
-          </Button>
+          {isEditor && (
+            <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); openEdit(r); }}>Edit</Button>
+          )}
+          {isEditor && (
+            <Button size="sm" variant={r.isActive ? 'destructive' : 'default'} onClick={(e) => { e.stopPropagation(); toggleActive(r); }}>
+              {r.isActive ? 'Deactivate' : 'Activate'}
+            </Button>
+          )}
         </div>
       )},
   ];
@@ -137,7 +144,7 @@ export default function EmployeePage() {
         <div className="flex items-center gap-3">
           <Input size="sm" placeholder="Search employees..." prefix={<Search size={14} className="text-outline" />}
             value={searchInput} onChange={(e) => onSearchChange(e.target.value)} className="!w-64" />
-          <Button size="sm" icon={<Plus size={14} />} onClick={openCreate}>Add Employee</Button>
+          {isEditor && <Button size="sm" icon={<Plus size={14} />} onClick={openCreate}>Add Employee</Button>}
         </div>
       </div>
       <div className="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden">

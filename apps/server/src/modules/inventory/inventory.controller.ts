@@ -110,13 +110,13 @@ export class InventoryController {
   }
 
   @Patch('spoilage/:id/approve')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.FACILITY_MANAGER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM)
   approveSpoilage(@Param('id') id: string, @ActiveUser() user: any) {
     return this.inventoryService.approveSpoilage(id, user.id, user.activeBranchId);
   }
 
   @Patch('spoilage/:id/reject')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.FACILITY_MANAGER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM)
   rejectSpoilage(@Param('id') id: string, @ActiveUser() user: any) {
     return this.inventoryService.rejectSpoilage(id, user.id, user.activeBranchId);
   }

@@ -47,8 +47,6 @@ const menuConfig: Record<UserRoleType, SidebarItem[]> = {
     { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
     { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
     { label: 'Staff', icon: Users, path: '/staff' },
-    { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
-    { label: 'Inventory Book', icon: BookOpen, path: '/inventory/book' },
     { label: 'Customers', icon: BookUser, path: '/customers' },
   ],
   FrontOfficeManager: [
