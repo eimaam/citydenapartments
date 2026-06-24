@@ -108,6 +108,37 @@ export class Booking extends Document {
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User' })
   checkedOutBy: MongooseSchema.Types.ObjectId;
+
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User' })
+  cancelledBy?: MongooseSchema.Types.ObjectId;
+
+  @Prop()
+  checkedInAt?: Date;
+
+  @Prop()
+  checkedOutAt?: Date;
+
+  @Prop({
+    type: [{
+      fromStatus: { type: String, required: true },
+      toStatus: { type: String, required: true },
+      changedBy: { type: MongooseSchema.Types.ObjectId, ref: 'User' },
+      changedAt: { type: Date, default: Date.now },
+    }],
+    default: [],
+  })
+  statusHistory: Array<{
+    fromStatus: string;
+    toStatus: string;
+    changedBy?: MongooseSchema.Types.ObjectId;
+    changedAt: Date;
+  }>;
+
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'DiscountCode' })
+  discountCodeId?: MongooseSchema.Types.ObjectId;
+
+  @Prop()
+  discountCode?: string;
 }
 
 export const BookingSchema = SchemaFactory.createForClass(Booking);

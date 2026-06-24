@@ -66,6 +66,7 @@ export interface CreateBookingPayload {
   actualPricePerNight: number;
   discountPercentage?: number;
   discountReason?: string;
+  discountCode?: string;
   totalAmountPaid: number;
   paymentMethod: PaymentMethodType;
   paymentReference?: string;

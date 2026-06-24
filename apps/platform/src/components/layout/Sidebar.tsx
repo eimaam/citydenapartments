@@ -30,11 +30,13 @@ const menuConfig: Record<UserRoleType, SidebarItem[]> = {
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
     { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
     { label: 'Inventory Book', icon: BookOpen, path: '/inventory/book' },
+    { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
     { label: 'Customers', icon: BookUser, path: '/customers' },
   ],
   GroupGM: [
     { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
     { label: 'Inventory Book', icon: BookOpen, path: '/inventory/book' },
+    { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
     { label: 'Customers', icon: BookUser, path: '/customers' },
   ],
   IT: [
@@ -47,6 +49,7 @@ const menuConfig: Record<UserRoleType, SidebarItem[]> = {
     { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
     { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
     { label: 'Staff', icon: Users, path: '/staff' },
+    { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
     { label: 'Customers', icon: BookUser, path: '/customers' },
   ],
   FrontOfficeManager: [
@@ -54,6 +57,7 @@ const menuConfig: Record<UserRoleType, SidebarItem[]> = {
     { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
     { label: 'Calendar', icon: CalendarFold, path: '/bookings/calendar' },
     { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
+    { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
     { label: 'Customers', icon: BookUser, path: '/customers' },
   ],
   Accountant: [

@@ -85,7 +85,7 @@ export class DashboardService {
             },
             revenue: {
               $sum: {
-                $cond: [{ $ne: ['$bookingStatus', BookingStatus.Cancelled] }, '$totalAmountPaid', 0],
+                $cond: [{ $in: ['$bookingStatus', [BookingStatus.Checked_In, BookingStatus.Checked_Out]] }, '$totalAmountPaid', 0],
               },
             },
           },
@@ -200,7 +200,7 @@ export class DashboardService {
                   $filter: {
                     input: '$branchBookings',
                     as: 'b',
-                    cond: { $ne: ['$$b.bookingStatus', BookingStatus.Cancelled] },
+                    cond: { $in: ['$$b.bookingStatus', [BookingStatus.Checked_In, BookingStatus.Checked_Out]] },
                   },
                 },
                 initialValue: 0,
@@ -248,7 +248,7 @@ export class DashboardService {
 
     const activeBookingMatch = {
       ...branchMatch,
-      bookingStatus: { $ne: BookingStatus.Cancelled },
+      bookingStatus: { $in: [BookingStatus.Checked_In, BookingStatus.Checked_Out] },
     };
 
     const [
@@ -262,7 +262,7 @@ export class DashboardService {
       inventoryAggResult,
     ] = await Promise.all([
       this.bookingModel.aggregate([
-        { $match: { bookingStatus: { $ne: BookingStatus.Cancelled }, ...branchMatch } },
+        { $match: { bookingStatus: { $in: [BookingStatus.Checked_In, BookingStatus.Checked_Out] }, ...branchMatch } },
         {
           $group: {
             _id: '$paymentMethod',

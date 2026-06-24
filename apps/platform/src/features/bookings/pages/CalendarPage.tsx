@@ -24,6 +24,7 @@ import { roomsApi, type RoomResponse } from '../../rooms/api/rooms.api';
 import { customersApi, type CustomerResponse } from '../api/customers.api';
 import { roomTypesApi, type RoomTypeResponse } from '../../room-types/api/room-types.api';
 import { RoomTypeSelector } from '../../../components/ui/RoomTypeSelector';
+import { discountCodesApi } from '../../discount-codes/api/discount-codes.api';
 
 interface Branch {
   _id: string;
@@ -127,6 +128,9 @@ export default function CalendarPage() {
   const [customerResults, setCustomerResults] = useState<CustomerResponse[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerResponse | null>(null);
   const [searchingCustomer, setSearchingCustomer] = useState(false);
+  const [discountCodeInput, setDiscountCodeInput] = useState('');
+  const [appliedDiscountCode, setAppliedDiscountCode] = useState<{ _id: string; code: string; percentage: number } | null>(null);
+  const [discountCodeLoading, setDiscountCodeLoading] = useState(false);
 
   // ── Fetching Data ──
   const fetchCalendar = useCallback(async (y: number, m: number) => {
@@ -391,7 +395,9 @@ export default function CalendarPage() {
       setPriceError(null);
       return;
     }
-    const price = 0;
+    const room = availableRooms.find((r) => r._id === roomId);
+    const roomType = allRoomTypes.find((rt) => rt._id === room?.roomTypeId?._id);
+    const price = roomType?.basePrice ?? 0;
     const nights = form.useNights ? form.nights : computedNights;
     updateField('actualPricePerNight', price);
     updateField('totalAmountPaid', Math.max(0, (price * nights) - Math.round((price * nights * form.discountPercentage) / 100)));
@@ -461,6 +467,18 @@ export default function CalendarPage() {
     setPhoneError(validatePhone(phone));
   };
 
+  const applyDiscountCode = async () => {
+    if (!discountCodeInput.trim()) { toast('error', 'Enter a discount code.'); return; }
+    setDiscountCodeLoading(true);
+    try {
+      const result = await discountCodesApi.validate(discountCodeInput.trim());
+      setAppliedDiscountCode(result);
+      updateField('discountPercentage', result.percentage);
+      toast('success', `Discount code applied: ${result.percentage}% off`);
+    } catch (e: any) { toast('error', e.message); setAppliedDiscountCode(null); }
+    finally { setDiscountCodeLoading(false); }
+  };
+
   const onCustomerSearchPhoneChange = (phone: string) => {
     setCustomerSearchPhone(phone);
     setSelectedCustomer(null);
@@ -517,11 +535,14 @@ export default function CalendarPage() {
         guestGender: form.guestGender, guestReligion: form.guestReligion || undefined,
         numberOfGuests: Number(form.numberOfGuests) || 1, checkInDate: form.checkInDate, checkOutDate: form.checkOutDate,
         actualPricePerNight: price, discountPercentage: Number(form.discountPercentage) || 0,
+        discountCode: appliedDiscountCode?.code,
         totalAmountPaid: Number(form.totalAmountPaid), paymentMethod: form.paymentMethod, bookingSource: form.bookingSource,
         bookingStatus,
       });
       setShowCreate(false);
       toast('success', 'Booking created.');
+      setAppliedDiscountCode(null);
+      setDiscountCodeInput('');
       fetchCalendar(year, month);
       openReceipt(created as unknown as ReceiptBooking);
     } catch (e) {
@@ -831,7 +852,20 @@ export default function CalendarPage() {
               </div>
             </div>
           </div>
-          {selectedRoom && (<div className="p-4 mb-5 rounded-lg border border-outline-variant bg-surface-container"><div className="grid grid-cols-3 gap-3"><div><span className="text-[10px] text-outline uppercase tracking-wide">Price / Night</span><Input size="sm" type="number" min={0} value={form.actualPricePerNight || ''} onChange={(e) => onPriceChange(Number(e.target.value))} status={priceError ? 'error' : undefined} /></div><div><span className="text-[10px] text-outline uppercase tracking-wide">Discount (%)</span><Input size="sm" type="number" min={0} max={100} step={1} value={form.discountPercentage || ''} onChange={(e) => onDiscountPctChange(Number(e.target.value))} /></div><div><span className="text-[10px] text-outline uppercase tracking-wide">Total Paid</span><Input size="sm" type="number" min={1} value={form.totalAmountPaid || ''} onChange={(e) => updateField('totalAmountPaid', Number(e.target.value))} /></div></div>{priceError && <p className="mt-2 text-xs text-error">{priceError}</p>}<div className="flex flex-wrap gap-4 mt-2 text-[10px] text-outline"><span>Nights: {form.useNights ? form.nights : computedNights}</span><span>Subtotal: ₦{((Number(form.actualPricePerNight) || 0) * (form.useNights ? form.nights : computedNights)).toLocaleString()}</span>{form.discountPercentage > 0 && <span className="text-error">Discount: {form.discountPercentage}%</span>}</div></div>)}
+          {selectedRoom && (<div className="p-4 mb-5 rounded-lg border border-outline-variant bg-surface-container"><div className="grid grid-cols-3 gap-3"><div><span className="text-[10px] text-outline uppercase tracking-wide">Price / Night</span><Input size="sm" type="number" min={0} value={form.actualPricePerNight || ''} onChange={(e) => onPriceChange(Number(e.target.value))} status={priceError ? 'error' : undefined} /></div><div><span className="text-[10px] text-outline uppercase tracking-wide">Discount (%)</span><Input size="sm" type="number" min={0} max={100} step={1} value={form.discountPercentage || ''} onChange={(e) => onDiscountPctChange(Number(e.target.value))} /></div><div><span className="text-[10px] text-outline uppercase tracking-wide">Total Paid</span><Input size="sm" type="number" min={1} value={form.totalAmountPaid || ''} onChange={(e) => updateField('totalAmountPaid', Number(e.target.value))} /></div></div>
+  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-outline-variant/60">
+    <Input size="sm" placeholder="Discount code" value={discountCodeInput}
+      onChange={(e) => setDiscountCodeInput(e.target.value)}
+      onKeyDown={(e) => { if (e.key === 'Enter') applyDiscountCode(); }} />
+    <Button size="sm" loading={discountCodeLoading} disabled={!!appliedDiscountCode} onClick={applyDiscountCode}>
+      {appliedDiscountCode ? 'Applied' : 'Apply'}
+    </Button>
+    {appliedDiscountCode && (
+      <button onClick={() => { setAppliedDiscountCode(null); setDiscountCodeInput(''); }}
+        className="text-xs text-error hover:underline cursor-pointer whitespace-nowrap">Remove</button>
+    )}
+  </div>
+{priceError && <p className="mt-2 text-xs text-error">{priceError}</p>}<div className="flex flex-wrap gap-4 mt-2 text-[10px] text-outline"><span>Nights: {form.useNights ? form.nights : computedNights}</span><span>Subtotal: ₦{((Number(form.actualPricePerNight) || 0) * (form.useNights ? form.nights : computedNights)).toLocaleString()}</span>{form.discountPercentage > 0 && <span className="text-error">Discount: {form.discountPercentage}%</span>}</div></div>)}
           <div className="mb-5"><label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Payment Method</label><div className="grid grid-cols-3 gap-2 mt-1">{paymentMethods.map((pm) => { const Icon = pm.icon; const active = form.paymentMethod === pm.key; return (<button key={pm.key} type="button" onClick={() => updateField('paymentMethod', pm.key)} className="flex flex-col items-center gap-1 p-3 rounded-lg border text-center transition-all cursor-pointer" style={{ borderColor: active ? 'var(--color-primary)' : 'var(--color-outline-variant)', background: active ? 'var(--color-primary-container)/10' : 'var(--color-surface-container-lowest)' }}><Icon size={20} style={{ color: active ? 'var(--color-primary)' : 'var(--color-outline)' }} /><span className="text-xs font-medium" style={{ color: active ? 'var(--color-on-surface)' : 'var(--color-on-surface-variant)' }}>{pm.label}</span><span className="text-[9px] leading-tight" style={{ color: active ? 'var(--color-on-surface-variant)' : 'var(--color-outline)' }}>{pm.desc}</span></button>); })}</div></div>
           <div className="mb-5"><label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Source</label><div className="flex gap-1 mt-1">{bookingSources.map((s) => (<button key={s.key} type="button" onClick={() => updateField('bookingSource', s.key)} className="flex-1 py-2 text-xs font-medium rounded border transition-all cursor-pointer" style={{ borderColor: form.bookingSource === s.key ? 'var(--color-primary)' : 'var(--color-outline-variant)', background: form.bookingSource === s.key ? 'var(--color-primary-container)/10' : 'var(--color-surface-container-lowest)', color: form.bookingSource === s.key ? 'var(--color-on-surface)' : 'var(--color-on-surface-variant)' }}>{s.label}</button>))}</div></div>
         </form>

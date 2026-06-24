@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   CalendarFold,
   AlertTriangle,
+  History,
 } from 'lucide-react';
 import type { UserRoleType } from '../../lib/types';
 import { cn } from '../../lib/utils';
@@ -35,12 +36,14 @@ const menuConfig: Record<UserRoleType, SidebarItem[]> = {
     { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
     { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
     { label: 'Calendar', icon: CalendarFold, path: '/bookings/calendar' },
+    { label: 'Audit Log', icon: History, path: '/bookings/status-history' },
     { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
     { label: 'Staff', icon: Users, path: '/staff' },
     { label: 'Employees', icon: Users, path: '/employees' },
     { label: 'Inventory', icon: Package, path: '/inventory' },
     { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
     { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
+    { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
     { label: 'Roles', icon: Shield, path: '/roles' },
   ],
   GroupGM: [
@@ -49,11 +52,13 @@ const menuConfig: Record<UserRoleType, SidebarItem[]> = {
     { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
     { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
     { label: 'Calendar', icon: CalendarFold, path: '/bookings/calendar' },
+    { label: 'Audit Log', icon: History, path: '/bookings/status-history' },
     { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
     { label: 'Employees', icon: Users, path: '/employees' },
     { label: 'Inventory', icon: Package, path: '/inventory' },
     { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
     { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
+    { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
     { label: 'Roles', icon: Shield, path: '/roles' },
   ],
   IT: [
@@ -62,24 +67,21 @@ const menuConfig: Record<UserRoleType, SidebarItem[]> = {
     { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
     { label: 'Staff', icon: Users, path: '/staff' },
     { label: 'Employees', icon: Users, path: '/employees' },
+    { label: 'Audit Log', icon: History, path: '/bookings/status-history' },
     { label: 'Roles', icon: Shield, path: '/roles' },
   ],
   FacilityManager: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { label: 'Employees', icon: Users, path: '/employees' },
   ],
   FrontOfficeManager: [],
   Accountant: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { label: 'Employees', icon: Users, path: '/employees' },
     { label: 'Inventory', icon: Package, path: '/inventory' },
     { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
   ],
   StoreManager: [
-    { label: 'Employees', icon: Users, path: '/employees' },
   ],
   StoreKeeper: [
-    { label: 'Employees', icon: Users, path: '/employees' },
   ],
   Reception: [],
   KitchenStaff: [],

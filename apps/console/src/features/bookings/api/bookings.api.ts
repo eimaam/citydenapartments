@@ -2,6 +2,13 @@ import { api } from '../../../lib/api';
 import type { BookingStatusType, PaymentMethodType, BookingSourceType, RoomStatusType } from '@citydenapartments/shared';
 import type { RoomResponse } from '../../rooms/api/rooms.api';
 
+export interface StatusHistoryEntry {
+  fromStatus: string;
+  toStatus: string;
+  changedBy?: { _id: string; firstName: string; lastName: string };
+  changedAt: string;
+}
+
 export interface BookingResponse {
   _id: string;
   bookingReference: string;
@@ -39,6 +46,13 @@ export interface BookingResponse {
   bookingStatus: BookingStatusType;
   bookingSource: BookingSourceType;
   createdAt: string;
+  bookedBy?: { _id: string; firstName: string; lastName: string };
+  checkedInBy?: { _id: string; firstName: string; lastName: string };
+  checkedOutBy?: { _id: string; firstName: string; lastName: string };
+  cancelledBy?: { _id: string; firstName: string; lastName: string };
+  checkedInAt?: string;
+  checkedOutAt?: string;
+  statusHistory?: StatusHistoryEntry[];
 }
 
 export interface CreateBookingPayload {
@@ -62,6 +76,7 @@ export interface CreateBookingPayload {
   actualPricePerNight: number;
   discountPercentage?: number;
   discountReason?: string;
+  discountCode?: string;
   totalAmountPaid: number;
   paymentMethod: PaymentMethodType;
   paymentReference?: string;

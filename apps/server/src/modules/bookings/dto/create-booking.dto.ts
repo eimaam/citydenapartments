@@ -124,4 +124,8 @@ export class CreateBookingDto {
   @IsOptional()
   @IsEnum(BookingSourceEnum)
   bookingSource?: BookingSource;
+
+  @IsOptional()
+  @IsString()
+  discountCode?: string;
 }

@@ -7,6 +7,7 @@ import { Room, RoomSchema } from '../rooms/room.schema';
 import { RoomType, RoomTypeSchema } from '../room-types/room-type.schema';
 import { BreakfastLog, BreakfastLogSchema } from '../breakfast/breakfast-log.schema';
 import { Customer, CustomerSchema } from '../customers/customer.schema';
+import { DiscountCodesModule } from '../discount-codes/discount-codes.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { Customer, CustomerSchema } from '../customers/customer.schema';
       { name: BreakfastLog.name, schema: BreakfastLogSchema },
       { name: Customer.name, schema: CustomerSchema },
     ]),
+    DiscountCodesModule,
   ],
   controllers: [BookingsController],
   providers: [BookingsService],

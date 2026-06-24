@@ -17,6 +17,7 @@ import { escapeRegex } from '../../common/utils/escape-regex';
 import { BookingStatus, BookingSource, Gender } from '@citydenapartments/shared';
 import { BreakfastLog } from '../breakfast/breakfast-log.schema';
 import { isPastBreakfastCutoff } from '../breakfast/breakfast.constants';
+import { DiscountCodesService } from '../discount-codes/discount-codes.service';
 
 @Injectable()
 export class BookingsService {
@@ -28,17 +29,18 @@ export class BookingsService {
     @InjectModel(Customer.name) private customerModel: Model<Customer>,
     @InjectConnection() private readonly connection: Connection,
     private readonly redis: RedisService,
+    private readonly discountCodesService: DiscountCodesService,
   ) {}
 
   private readonly logger = new Logger(BookingsService.name);
 
   private async expireBreakfastIfNeeded(booking: Booking, actorId: string) {
-    const hasDiscount = (booking.discountPercentage || 0) >= 15;
+    const hasDiscount = (booking.discountPercentage || 0) >= 5;
     const pastCutoff = isPastBreakfastCutoff();
     if (!hasDiscount && !pastCutoff) return;
 
     this.logger.log(
-      `Breakfast expired — Booking #${booking.bookingReference} | reason: ${hasDiscount ? 'discount>=15%' : ''}${hasDiscount && pastCutoff ? ' + ' : ''}${pastCutoff ? 'past cutoff' : ''}`,
+      `Breakfast expired — Booking #${booking.bookingReference} | reason: ${hasDiscount ? 'discount>=5%' : ''}${hasDiscount && pastCutoff ? ' + ' : ''}${pastCutoff ? 'past cutoff' : ''}`,
     );
 
     await this.breakfastLogModel.create({
@@ -117,7 +119,15 @@ export class BookingsService {
   }
 
   async findOne(id: string, branchId: string) {
-    return this.bookingModel.findOne({ _id: id, branchId }).populate('roomId').lean();
+    return this.bookingModel
+      .findOne({ _id: id, branchId })
+      .populate('roomId')
+      .populate('bookedBy', 'firstName lastName')
+      .populate('checkedInBy', 'firstName lastName')
+      .populate('checkedOutBy', 'firstName lastName')
+      .populate('cancelledBy', 'firstName lastName')
+      .populate('statusHistory.changedBy', 'firstName lastName')
+      .lean();
   }
 
   async createWalkInBooking(dto: CreateBookingDto, actorId: string, branchId: string) {
@@ -137,6 +147,11 @@ export class BookingsService {
     session.startTransaction();
 
     try {
+      let discountCodeDoc: { _id: any; code: string } | null = null;
+      if (dto.discountCode) {
+        discountCodeDoc = await this.discountCodesService.validate(dto.discountCode);
+      }
+
       const room = await this.roomModel.findById(dto.roomId).session(session);
       if (!room || !room.isActive) {
         this.logger.warn(`Room not found or inactive — roomId: ${dto.roomId}`);
@@ -311,6 +326,15 @@ export class BookingsService {
             bookingSource: dto.bookingSource || BookingSource.WalkIn,
             bookedBy: actorId,
             checkedInBy: isImmediateCheckIn ? actorId : undefined,
+            checkedInAt: isImmediateCheckIn ? new Date() : undefined,
+            statusHistory: [{
+              fromStatus: '',
+              toStatus: targetStatus,
+              changedBy: actorId,
+              changedAt: new Date(),
+            }],
+            discountCodeId: discountCodeDoc?._id,
+            discountCode: discountCodeDoc?.code,
           },
         ],
         { session },
@@ -335,6 +359,10 @@ export class BookingsService {
 
       if (isImmediateCheckIn) {
         await this.expireBreakfastIfNeeded(newBooking, actorId);
+      }
+
+      if (discountCodeDoc) {
+        await this.discountCodesService.consume(discountCodeDoc._id);
       }
 
       this.logger.log(`Booking created — #${newBooking.bookingReference} | Room ${room.roomNumber} | Guest ${guestDetails.name} | by ${actorId}`);
@@ -385,8 +413,15 @@ export class BookingsService {
     session.startTransaction();
 
     try {
+      booking.statusHistory.push({
+        fromStatus: booking.bookingStatus,
+        toStatus: BookingStatus.Checked_In,
+        changedBy: actorId as any,
+        changedAt: new Date(),
+      });
       booking.bookingStatus = BookingStatus.Checked_In;
       booking.checkedInBy = actorId as any;
+      booking.checkedInAt = new Date();
       await booking.save({ session });
 
       room.status = RoomStatusEnum.OCCUPIED as any;
@@ -433,8 +468,15 @@ export class BookingsService {
     session.startTransaction();
 
     try {
+      booking.statusHistory.push({
+        fromStatus: booking.bookingStatus,
+        toStatus: BookingStatus.Checked_Out,
+        changedBy: actorId as any,
+        changedAt: new Date(),
+      });
       booking.bookingStatus = BookingStatus.Checked_Out;
       booking.checkedOutBy = actorId as any;
+      booking.checkedOutAt = new Date();
       await booking.save({ session });
 
       room.status = RoomStatusEnum.DIRTY as any;
@@ -482,7 +524,14 @@ export class BookingsService {
     session.startTransaction();
 
     try {
+      booking.statusHistory.push({
+        fromStatus: booking.bookingStatus,
+        toStatus: BookingStatus.Cancelled,
+        changedBy: actorId as any,
+        changedAt: new Date(),
+      });
       booking.bookingStatus = BookingStatus.Cancelled;
+      booking.cancelledBy = actorId as any;
       booking.checkedOutBy = actorId as any;
       await booking.save({ session });
 

@@ -15,6 +15,7 @@ import RoomTypesPage from './features/room-types/pages/RoomTypesPage';
 import RoomsPage from './features/rooms/pages/RoomsPage';
 import BookingsPage from './features/bookings/pages/BookingsPage';
 import CalendarPage from './features/bookings/pages/CalendarPage';
+import StatusHistoryPage from './features/bookings/pages/StatusHistoryPage';
 import StaffPage from './features/staff/pages/StaffPage';
 import EmployeePage from './features/employees/pages/EmployeePage';
 import BreakfastPage from './features/breakfast/pages/BreakfastPage';
@@ -22,6 +23,7 @@ import InventoryPage from './features/inventory/pages/InventoryPage';
 import InventoryTransactionsPage from './features/inventory/pages/TransactionsPage';
 import SpoilagePage from './features/inventory/pages/SpoilagePage';
 import RolesPage from './features/roles/pages/RolesPage';
+import DiscountCodesPage from './features/discount-codes/pages/DiscountCodesPage';
 import type { UserRoleType } from './lib/types';
 
 function ProtectedRoute({ roles, children }: { roles: UserRoleType[]; children: React.ReactNode }) {
@@ -38,12 +40,14 @@ const routeRoles: Record<string, UserRoleType[]> = {
   '/rooms': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/bookings': [UserRole.SuperAdmin, UserRole.GroupGM],
   '/bookings/calendar': [UserRole.SuperAdmin, UserRole.GroupGM],
+  '/bookings/status-history': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/staff': [UserRole.SuperAdmin, UserRole.IT],
-  '/employees': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.FacilityManager, UserRole.Accountant, UserRole.StoreManager, UserRole.StoreKeeper],
+  '/employees': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/breakfast': [UserRole.SuperAdmin, UserRole.GroupGM],
   '/inventory': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.Accountant],
   '/inventory/transactions': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.Accountant],
   '/inventory/spoilage': [UserRole.SuperAdmin, UserRole.GroupGM],
+  '/discount-codes': [UserRole.SuperAdmin, UserRole.GroupGM],
   '/roles': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
 };
 
@@ -74,12 +78,14 @@ export default function App() {
                           case '/rooms': return <RoomsPage />;
                           case '/bookings': return <BookingsPage />;
                           case '/bookings/calendar': return <CalendarPage />;
+                          case '/bookings/status-history': return <StatusHistoryPage />;
                           case '/staff': return <StaffPage />;
                           case '/employees': return <EmployeePage />;
                           case '/breakfast': return <BreakfastPage />;
                           case '/inventory': return <InventoryPage />;
                           case '/inventory/transactions': return <InventoryTransactionsPage />;
                           case '/inventory/spoilage': return <SpoilagePage />;
+                          case '/discount-codes': return <DiscountCodesPage />;
                           case '/roles': return <RolesPage />;
                           default: return null;
                         }
