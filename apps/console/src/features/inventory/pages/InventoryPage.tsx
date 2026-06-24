@@ -12,7 +12,7 @@ const LIMIT = 20;
 export default function InventoryPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const canWrite = user ? [UserRole.SuperAdmin, UserRole.StoreManager, UserRole.Accountant].includes(user.role) : false;
+  const canWrite = user ? [UserRole.SuperAdmin, UserRole.StoreManager, UserRole.Accountant].includes(user.role as any) : false;
 
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [total, setTotal] = useState(0);
