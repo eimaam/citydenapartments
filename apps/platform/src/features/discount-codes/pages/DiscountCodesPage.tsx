@@ -12,6 +12,7 @@ const LIMIT = 20;
 
 export default function DiscountCodesPage() {
   const { user } = useAuth();
+  
   const { toast } = useToast();
   const canToggle = user ? [UserRole.SuperAdmin, UserRole.GroupGM].includes(user.role as any) : false;
 
