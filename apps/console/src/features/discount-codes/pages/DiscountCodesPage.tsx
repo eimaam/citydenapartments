@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button, Input, Drawer, Table, Badge, RoomStatus } from '@citydenapartments/shared';
-import type { TableProps } from '@citydenapartments/shared';
+import type { TableProps, UserRoleType } from '@citydenapartments/shared';
 import { Search, Plus, Hash, Calendar } from 'lucide-react';
 import { useToast } from '../../../components/ui/Toast';
 import { discountCodesApi, type DiscountCode } from '../api/discount-codes.api';
@@ -13,7 +13,7 @@ const LIMIT = 20;
 export default function DiscountCodesPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const isSuperOrGM = user ? [UserRole.SuperAdmin, UserRole.GroupGM].includes(user.role) : false;
+  const isSuperOrGM = user ? [UserRole.SuperAdmin, UserRole.GroupGM].includes(user.role as any) : false;
 
   const [data, setData] = useState<{ items: DiscountCode[]; total: number; page: number; limit: number }>({ items: [], total: 0, page: 1, limit: LIMIT });
   const [loading, setLoading] = useState(true);

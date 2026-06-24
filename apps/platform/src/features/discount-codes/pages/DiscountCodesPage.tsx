@@ -13,7 +13,7 @@ const LIMIT = 20;
 export default function DiscountCodesPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const canToggle = user ? [UserRole.SuperAdmin, UserRole.GroupGM].includes(user.role) : false;
+  const canToggle = user ? [UserRole.SuperAdmin, UserRole.GroupGM].includes(user.role as any) : false;
 
   const [data, setData] = useState<{ items: DiscountCode[]; total: number; page: number; limit: number }>({ items: [], total: 0, page: 1, limit: LIMIT });
   const [loading, setLoading] = useState(true);

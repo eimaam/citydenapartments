@@ -2,6 +2,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Building2,
+  Tags,
   CalendarCheck,
   DoorOpen,
   Coffee,
