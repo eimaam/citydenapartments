@@ -469,7 +469,7 @@ export const BookingPage = () => {
 
                     {/* tags */}
                     <div className="mt-4 flex flex-wrap gap-2">
-                      {suite.tags.map(t => (
+                      {(suite.tags || []).map(t => (
                         <span key={t} className="text-[10px] font-medium text-secondary/80 bg-[#FAF8F6] border border-outline-variant/40 px-2 py-0.5 rounded-sm">
                           {t}
                         </span>
@@ -1017,7 +1017,7 @@ export const BookingPage = () => {
               <div>
                 <h4 className="text-[10px] font-bold tracking-widest text-[#7F7663] uppercase border-b border-outline-variant/30 pb-2 mb-3">AMENITIES</h4>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs text-secondary">
-                  {detailedSuiteView.amenities.map(a => (
+                  {(detailedSuiteView.amenities || []).map(a => (
                     <div key={a} className="flex items-center gap-2">
                       <div className="size-1.5 rounded-full bg-[#735c00] shrink-0" />
                       <span>{a}</span>
@@ -1030,7 +1030,7 @@ export const BookingPage = () => {
               <div>
                 <h4 className="text-[10px] font-bold tracking-widest text-[#7F7663] uppercase border-b border-outline-variant/30 pb-2 mb-4">GUEST REVIEWS</h4>
                 <div className="flex flex-col gap-4">
-                  {detailedSuiteView.reviews.map((r, i) => (
+                  {(detailedSuiteView.reviews || []).map((r, i) => (
                     <div key={i} className="bg-[#FAF8F6] border border-outline-variant/40 p-4 rounded-xs">
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-xs font-bold text-on-surface">{r.author}</span>
