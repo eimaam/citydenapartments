@@ -23,4 +23,4 @@ export class Department extends Document {
 }
 
 export const DepartmentSchema = SchemaFactory.createForClass(Department);
-DepartmentSchema.index({ branchId: 1, name: 1 }, { unique: true });
+DepartmentSchema.index({ branchId: 1, name: 1 }, { unique: true, partialFilterExpression: { isDeleted: false } });

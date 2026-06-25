@@ -328,7 +328,7 @@ export class BookingsService {
             checkedInBy: isImmediateCheckIn ? actorId : undefined,
             checkedInAt: isImmediateCheckIn ? new Date() : undefined,
             statusHistory: [{
-              fromStatus: '',
+              fromStatus: targetStatus,
               toStatus: targetStatus,
               changedBy: actorId,
               changedAt: new Date(),

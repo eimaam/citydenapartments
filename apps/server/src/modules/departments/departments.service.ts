@@ -39,12 +39,15 @@ export class DepartmentsService {
 
   async update(id: string, dto: UpdateDepartmentDto, userId: string) {
     if (dto.name) {
+      const current = await this.departmentModel.findById(id).lean();
+      if (!current) throw new NotFoundException('Department not found.');
       const dup = await this.departmentModel.findOne({
         _id: { $ne: id },
+        branchId: current.branchId,
         name: { $regex: `^${dto.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' },
         isDeleted: false,
       });
-      if (dup) throw new ConflictException('A department with this name already exists.');
+      if (dup) throw new ConflictException('A department with this name already exists in this branch.');
     }
     const updated = await this.departmentModel.findByIdAndUpdate(
       id,
