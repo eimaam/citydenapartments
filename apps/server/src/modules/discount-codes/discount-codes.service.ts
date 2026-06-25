@@ -30,6 +30,7 @@ export class DiscountCodesService {
     const maxPct = MAX_DISCOUNT_PCT[userRole];
     if (!maxPct) throw new ForbiddenException('Your role cannot generate discount codes.');
     if (dto.percentage > maxPct) throw new BadRequestException(`Max discount for your role is ${maxPct}%.`);
+    if (dto.expiresAt && new Date(dto.expiresAt) <= new Date()) throw new BadRequestException('Expiry date cannot be in the past.');
 
     let code: string;
     let attempts = 0;

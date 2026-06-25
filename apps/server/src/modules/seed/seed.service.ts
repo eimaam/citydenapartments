@@ -221,8 +221,11 @@ export class SeedService  {
       { branchId: branches[0]._id, name: 'Presidential Suite', basePrice: 400000, minPriceAllowed: 350000, amenities: ['King Bed', 'Living Room', 'Dining', 'Jacuzzi', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
     ]);
     const kadunaRT = await this.roomTypeModel.create([
-      { branchId: branches[1]._id, name: 'King Suite', basePrice: 70000, minPriceAllowed: 55000, amenities: ['King Bed', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[1]._id, name: 'Standard Room', basePrice: 40000, minPriceAllowed: 32000, amenities: ['Queen Bed', 'AC', 'WiFi'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[1]._id, name: 'Luxury Standard', basePrice: 53750, minPriceAllowed: 43000, amenities: ['Queen Bed', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[1]._id, name: 'Super Luxury', basePrice: 75250, minPriceAllowed: 60000, amenities: ['King Bed', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[1]._id, name: 'Executive Luxury', basePrice: 86000, minPriceAllowed: 68800, amenities: ['King Bed', 'AC', 'WiFi', 'Work Desk', 'TV'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[1]._id, name: 'Super Deluxe Suite', basePrice: 161250, minPriceAllowed: 129000, amenities: ['King Bed', 'Living Room', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[1]._id, name: 'Executive Suite', basePrice: 193500, minPriceAllowed: 154800, amenities: ['King Bed', 'Living Room', 'Work Desk', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
     ]);
     const maiRT = await this.roomTypeModel.create([
       { branchId: branches[2]._id, name: 'Deluxe Suite', basePrice: 50000, minPriceAllowed: 40000, amenities: ['Queen Bed', 'AC', 'WiFi'], createdBy: admin._id, updatedBy: admin._id },
@@ -251,9 +254,21 @@ export class SeedService  {
       // Abuja — Presidential Suite (rt 6)
       { branch: 0, rt: 6, num: 'A102', max: 4 }, { branch: 0, rt: 6, num: 'A103', max: 4 },
       { branch: 0, rt: 6, num: 'A104', max: 4 },
-      // Kaduna
-      { branch: 1, rt: 0, num: 'KS-101', max: 2 }, { branch: 1, rt: 0, num: 'KS-102', max: 2 },
-      { branch: 1, rt: 1, num: 'SR-201', max: 2 }, { branch: 1, rt: 1, num: 'SR-202', max: 2 },
+      // Kaduna — Luxury Standard (rt 0)
+      { branch: 1, rt: 0, num: 'B002', max: 2 }, { branch: 1, rt: 0, num: 'C002', max: 2 },
+      // Kaduna — Super Luxury (rt 1)
+      { branch: 1, rt: 1, num: 'B001', max: 2 }, { branch: 1, rt: 1, num: 'B101', max: 2 },
+      { branch: 1, rt: 1, num: 'B102', max: 2 }, { branch: 1, rt: 1, num: 'C001', max: 2 },
+      { branch: 1, rt: 1, num: 'C101', max: 2 }, { branch: 1, rt: 1, num: 'C102', max: 2 },
+      // Kaduna — Executive Luxury (rt 2)
+      { branch: 1, rt: 2, num: 'A101', max: 2 }, { branch: 1, rt: 2, num: 'A102', max: 2 },
+      { branch: 1, rt: 2, num: 'A103', max: 2 },
+      // Kaduna — Super Deluxe Suite (rt 3)
+      { branch: 1, rt: 3, num: 'A1', max: 3 }, { branch: 1, rt: 3, num: 'B1', max: 3 },
+      { branch: 1, rt: 3, num: 'C1', max: 3 },
+      // Kaduna — Executive Suite (rt 4)
+      { branch: 1, rt: 4, num: 'B2', max: 3 }, { branch: 1, rt: 4, num: 'B3', max: 3 },
+      { branch: 1, rt: 4, num: 'C2', max: 3 }, { branch: 1, rt: 4, num: 'C3', max: 3 },
       // Maiduguri
       { branch: 2, rt: 0, num: 'DS-101', max: 3 }, { branch: 2, rt: 0, num: 'DS-102', max: 3 },
       { branch: 2, rt: 1, num: 'SR-201', max: 2 },
