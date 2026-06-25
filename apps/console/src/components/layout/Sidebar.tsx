@@ -86,7 +86,9 @@ const menuConfig: Record<UserRoleType, SidebarItem[]> = {
   ],
   StoreKeeper: [
   ],
-  Reception: [],
+  Reception: [
+    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+  ],
   KitchenStaff: [],
   HouseKeeper: [],
 };

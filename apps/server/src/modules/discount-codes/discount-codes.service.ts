@@ -26,7 +26,7 @@ export class DiscountCodesService {
     @InjectModel(DiscountCode.name) private discountCodeModel: Model<DiscountCode>,
   ) {}
 
-  async generate(userRole: string, userId: string, dto: CreateDiscountCodeDto) {
+  async generate(userRole: string, userId: string, branchId: string, dto: CreateDiscountCodeDto) {
     const maxPct = MAX_DISCOUNT_PCT[userRole];
     if (!maxPct) throw new ForbiddenException('Your role cannot generate discount codes.');
     if (dto.percentage > maxPct) throw new BadRequestException(`Max discount for your role is ${maxPct}%.`);
@@ -42,6 +42,7 @@ export class DiscountCodesService {
     return this.discountCodeModel.create({
       code,
       percentage: dto.percentage,
+      branchId,
       // [multi-use] uncomment to restore maxUsage
       // maxUsage: dto.maxUsage,
       expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : undefined,
@@ -49,9 +50,10 @@ export class DiscountCodesService {
     });
   }
 
-  async findAll(query: { page?: number; limit?: number; isActive?: string; search?: string }) {
+  async findAll(query: { page?: number; limit?: number; isActive?: string; search?: string }, branchId?: string) {
     const { page = 1, limit = 20, isActive, search } = query;
     const filter: any = {};
+    if (branchId) filter.branchId = branchId;
     if (isActive !== undefined) filter.isActive = isActive === 'true';
     if (search) filter.code = { $regex: search, $options: 'i' };
 
@@ -63,17 +65,20 @@ export class DiscountCodesService {
     return { items, total, page, limit };
   }
 
-  async findOne(id: string) {
-    const code = await this.discountCodeModel.findById(id).populate('createdBy', 'name email').lean();
+  async findOne(id: string, branchId?: string) {
+    const filter: any = { _id: id };
+    if (branchId) filter.branchId = branchId;
+    const code = await this.discountCodeModel.findOne(filter).populate('createdBy', 'name email').lean();
     if (!code) throw new NotFoundException('Discount code not found.');
     return code;
   }
 
-  async validate(codeStr: string) {
+  async validate(codeStr: string, branchId: string) {
     const doc = await this.discountCodeModel.findOne({ code: codeStr }).lean();
     if (!doc) throw new NotFoundException('Discount code not found.');
     if (!doc.isActive) throw new BadRequestException('Discount code is deactivated.');
     if (doc.expiresAt && new Date() > doc.expiresAt) throw new BadRequestException('Discount code has expired.');
+    if (doc.branchId.toString() !== branchId) throw new BadRequestException('Discount code is not valid for this branch.');
     // [multi-use] was: if (doc.maxUsage && doc.usedCount >= doc.maxUsage)
     if (doc.usedCount >= 1) throw new BadRequestException('Discount code has already been used.');
 

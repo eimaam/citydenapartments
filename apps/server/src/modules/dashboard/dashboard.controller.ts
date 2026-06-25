@@ -15,7 +15,7 @@ export class DashboardController {
 
   @Get('summary')
   @UseGuards(RolesGuard)
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.ACCOUNTANT)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.ACCOUNTANT, UserRoleEnum.RECEPTION)
   getSummary(@ActiveUser() user: any, @Query('branchId') branchId?: string) {
     const resolvedId = isSuperAdmin(user.role)
       ? branchId || undefined

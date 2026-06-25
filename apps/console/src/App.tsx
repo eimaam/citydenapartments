@@ -35,7 +35,7 @@ function ProtectedRoute({ roles, children }: { roles: UserRoleType[]; children: 
 }
 
 const routeRoles: Record<string, UserRoleType[]> = {
-  '/': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.Accountant],
+  '/': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.Accountant, UserRole.Reception],
   '/branches': [UserRole.SuperAdmin],
   '/room-types': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/rooms': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],

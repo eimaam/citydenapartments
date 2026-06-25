@@ -149,7 +149,7 @@ export class BookingsService {
     try {
       let discountCodeDoc: { _id: any; code: string } | null = null;
       if (dto.discountCode) {
-        discountCodeDoc = await this.discountCodesService.validate(dto.discountCode);
+        discountCodeDoc = await this.discountCodesService.validate(dto.discountCode, branchId);
       }
 
       const room = await this.roomModel.findById(dto.roomId).session(session);
