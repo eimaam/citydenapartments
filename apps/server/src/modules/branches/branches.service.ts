@@ -19,9 +19,8 @@ export class BranchService {
         private redisService: RedisService
     ) { }
 
-    async getAll(params?: { page?: number; limit?: number; search?: string }) {
-        const { page = 1, limit = 20, search } = params || {};
-        const filter: any = {};
+    async getAll(params?: { page?: number; limit?: number; search?: string; filter?: any }) {
+        const { page = 1, limit = 20, search, filter = {} } = params || {};
         if (search) {
             const escaped = escapeRegex(search);
             filter.$or = [

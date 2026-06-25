@@ -3,12 +3,13 @@ import { DiscountCodesService } from './discount-codes.service';
 import { CreateDiscountCodeDto } from './dto/create-discount-code.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { WorkspaceAuthGuard } from '../../common/guards/workspace-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRoleEnum } from '../users/user.schema';
 import { ActiveUser } from '../../common/decorators/active-user.decorator';
 
 @Controller('discount-codes')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, WorkspaceAuthGuard)
 export class DiscountCodesController {
   constructor(private discountCodesService: DiscountCodesService) {}
 

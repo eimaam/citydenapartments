@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException, ConflictException } from '@nestj
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Department } from './department.schema';
+import { hasElevatedRole } from '../../common/utils/role.utils';
 import type { CreateDepartmentDto } from './dto/create-department.dto';
 import type { UpdateDepartmentDto } from './dto/update-department.dto';
 
@@ -31,9 +32,14 @@ export class DepartmentsService {
     return this.departmentModel.find(filter).sort({ name: 1 }).lean();
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, user?: any) {
     const dept = await this.departmentModel.findOne({ _id: id, isDeleted: false }).lean();
     if (!dept) throw new NotFoundException('Department not found.');
+    if (user && !hasElevatedRole(user.role)) {
+      if (dept.branchId.toString() !== user.activeBranchId) {
+        throw new NotFoundException('Department not found.');
+      }
+    }
     return dept;
   }
 

@@ -5,11 +5,12 @@ import { SearchCustomerDto } from './dto/search-customer.dto';
 import { PaginatedQueryDto } from '../../common/dto/paginated-query.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { WorkspaceAuthGuard } from '../../common/guards/workspace-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRoleEnum } from '../users/user.schema';
 
 @Controller('customers')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, WorkspaceAuthGuard)
 export class CustomersController {
   constructor(private customersService: CustomersService) {}
 
@@ -20,7 +21,7 @@ export class CustomersController {
   }
 
   @Get('search')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.ACCOUNTANT, UserRoleEnum.IT, UserRoleEnum.RECEPTION, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.ACCOUNTANT, UserRoleEnum.IT, UserRoleEnum.RECEPTION)
   search(@Query() query: SearchCustomerDto) {
     return this.customersService.searchByPhone(query.phone);
   }

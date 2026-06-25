@@ -1,6 +1,6 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException, UnauthorizedException, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { UserRoleEnum } from '../../modules/users/user.schema';
+import { isSuperAdmin } from '../utils/role.utils';
 
 @Injectable()
 export class WorkspaceAuthGuard implements CanActivate {
@@ -30,7 +30,7 @@ export class WorkspaceAuthGuard implements CanActivate {
       }
     }
 
-    if (user.role !== UserRoleEnum.SUPER_ADMIN && !user.allowedBranches.includes(activeBranchId)) {
+    if (!isSuperAdmin(user.role) && !user.allowedBranches.includes(activeBranchId)) {
       this.logger.warn(`Workspace denied — ${user.email} no access to ${activeBranchId}`);
       throw new ForbiddenException('Unauthorized workspace access context.');
     }
