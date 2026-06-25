@@ -3,17 +3,20 @@ import { Document, Schema as MongooseSchema } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class Employee extends Document {
-  @Prop({ required: true })
+  @Prop({ required: true, uppercase: true })
   name: string;
 
   @Prop({ required: true, unique: true, lowercase: true })
   email: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, minLength: 11 })
   phone: string;
 
   @Prop()
   department?: string;
+
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Department' })
+  departmentId?: MongooseSchema.Types.ObjectId;
 
   @Prop()
   position?: string;

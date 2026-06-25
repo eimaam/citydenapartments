@@ -18,6 +18,7 @@ import CalendarPage from './features/bookings/pages/CalendarPage';
 import StatusHistoryPage from './features/bookings/pages/StatusHistoryPage';
 import StaffPage from './features/staff/pages/StaffPage';
 import EmployeePage from './features/employees/pages/EmployeePage';
+import DepartmentPage from './features/departments/pages/DepartmentPage';
 import BreakfastPage from './features/breakfast/pages/BreakfastPage';
 import InventoryPage from './features/inventory/pages/InventoryPage';
 import InventoryTransactionsPage from './features/inventory/pages/TransactionsPage';
@@ -43,6 +44,7 @@ const routeRoles: Record<string, UserRoleType[]> = {
   '/bookings/status-history': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/staff': [UserRole.SuperAdmin, UserRole.IT],
   '/employees': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
+  '/departments': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/breakfast': [UserRole.SuperAdmin, UserRole.GroupGM],
   '/inventory': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.Accountant],
   '/inventory/transactions': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.Accountant],
@@ -81,6 +83,7 @@ export default function App() {
                           case '/bookings/status-history': return <StatusHistoryPage />;
                           case '/staff': return <StaffPage />;
                           case '/employees': return <EmployeePage />;
+                          case '/departments': return <DepartmentPage />;
                           case '/breakfast': return <BreakfastPage />;
                           case '/inventory': return <InventoryPage />;
                           case '/inventory/transactions': return <InventoryTransactionsPage />;

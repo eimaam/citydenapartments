@@ -18,6 +18,10 @@ export class CreateEmployeeDto {
   department?: string;
 
   @IsOptional()
+  @IsMongoId()
+  departmentId?: string;
+
+  @IsOptional()
   @IsString()
   position?: string;
 
