@@ -1,10 +1,11 @@
-import { Injectable, Logger, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Employee } from './employee.schema';
 import { RedisService } from '../redis/redis.service';
 import { CACHE_TTL } from '../../config/cache.constants';
 import { escapeRegex } from '../../common/utils/escape-regex';
+import { hasElevatedRole } from '../../common/utils/role.utils';
 import type { CreateEmployeeDto } from './dto/create-employee.dto';
 import type { UpdateEmployeeDto } from './dto/update-employee.dto';
 
@@ -93,7 +94,7 @@ export class EmployeesService {
     return results;
   }
 
-  async findById(id: string) {
+  async findById(id: string, user?: any) {
     const cacheKey = `employees:${id}`;
     const cached = await this.redis.get(cacheKey);
     if (cached) {
@@ -103,6 +104,12 @@ export class EmployeesService {
 
     const employee = await this.employeeModel.findById(id).populate('departmentId', 'name').lean();
     if (!employee) throw new NotFoundException('Employee not found.');
+
+    if (user && !hasElevatedRole(user.role)) {
+      if (employee.branchId.toString() !== user.activeBranchId) {
+        throw new NotFoundException('Employee not found.');
+      }
+    }
 
     await this.redis.set(cacheKey, JSON.stringify(employee), CACHE_TTL.ONE_HOUR);
     return employee;

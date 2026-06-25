@@ -11,6 +11,7 @@ import { Booking } from '../bookings/booking.schema';
 import { InventoryItem } from '../inventory/inventory-item.schema';
 import { InventoryTransaction } from '../inventory/inventory-transaction.schema';
 import { Employee } from '../employees/employee.schema';
+import { Department } from '../departments/department.schema';
 import { Customer } from '../customers/customer.schema';
 
 // ── random helpers ──────────────────────────────────────────────
@@ -112,6 +113,7 @@ export class SeedService  {
     @InjectModel(InventoryItem.name) private inventoryItemModel: Model<InventoryItem>,
     @InjectModel(InventoryTransaction.name) private inventoryTxModel: Model<InventoryTransaction>,
     @InjectModel(Employee.name) private employeeModel: Model<Employee>,
+    @InjectModel(Department.name) private departmentModel: Model<Department>,
     @InjectModel(Customer.name) private customerModel: Model<Customer>,
   ) {}
 
@@ -380,67 +382,112 @@ export class SeedService  {
 
     this.logger.log(`Seed — inventory items created: ${createdItems.length} across ${branches.length} branches`);
 
-    // ── employees ────────────────────────────────────────────────────
-    const employeeData: Array<Record<string, unknown>> = [];
+    // ── departments ──────────────────────────────────────────────────
+    const deptDefs = [
+      { branchIdx: 0, name: 'Management', description: 'Branch management and administration' },
+      { branchIdx: 0, name: 'Front Desk', description: 'Reception and guest services' },
+      { branchIdx: 0, name: 'Housekeeping', description: 'Room cleaning and maintenance' },
+      { branchIdx: 0, name: 'Laundry', description: 'Laundry and linen services' },
+      { branchIdx: 0, name: 'Kitchen', description: 'Food preparation and cooking' },
+      { branchIdx: 0, name: 'F & B', description: 'Food and beverage service' },
+      { branchIdx: 0, name: 'Store', description: 'Inventory and supplies management' },
+      { branchIdx: 0, name: 'IT', description: 'Information technology support' },
+      { branchIdx: 1, name: 'Management', description: 'Branch management and administration' },
+      { branchIdx: 1, name: 'Front Desk', description: 'Reception and guest services' },
+      { branchIdx: 1, name: 'Housekeeping', description: 'Room cleaning and maintenance' },
+      { branchIdx: 1, name: 'Kitchen', description: 'Food preparation and cooking' },
+      { branchIdx: 1, name: 'Store', description: 'Inventory and supplies management' },
+      { branchIdx: 2, name: 'Management', description: 'Branch management and administration' },
+      { branchIdx: 2, name: 'Front Desk', description: 'Reception and guest services' },
+      { branchIdx: 2, name: 'Housekeeping', description: 'Room cleaning, gardening and maintenance' },
+      { branchIdx: 2, name: 'Laundry', description: 'Laundry and linen services' },
+      { branchIdx: 2, name: 'Kitchen', description: 'Food preparation, cooking and service' },
+      { branchIdx: 2, name: 'Store', description: 'Inventory and supplies management' },
+    ];
 
-    const staffByBranch: Array<{ branchIdx: number; staff: Array<{ name: string; email: string; phone: string; department: string; position: string }> }> = [
+    const departments = await this.departmentModel.create(
+      deptDefs.map((d) => ({
+        name: d.name,
+        description: d.description,
+        branchId: branches[d.branchIdx]._id,
+        createdBy: admin._id,
+        updatedBy: admin._id,
+      })),
+    );
+    this.logger.log(`Seed — departments created: ${departments.length} across ${branches.length} branches`);
+    const deptsByBranch: Record<number, Record<string, string>> = {};
+    for (const d of departments) {
+      const branchIdx = branches.findIndex((b) => b._id.toString() === d.branchId.toString());
+      if (!deptsByBranch[branchIdx]) deptsByBranch[branchIdx] = {};
+      deptsByBranch[branchIdx][d.name] = d._id.toString();
+    }
+
+    // ── employees ────────────────────────────────────────────────────
+    const staffByBranch: Array<{ branchIdx: number; staff: Array<{ name: string; email: string; phone: string; position: string; deptName: string }> }> = [
       {
         branchIdx: 0, // Abuja
         staff: [
-          { name: 'Adebayo Olamide', email: 'adebayo.olamide@cityden.com', phone: '08031234567', department: 'Front Office', position: 'Senior Receptionist' },
-          { name: 'Nkechi Okoro', email: 'nkechi.okoro@cityden.com', phone: '08031234568', department: 'Front Office', position: 'Receptionist' },
-          { name: 'Samuel Eze', email: 'samuel.eze@cityden.com', phone: '08031234569', department: 'Front Office', position: 'Receptionist' },
-          { name: 'Mariam Bello', email: 'mariam.bello@cityden.com', phone: '08031234570', department: 'Housekeeping', position: 'Head Housekeeper' },
-          { name: 'Grace John', email: 'grace.john@cityden.com', phone: '08031234571', department: 'Housekeeping', position: 'Housekeeper' },
-          { name: 'Patience Ali', email: 'patience.ali@cityden.com', phone: '08031234572', department: 'Housekeeping', position: 'Housekeeper' },
-          { name: 'Hauwa Yusuf', email: 'hauwa.yusuf@cityden.com', phone: '08031234573', department: 'Housekeeping', position: 'Housekeeper' },
-          { name: 'Michael Okafor', email: 'michael.okafor@cityden.com', phone: '08031234574', department: 'Kitchen', position: 'Head Chef' },
-          { name: 'Kelechi Nwosu', email: 'kelechi.nwosu@cityden.com', phone: '08031234575', department: 'Kitchen', position: 'Line Cook' },
-          { name: 'Favour Sunday', email: 'favour.sunday@cityden.com', phone: '08031234576', department: 'Kitchen', position: 'Kitchen Assistant' },
-          { name: 'Musa Ibrahim', email: 'musa.ibrahim@cityden.com', phone: '08031234577', department: 'Maintenance', position: 'Technician' },
-          { name: 'Chinedu Obi', email: 'chinedu.obi@cityden.com', phone: '08031234578', department: 'Maintenance', position: 'Electrician' },
-          { name: 'Ahmed Suleiman', email: 'ahmed.suleiman@cityden.com', phone: '08031234579', department: 'Store', position: 'Store Keeper' },
-          { name: 'Ruth David', email: 'ruth.david@cityden.com', phone: '08031234580', department: 'Store', position: 'Store Assistant' },
-          { name: 'Danjuma Garba', email: 'danjuma.garba@cityden.com', phone: '08031234581', department: 'Security', position: 'Security Officer' },
-          { name: 'Bashir Umar', email: 'bashir.umar@cityden.com', phone: '08031234582', department: 'Security', position: 'Security Officer' },
+          { name: 'DR. SINI KWABE', email: 'sini.kwabe@citydenapartments.com', phone: '08039686719', position: 'Principal Consultant/Group GM', deptName: 'Management' },
+          { name: 'IBU VINCENT ANTHONY', email: 'ibu.anthony@citydenapartments.com', phone: '08039686719', position: 'Facility Manager', deptName: 'Management' },
+          { name: 'DIVINELOVE OLUCHI CHIKEZIE', email: 'divinelove.chikezie@citydenapartments.com', phone: '08039686719', position: 'Front Office Manager/HR', deptName: 'Management' },
+          { name: 'KENNETH USHIE', email: 'kenneth.ushie@citydenapartments.com', phone: '08039686719', position: 'Accountant/Internal Auditor', deptName: 'Management' },
+          { name: 'GABRIEL OMANG OGAR', email: 'gabriel.ogar@citydenapartments.com', phone: '08039686719', position: 'Executive Housekeeper', deptName: 'Management' },
+          { name: 'OJIH ELIZABETH ADAH', email: 'ojih.adah@citydenapartments.com', phone: '08063269302', position: 'Receptionist', deptName: 'Front Desk' },
+          { name: 'FATIMA ELIZABETH DAVID', email: 'fatima.david@citydenapartments.com', phone: '09166818195', position: 'Receptionist', deptName: 'Front Desk' },
+          { name: 'JOEL AJINU', email: 'joel.ajinu@citydenapartments.com', phone: '07063542501', position: 'Porter', deptName: 'Front Desk' },
+          { name: 'ABUBAKAR MUSA GBEDAKO', email: 'abubakar.gbedako@citydenapartments.com', phone: '07073767344', position: 'Housekeeper', deptName: 'Housekeeping' },
+          { name: 'ABDALLAH SAEED ADAM', email: 'abdallah.adam@citydenapartments.com', phone: '09131571180', position: 'Housekeeper', deptName: 'Housekeeping' },
+          { name: 'SAMSON INALEGWU GABRIEL', email: 'samson.gabriel@citydenapartments.com', phone: '07034165082', position: 'Housekeeper', deptName: 'Housekeeping' },
+          { name: 'HASSAN SEDIK', email: 'hassan.sedik@citydenapartments.com', phone: '08100662213', position: 'Housekeeper', deptName: 'Housekeeping' },
+          { name: 'JEREMIAH HOPE', email: 'jeremiah.hope@citydenapartments.com', phone: '08036740067', position: 'Laundry Operative', deptName: 'Laundry' },
+          { name: 'TAWO LEONARD', email: 'tawo.leonard@citydenapartments.com', phone: '07067171793', position: 'Chef', deptName: 'Kitchen' },
+          { name: 'MARYAM GANIU', email: 'maryam.ganiu@citydenapartments.com', phone: '07064909810', position: 'Cook', deptName: 'Kitchen' },
+          { name: 'VERONICA UBAH', email: 'veronica.ubah@citydenapartments.com', phone: '09021625954', position: 'Steward', deptName: 'Kitchen' },
+          { name: 'EMMANUEL YOMLA', email: 'emmanuel.yomla@citydenapartments.com', phone: '08034760483', position: 'Head Waiter', deptName: 'F & B' },
+          { name: 'SOLOMON ZACHARIAH', email: 'solomon.zachariah@citydenapartments.com', phone: '09064888529', position: 'Store Keeper', deptName: 'Store' },
+          { name: 'JONAH WANNAH KOLOMI', email: 'jonah.kolomi@citydenapartments.com', phone: '08133089344', position: 'IT', deptName: 'IT' },
+          { name: 'ZURUQ MOHAMMED', email: 'zuruq.mohammed@citydenapartments.com', phone: '07025275360', position: 'IT', deptName: 'IT' },
         ],
       },
       {
         branchIdx: 1, // Kaduna
-        staff: [
-          { name: 'Zainab Abubakar', email: 'zainab.abubakar@cityden.com', phone: '08031234583', department: 'Front Office', position: 'Receptionist' },
-          { name: 'Joseph Audu', email: 'joseph.audu@cityden.com', phone: '08031234584', department: 'Front Office', position: 'Receptionist' },
-          { name: 'Lami Musa', email: 'lami.musa@cityden.com', phone: '08031234585', department: 'Housekeeping', position: 'Head Housekeeper' },
-          { name: 'Rahila Yakubu', email: 'rahila.yakubu@cityden.com', phone: '08031234586', department: 'Housekeeping', position: 'Housekeeper' },
-          { name: 'Emmanuel Silas', email: 'emmanuel.silas@cityden.com', phone: '08031234587', department: 'Kitchen', position: 'Chef' },
-          { name: 'Paulina Ishaya', email: 'paulina.ishaya@cityden.com', phone: '08031234588', department: 'Kitchen', position: 'Kitchen Assistant' },
-          { name: 'Sani Abdullahi', email: 'sani.abdullahi@cityden.com', phone: '08031234589', department: 'Maintenance', position: 'Handyman' },
-          { name: 'Hassan Bello', email: 'hassan.bello@cityden.com', phone: '08031234590', department: 'Store', position: 'Store Keeper' },
-          { name: 'Nuhu Mohammed', email: 'nuhu.mohammed@cityden.com', phone: '08031234591', department: 'Security', position: 'Security Officer' },
-        ],
+        staff: [],
       },
       {
         branchIdx: 2, // Maiduguri
         staff: [
-          { name: 'Amina Bukar', email: 'amina.bukar@cityden.com', phone: '08031234592', department: 'Front Office', position: 'Receptionist' },
-          { name: 'Falmata Kyari', email: 'falmata.kyari@cityden.com', phone: '08031234593', department: 'Housekeeping', position: 'Head Housekeeper' },
-          { name: 'Yagana Usman', email: 'yagana.usman@cityden.com', phone: '08031234594', department: 'Housekeeping', position: 'Housekeeper' },
-          { name: 'Babagana Modu', email: 'babagana.modu@cityden.com', phone: '08031234595', department: 'Kitchen', position: 'Chef' },
-          { name: 'Tijjani Goni', email: 'tijjani.goni@cityden.com', phone: '08031234596', department: 'Maintenance', position: 'Technician' },
-          { name: 'Abba Mustapha', email: 'abba.mustapha@cityden.com', phone: '08031234597', department: 'Store', position: 'Store Keeper' },
-          { name: 'Umar Kaka', email: 'umar.kaka@cityden.com', phone: '08031234598', department: 'Security', position: 'Security Officer' },
+          { name: 'Muhammed Tahiru', email: 'muhammed.tahiru@citydenapartments.com', phone: '08039686719', position: 'General Manager', deptName: 'Management' },
+          { name: 'Dorcas Musa Waba', email: 'dorcas.waba@citydenapartments.com', phone: '08063269302', position: 'Receptionist', deptName: 'Front Desk' },
+          { name: 'Micheal Cynthia', email: 'micheal.cynthia@citydenapartments.com', phone: '09166818195', position: 'Receptionist', deptName: 'Front Desk' },
+          { name: 'Aziz Hayatu Dzarma', email: 'aziz.dzarma@citydenapartments.com', phone: '07063542501', position: 'Receptionist', deptName: 'Front Desk' },
+          { name: 'Ibrahim Dauda', email: 'ibrahim.dauda@citydenapartments.com', phone: '07073767344', position: 'Housekeeper', deptName: 'Housekeeping' },
+          { name: 'Amos Chaka', email: 'amos.chaka@citydenapartments.com', phone: '09131571180', position: 'Housekeeper', deptName: 'Housekeeping' },
+          { name: 'David Monday', email: 'david.monday@citydenapartments.com', phone: '07034165082', position: 'Housekeeper', deptName: 'Housekeeping' },
+          { name: 'Asmau Adamu', email: 'asmau.adamu@citydenapartments.com', phone: '08100662213', position: 'Housekeeper', deptName: 'Housekeeping' },
+          { name: 'Kolomi Akter', email: 'kolomi.akter@citydenapartments.com', phone: '08036740067', position: 'Gardener', deptName: 'Housekeeping' },
+          { name: 'Muhammed Bashir Bukar', email: 'muhammed.bukar@citydenapartments.com', phone: '07067171793', position: 'Gardener', deptName: 'Housekeeping' },
+          { name: 'Asura James', email: 'asura.james@citydenapartments.com', phone: '07064909810', position: 'Laundry', deptName: 'Laundry' },
+          { name: 'Barkah Boniface', email: 'barkah.boniface@citydenapartments.com', phone: '09021625954', position: 'Laundry', deptName: 'Laundry' },
+          { name: 'Haruna Matagak', email: 'haruna.matagak@citydenapartments.com', phone: '08034760483', position: 'Senior Chef', deptName: 'Kitchen' },
+          { name: 'Christy Augustina', email: 'christy.augustina@citydenapartments.com', phone: '09064888529', position: 'Cook', deptName: 'Kitchen' },
+          { name: 'Halima Salah', email: 'halima.salah@citydenapartments.com', phone: '08133089344', position: 'Steward', deptName: 'Kitchen' },
+          { name: 'Flora Musa Waba', email: 'flora.waba@citydenapartments.com', phone: '07025275360', position: 'Potter', deptName: 'Kitchen' },
+          { name: 'Ladi Bata', email: 'ladi.bata@citydenapartments.com', phone: '07019885313', position: 'Waiter', deptName: 'Kitchen' },
+          { name: 'Mala Musa Dzakwa', email: 'mala.dzakwa@citydenapartments.com', phone: '08031234599', position: 'Waiter', deptName: 'Kitchen' },
         ],
       },
     ];
 
+    const employeeData: Array<Record<string, unknown>> = [];
     for (const { branchIdx, staff } of staffByBranch) {
       for (const s of staff) {
         employeeData.push({
           name: s.name,
           email: s.email,
           phone: s.phone,
-          department: s.department,
           position: s.position,
+          departmentId: deptsByBranch[branchIdx]?.[s.deptName] || undefined,
+          department: s.deptName,
           branchId: branches[branchIdx]._id,
           isActive: true,
         });
@@ -449,6 +496,48 @@ export class SeedService  {
 
     await this.employeeModel.create(employeeData);
     this.logger.log(`Seed — employees created: ${employeeData.length} across ${branches.length} branches`);
+
+    // ── live user accounts for real staff ────────────────────────────
+    const positionRoleMap: Record<string, string> = {
+      'Principal Consultant/Group GM': 'GroupGM',
+      'General Manager': 'GroupGM',
+      'Facility Manager': 'FacilityManager',
+      'Front Office Manager/HR': 'FrontOfficeManager',
+      'Accountant/Internal Auditor': 'Accountant',
+      'Executive Housekeeper': 'HouseKeeper',
+      'Receptionist': 'Reception',
+      'Housekeeper': 'HouseKeeper',
+      'Chef': 'KitchenStaff',
+      'Cook': 'KitchenStaff',
+      'Steward': 'KitchenStaff',
+      'Senior Chef': 'KitchenStaff',
+      'Potter': 'KitchenStaff',
+      'Waiter': 'KitchenStaff',
+      'Store Keeper': 'StoreKeeper',
+      'IT': 'IT',
+    };
+
+    const liveUsers: Array<Record<string, unknown>> = [];
+    const liveCredentials: Array<{ label: string; email: string; password: string; role: string }> = [];
+    for (const { branchIdx, staff } of staffByBranch) {
+      for (const s of staff) {
+        const role = positionRoleMap[s.position];
+        if (!role) continue;
+        liveUsers.push({
+          email: s.email,
+          password: await bcrypt.hash(s.phone, 12),
+          name: s.name,
+          role,
+          allowedBranches: [branches[branchIdx]._id],
+          activeBranchId: branches[branchIdx]._id,
+          isActive: true,
+          passwordChangedAt: null,
+        });
+        liveCredentials.push({ label: `${role} (${branches[branchIdx].name}) — ${s.name}`, email: s.email, password: s.phone, role });
+      }
+    }
+    await this.userModel.create(liveUsers);
+    this.logger.log(`Seed — live user accounts created: ${liveUsers.length}`);
 
     // ── customers ────────────────────────────────────────────────────
     const customerData: Array<Record<string, unknown>> = [];
@@ -553,27 +642,34 @@ export class SeedService  {
       await this.roomModel.findByIdAndUpdate(roomId, { status });
     }
 
-    this.logger.log(`Seed completed — users: 14, customers: ${customerData.length}, employees: ${employeeData.length}, branches: ${branches.length}, roomTypes: ${abujaRT.length + kadunaRT.length + maiRT.length}, rooms: ${rooms.length}, bookings: ${bookingData.length}`);
+    const totalUsers = 14 + liveUsers.length; // 14 dummy accounts + live accounts
+
+    this.logger.log(`Seed completed — users: ${totalUsers}, customers: ${customerData.length}, employees: ${employeeData.length}, branches: ${branches.length}, roomTypes: ${abujaRT.length + kadunaRT.length + maiRT.length}, rooms: ${rooms.length}, bookings: ${bookingData.length}`);
+
+    const creds: Record<string, string> = {
+      admin: 'admin@cityden.com / admin123',
+      reception: 'reception@cityden.com / admin123',
+      kitchen: 'kitchen@cityden.com / admin123',
+      housekeeper: 'housekeeper@cityden.com / admin123',
+      frontoffice: 'frontoffice@cityden.com / admin123',
+      accountant: 'accountant@cityden.com / admin123',
+      it: 'it@cityden.com / admin123',
+      groupgm: 'groupgm@cityden.com / admin123',
+      'fm-abuja': 'fm-abuja@cityden.com / admin123',
+      'fm-kaduna': 'fm-kaduna@cityden.com / admin123',
+      'fm-maiduguri': 'fm-maiduguri@cityden.com / admin123',
+      storekeeper: 'storekeeper@cityden.com / admin123',
+      storemanager: 'storemanager@cityden.com / admin123',
+    };
+    for (const c of liveCredentials) {
+      creds[c.label] = `${c.email} / ${c.password}`;
+    }
 
     return {
       message: 'System seeded successfully',
-      credentials: {
-        admin: 'admin@cityden.com / admin123',
-        reception: 'reception@cityden.com / admin123',
-        kitchen: 'kitchen@cityden.com / admin123',
-        housekeeper: 'housekeeper@cityden.com / admin123',
-        'frontoffice': 'frontoffice@cityden.com / admin123',
-        accountant: 'accountant@cityden.com / admin123',
-        it: 'it@cityden.com / admin123',
-        'groupgm': 'groupgm@cityden.com / admin123',
-        'fm-abuja': 'fm-abuja@cityden.com / admin123',
-        'fm-kaduna': 'fm-kaduna@cityden.com / admin123',
-        'fm-maiduguri': 'fm-maiduguri@cityden.com / admin123',
-        storekeeper: 'storekeeper@cityden.com / admin123',
-        storemanager: 'storemanager@cityden.com / admin123',
-      },
+      credentials: creds,
       stats: {
-        users: 14,
+        users: totalUsers,
         customers: customerData.length,
         employees: employeeData.length,
         branches: 3,

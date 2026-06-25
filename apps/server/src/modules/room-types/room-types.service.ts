@@ -1,10 +1,11 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { RoomType } from './room-type.schema';
 import { CreateRoomTypeDto } from './dto/create-room-type.dto';
 import { UpdateRoomTypeDto } from './dto/update-room-type.dto';
 import { escapeRegex } from '../../common/utils/escape-regex';
+import { hasElevatedRole } from '../../common/utils/role.utils';
 
 @Injectable()
 export class RoomTypesService {
@@ -28,8 +29,15 @@ export class RoomTypesService {
     return { items, total, page, limit };
   }
 
-  async findOne(id: string) {
-    return this.roomTypeModel.findById(id).lean();
+  async findOne(id: string, user?: any) {
+    const rt = await this.roomTypeModel.findById(id).lean();
+    if (!rt) throw new NotFoundException('Room type not found.');
+    if (user && !hasElevatedRole(user.role)) {
+      if (rt.branchId.toString() !== user.activeBranchId) {
+        throw new NotFoundException('Room type not found.');
+      }
+    }
+    return rt;
   }
 
   async create(dto: CreateRoomTypeDto, userId: string) {
@@ -43,7 +51,14 @@ export class RoomTypesService {
     });
   }
 
-  async update(id: string, dto: UpdateRoomTypeDto, userId: string) {
+  async update(id: string, dto: UpdateRoomTypeDto, userId: string, user?: any) {
+    const existing = await this.roomTypeModel.findById(id).lean();
+    if (!existing) throw new NotFoundException('Room type not found.');
+    if (user && !hasElevatedRole(user.role)) {
+      if (existing.branchId.toString() !== user.activeBranchId) {
+        throw new NotFoundException('Room type not found.');
+      }
+    }
     const updated = await this.roomTypeModel.findByIdAndUpdate(id, { ...dto, updatedBy: userId }, { new: true }).lean();
     if (updated) {
       this.logger.log(`Room type updated — ${updated.name}`);

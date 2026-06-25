@@ -8,6 +8,7 @@ import { UpdateRoomDto } from './dto/update-room.dto';
 import { escapeRegex } from '../../common/utils/escape-regex';
 import { RedisService } from '../redis/redis.service';
 import { BookingStatus } from '@citydenapartments/shared';
+import { hasElevatedRole } from '../../common/utils/role.utils';
 
 @Injectable()
 export class RoomsService {
@@ -60,8 +61,15 @@ export class RoomsService {
     return { items, total, page, limit };
   }
 
-  async findOne(id: string) {
-    return this.roomModel.findById(id).populate('roomTypeId', 'name amenities').lean();
+  async findOne(id: string, user?: any) {
+    const room = await this.roomModel.findById(id).populate('roomTypeId', 'name amenities').lean();
+    if (!room) throw new NotFoundException('Room not found.');
+    if (user && !hasElevatedRole(user.role)) {
+      if (room.branchId.toString() !== user.activeBranchId) {
+        throw new NotFoundException('Room not found.');
+      }
+    }
+    return room;
   }
 
   async create(dto: CreateRoomDto, userId: string) {
@@ -72,15 +80,28 @@ export class RoomsService {
     return this.roomModel.create({ ...dto, createdBy: userId });
   }
 
-  async update(roomId: string, dto: UpdateRoomDto, userId: string) {
+  async update(roomId: string, dto: UpdateRoomDto, userId: string, user?: any) {
+    const existing = await this.roomModel.findById(roomId).lean();
+    if (!existing) throw new NotFoundException('Room not found.');
+    if (user && !hasElevatedRole(user.role)) {
+      if (existing.branchId.toString() !== user.activeBranchId) {
+        throw new NotFoundException('Room not found.');
+      }
+    }
     const updatedRoom = await this.roomModel.findByIdAndUpdate(roomId, { ...dto, updatedBy: userId }, { new: true })
     if (!updatedRoom) throw new NotFoundException('Room not found.');
     return updatedRoom;
   }
 
-  async updateStatus(id: string, status: RoomStatus, userId: string) {
+  async updateStatus(id: string, status: RoomStatus, userId: string, user?: any) {
     const room = await this.roomModel.findById(id);
     if (!room) throw new BadRequestException('Room not found.');
+
+    if (user && !hasElevatedRole(user.role)) {
+      if (room.branchId.toString() !== user.activeBranchId) {
+        throw new BadRequestException('Room not found.');
+      }
+    }
 
     const from = room.status;
     const to = status;
