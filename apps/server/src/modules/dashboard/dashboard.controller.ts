@@ -20,7 +20,7 @@ export class DashboardController {
     const resolvedId = isSuperAdmin(user.role)
       ? branchId || undefined
       : user.activeBranchId;
-    return this.dashboardService.getSummary(resolvedId);
+    return this.dashboardService.getSummary(resolvedId, user.role);
   }
 
   @Get('accounting')

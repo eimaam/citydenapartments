@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../../contexts/auth';
 import { Spinner } from '../../../components/ui/Spinner';
 import { api } from '../../../lib/api';
-import { Building2, TrendingUp, Users, BedDouble, CalendarCheck, MapPin, ChevronDown } from 'lucide-react';
+import { Building2, TrendingUp, Users, BedDouble, CalendarCheck, MapPin, ChevronDown, Coffee } from 'lucide-react';
 
 interface Branch {
   _id: string;
@@ -12,16 +12,21 @@ interface Branch {
 
 interface Summary {
   overview: {
-    totalRevenue: number;
+    totalRevenue?: number;
     occupancyRate: number;
-    totalRooms: number;
-    totalBookings: number;
-    activeUsers: number;
+    totalRooms?: number;
+    totalBookings?: number;
+    activeUsers?: number;
     checkedInGuests: number;
     pendingCheckIns: number;
     todayArrivals: number;
   };
-  byBranch: Array<{
+  breakfast?: {
+    total: number;
+    served: number;
+    pending: number;
+  };
+  byBranch?: Array<{
     branchId: string;
     name: string;
     code: string;
@@ -73,19 +78,20 @@ export default function AdminDashboard() {
   if (error) return <div className="p-8 text-center text-error">{error}</div>;
   if (!summary) return null;
 
-  const { overview = {} as Summary['overview'], byBranch = [] } = summary;
+  const { overview = {} as Summary['overview'], byBranch, breakfast } = summary;
 
   const o = overview;
   const stats = [
-    { label: 'Revenue', value: `₦${(o.totalRevenue ?? 0).toLocaleString()}`, icon: TrendingUp, color: '#10b981' },
+    o.totalRevenue !== undefined && { label: 'Revenue', value: `₦${o.totalRevenue.toLocaleString()}`, icon: TrendingUp, color: '#10b981' },
     { label: 'Occupancy', value: `${o.occupancyRate ?? 0}%`, icon: BedDouble, color: '#d4af37' },
-    { label: 'Total Bookings', value: o.totalBookings ?? 0, icon: CalendarCheck, color: '#3b82f6' },
+    o.totalBookings !== undefined && { label: 'Total Bookings', value: o.totalBookings, icon: CalendarCheck, color: '#3b82f6' },
     { label: 'In-House Guests', value: o.checkedInGuests ?? 0, icon: Users, color: '#8b5cf6' },
     { label: 'Pending Check-ins', value: o.pendingCheckIns ?? 0, icon: CalendarCheck, color: '#f59e0b' },
     { label: "Today's Arrivals", value: o.todayArrivals ?? 0, icon: Building2, color: '#6366f1' },
-    { label: 'Active Staff', value: o.activeUsers ?? 0, icon: Users, color: '#ec4899' },
-    { label: 'Total Rooms', value: o.totalRooms ?? 0, icon: BedDouble, color: '#14b8a6' },
-  ];
+    o.activeUsers !== undefined && { label: 'Active Staff', value: o.activeUsers, icon: Users, color: '#ec4899' },
+    o.totalRooms !== undefined && { label: 'Total Rooms', value: o.totalRooms, icon: BedDouble, color: '#14b8a6' },
+    breakfast && { label: 'Breakfast', value: `${breakfast.served}/${breakfast.total}`, icon: Coffee, color: '#a855f7' },
+  ].filter(Boolean) as Array<{ label: string; value: string | number; icon: any; color: string }>;
 
   return (
     <div className="p-6 md:p-8">
@@ -104,6 +110,7 @@ export default function AdminDashboard() {
           </p>
         </div>
 
+        {user?.role !== 'Reception' && (
         <div className="relative flex-shrink-0" ref={branchRef}>
           <button
             onClick={() => setBranchOpen(!branchOpen)}
@@ -138,6 +145,7 @@ export default function AdminDashboard() {
             </div>
           )}
         </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
@@ -154,7 +162,7 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {!selectedBranchId && (
+      {!selectedBranchId && byBranch && (
         <>
           <h2 className="font-serif text-xl text-on-surface mb-4">By Branch</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

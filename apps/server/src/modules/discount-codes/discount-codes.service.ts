@@ -78,6 +78,7 @@ export class DiscountCodesService {
     if (!doc) throw new NotFoundException('Discount code not found.');
     if (!doc.isActive) throw new BadRequestException('Discount code is deactivated.');
     if (doc.expiresAt && new Date() > doc.expiresAt) throw new BadRequestException('Discount code has expired.');
+    if (!doc.branchId) throw new BadRequestException('Discount code is not associated with any branch.');
     if (doc.branchId.toString() !== branchId) throw new BadRequestException('Discount code is not valid for this branch.');
     // [multi-use] was: if (doc.maxUsage && doc.usedCount >= doc.maxUsage)
     if (doc.usedCount >= 1) throw new BadRequestException('Discount code has already been used.');
