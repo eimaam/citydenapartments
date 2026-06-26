@@ -26,7 +26,7 @@ export class DashboardService {
     private readonly redis: RedisService,
   ) {}
 
-  async getSummary(branchId?: string) {
+  async getSummary(branchId?: string, role?: string) {
     const cacheKey = branchId
       ? `${CACHE_KEYS.DASHBOARD_SUMMARY}:${branchId}`
       : CACHE_KEYS.DASHBOARD_SUMMARY;
@@ -227,6 +227,21 @@ export class DashboardService {
 
     await this.redis.set(cacheKey, JSON.stringify(summary), CACHE_TTL.ONE_MINUTE);
     this.logger.log(`Summary computed and cached ${branchId ? `(branch: ${branchId})` : ''}`);
+
+    if (role === 'Reception') {
+      return {
+        overview: {
+          occupancyRate: summary.overview.occupancyRate,
+          checkedInGuests: summary.overview.checkedInGuests,
+          pendingCheckIns: summary.overview.pendingCheckIns,
+          todayArrivals: summary.overview.todayArrivals,
+          roomCounts: summary.overview.roomCounts,
+        },
+        breakfast: summary.breakfast,
+        branch: summary.branch,
+      };
+    }
+
     return summary;
   }
 

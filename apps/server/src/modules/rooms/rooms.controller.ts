@@ -12,6 +12,7 @@ import { UpdateRoomDto } from './dto/update-room.dto';
 import { UpdateRoomStatusDto } from './dto/update-room-status.dto';
 import { QueryRoomsDto } from './dto/room-query.dto';
 import { AvailableRoomsDto } from './dto/available-rooms.dto';
+import { isSuperAdmin } from '../../common/utils/role.utils';
 
 @Controller('rooms')
 @UseGuards(JwtAuthGuard, WorkspaceAuthGuard, RolesGuard)
@@ -38,25 +39,28 @@ export class RoomsController {
 
   @Get(':id')
   @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.HOUSE_KEEPER, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT)
-  findOne(@Param('id') id: string) {
-    return this.roomsService.findOne(id);
+  findOne(@Param('id') id: string, @ActiveUser() user: any) {
+    return this.roomsService.findOne(id, user);
   }
 
   @Post()
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.IT)
   create(@Body() dto: CreateRoomDto, @ActiveUser() user: any) {
+    if (!isSuperAdmin(user.role)) {
+      dto.branchId = user.activeBranchId;
+    }
     return this.roomsService.create(dto, user.id);
   }
 
   @Patch(':id')
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.IT)
   updateRoom(@Param('id') id: string, @Body() dto: UpdateRoomDto, @ActiveUser() user: any) {
-    return this.roomsService.update(id, dto, user.id);
+    return this.roomsService.update(id, dto, user.id, user);
   }
 
   @Patch(':id/status')
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.HOUSE_KEEPER, UserRoleEnum.RECEPTION, UserRoleEnum.IT)
   updateStatus(@Param('id') id: string, @Body() body: UpdateRoomStatusDto, @ActiveUser() user: any) {
-    return this.roomsService.updateStatus(id, body.status as unknown as RoomStatus, user.id);
+    return this.roomsService.updateStatus(id, body.status as unknown as RoomStatus, user.id, user);
   }
 }

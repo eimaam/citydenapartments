@@ -9,6 +9,9 @@ export class DiscountCode extends Document {
   @Prop({ required: true, min: 1, max: 100 })
   percentage: number;
 
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Branch', required: true })
+  branchId: MongooseSchema.Types.ObjectId;
+
   @Prop({ default: 0 })
   usedCount: number;
 

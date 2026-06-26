@@ -33,6 +33,9 @@ export class InventoryTransaction extends Document {
   @Prop()
   department: string;
 
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Department' })
+  departmentId: MongooseSchema.Types.ObjectId;
+
   @Prop()
   notes: string;
 

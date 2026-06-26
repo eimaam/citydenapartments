@@ -1,10 +1,11 @@
-import { Injectable, Logger, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Employee } from './employee.schema';
 import { RedisService } from '../redis/redis.service';
 import { CACHE_TTL } from '../../config/cache.constants';
 import { escapeRegex } from '../../common/utils/escape-regex';
+import { hasElevatedRole } from '../../common/utils/role.utils';
 import type { CreateEmployeeDto } from './dto/create-employee.dto';
 import type { UpdateEmployeeDto } from './dto/update-employee.dto';
 
@@ -38,7 +39,7 @@ export class EmployeesService {
     }
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([
-      this.employeeModel.find(filter).sort({ name: 1 }).skip(skip).limit(limit).lean(),
+      this.employeeModel.find(filter).populate('departmentId', 'name').sort({ name: 1 }).skip(skip).limit(limit).lean(),
       this.employeeModel.countDocuments(filter),
     ]);
 
@@ -54,7 +55,7 @@ export class EmployeesService {
     const employee = await this.employeeModel.create(dto);
     await this.redis.clearPattern('employees:list:*');
     this.logger.log(`Employee created — ${employee.name} (${employee.email})`);
-    return employee;
+    return this.employeeModel.findById(employee._id).populate('departmentId', 'name').lean();
   }
 
   async update(id: string, dto: UpdateEmployeeDto) {
@@ -62,7 +63,7 @@ export class EmployeesService {
       const dup = await this.employeeModel.findOne({ email: dto.email.toLowerCase(), _id: { $ne: id } });
       if (dup) throw new ConflictException('An employee with this email already exists.');
     }
-    const updated = await this.employeeModel.findByIdAndUpdate(id, dto, { new: true }).lean();
+    const updated = await this.employeeModel.findByIdAndUpdate(id, dto, { new: true }).populate('departmentId', 'name').lean();
     if (!updated) throw new NotFoundException('Employee not found.');
     await this.redis.clearPattern('employees:list:*');
     await this.redis.del(`employees:${id}`);
@@ -83,6 +84,7 @@ export class EmployeesService {
     const escaped = escapeRegex(query);
     const results = await this.employeeModel
       .find({ branchId, isActive: true, name: { $regex: escaped, $options: 'i' } })
+      .populate('departmentId', 'name')
       .sort({ name: 1 })
       .limit(10)
       .lean();
@@ -92,7 +94,7 @@ export class EmployeesService {
     return results;
   }
 
-  async findById(id: string) {
+  async findById(id: string, user?: any) {
     const cacheKey = `employees:${id}`;
     const cached = await this.redis.get(cacheKey);
     if (cached) {
@@ -100,8 +102,14 @@ export class EmployeesService {
       return JSON.parse(cached);
     }
 
-    const employee = await this.employeeModel.findById(id).lean();
+    const employee = await this.employeeModel.findById(id).populate('departmentId', 'name').lean();
     if (!employee) throw new NotFoundException('Employee not found.');
+
+    if (user && !hasElevatedRole(user.role)) {
+      if (employee.branchId.toString() !== user.activeBranchId) {
+        throw new NotFoundException('Employee not found.');
+      }
+    }
 
     await this.redis.set(cacheKey, JSON.stringify(employee), CACHE_TTL.ONE_HOUR);
     return employee;

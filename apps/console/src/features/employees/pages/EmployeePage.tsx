@@ -5,6 +5,7 @@ import { Plus, Search } from 'lucide-react';
 import { useToast } from '../../../components/ui/Toast';
 import { useAuth } from '../../../contexts/auth';
 import { api } from '../../../lib/api';
+import { departmentsApi, type Department } from '../../departments/api/departments.api';
 
 const LIMIT = 20;
 
@@ -39,6 +40,7 @@ export default function EmployeePage() {
   const isEditor = user ? user.role !== UserRole.FacilityManager : false;
   const [data, setData] = useState<PaginatedData>({ items: [], total: 0, page: 1, limit: LIMIT });
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState('');
@@ -47,17 +49,19 @@ export default function EmployeePage() {
   const [drawer, setDrawer] = useState(false);
   const [edit, setEdit] = useState<Employee | null>(null);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', phone: '', department: '', position: '', branchId: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', department: '', departmentId: '', position: '', branchId: '' });
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [emps, br] = await Promise.all([
+      const [emps, br, depts] = await Promise.all([
         api.get<PaginatedData>(`/employees?page=${page}&limit=${LIMIT}&search=${encodeURIComponent(search)}&includeInactive=true`),
         api.get<{ items: Branch[] }>('/branches').then((r) => r.items),
+        departmentsApi.list(user?.activeBranchId || ''),
       ]);
       setData(emps);
       setBranches(br);
+      setDepartments(depts);
     } catch { toast('error', 'Failed to load data.'); }
     finally { setLoading(false); }
   }, [toast, page, search]);
@@ -73,13 +77,13 @@ export default function EmployeePage() {
 
   const openCreate = () => {
     setEdit(null);
-    setForm({ name: '', email: '', phone: '', department: '', position: '', branchId: branches[0]?._id || '' });
+    setForm({ name: '', email: '', phone: '', department: '', departmentId: '', position: '', branchId: branches[0]?._id || '' });
     setDrawer(true);
   };
 
   const openEdit = (e: Employee) => {
     setEdit(e);
-    setForm({ name: e.name, email: e.email, phone: e.phone, department: e.department || '', position: e.position || '', branchId: e.branchId });
+    setForm({ name: e.name, email: e.email, phone: e.phone, department: e.department || '', departmentId: (e as any).departmentId?._id || '', position: e.position || '', branchId: e.branchId });
     setDrawer(true);
   };
 
@@ -87,10 +91,10 @@ export default function EmployeePage() {
     setSaving(true);
     try {
       if (edit) {
-        await api.patch(`/employees/${edit._id}`, form);
+        await api.patch(`/employees/${edit._id}`, { ...form, departmentId: form.departmentId || undefined });
         toast('success', 'Employee updated.');
       } else {
-        await api.post('/employees', form);
+        await api.post('/employees', { ...form, departmentId: form.departmentId || undefined });
         toast('success', 'Employee created.');
       }
       setDrawer(false);
@@ -113,7 +117,10 @@ export default function EmployeePage() {
     { title: 'Name', dataIndex: 'name', key: 'name' },
     { title: 'Email', dataIndex: 'email', key: 'email', width: 200 },
     { title: 'Phone', dataIndex: 'phone', key: 'phone', width: 140 },
-    { title: 'Department', dataIndex: 'department', key: 'department', width: 130 },
+    { title: 'Department', dataIndex: 'departmentId', key: 'department', width: 130,
+      render: (_: unknown, r: Employee) => (
+        <span className="text-xs">{(r as any).departmentId?.name || r.department || '—'}</span>
+      )},
     { title: 'Position', dataIndex: 'position', key: 'position', width: 150 },
     { title: 'Branch', key: 'branch', width: 120,
       render: (_: unknown, r: Employee) => (
@@ -175,7 +182,9 @@ export default function EmployeePage() {
           <Input size="lg" type="email" placeholder="Email address" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} disabled={!!edit} />
           <Input size="lg" placeholder="Phone number" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
           <div className="grid grid-cols-2 gap-3">
-            <Input size="lg" placeholder="Department (e.g. Housekeeping)" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} />
+            <Select size="lg" className="w-full" value={form.departmentId} onChange={(v) => setForm({ ...form, departmentId: v })} placeholder="Select department">
+              {departments.map((d) => <Option key={d._id} value={d._id}>{d.name}</Option>)}
+            </Select>
             <Input size="lg" placeholder="Position (e.g. Head Housekeeper)" value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} />
           </div>
           <div>

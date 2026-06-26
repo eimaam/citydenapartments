@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef, type FormEvent } from 'react';
-import { Plus, Search, Banknote, CreditCard, Building2, Users, Calendar, Copy, Check, Printer } from 'lucide-react';
+import { Plus, Search, Banknote, CreditCard, Building2, Users, Calendar, Copy, Check, Printer, ChevronDown, ChevronRight } from 'lucide-react';
 import { format, addDays, differenceInDays } from 'date-fns';
 import { getAllStates } from 'ng-geo-data';
 import {
@@ -107,6 +107,18 @@ export default function BookingsPage() {
   const [discountCodeInput, setDiscountCodeInput] = useState('');
   const [appliedDiscountCode, setAppliedDiscountCode] = useState<{ _id: string; code: string; percentage: number } | null>(null);
   const [discountCodeLoading, setDiscountCodeLoading] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+
+  const toggleSection = (key: string) => setCollapsedSections((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  const SectionHeader = ({ label, sectionKey, icon: Icon }: { label: string; sectionKey: string; icon: any }) => (
+    <button type="button" onClick={() => toggleSection(sectionKey)}
+      className="text-xs font-bold tracking-[0.1em] uppercase text-outline flex items-center gap-2 mb-1 w-full text-left cursor-pointer bg-transparent border-none">
+      {Icon && <Icon size={12} />}
+      {label}
+      {collapsedSections[sectionKey] ? <ChevronRight size={12} className="ml-auto" /> : <ChevronDown size={12} className="ml-auto" />}
+    </button>
+  );
 
   const selectedRoom = useMemo(() => rooms.find((r) => r._id === form.roomId), [rooms, form.roomId]);
   const computedNights = useMemo(() => {
@@ -205,9 +217,21 @@ export default function BookingsPage() {
       const result = await discountCodesApi.validate(discountCodeInput.trim());
       setAppliedDiscountCode(result);
       updateField('discountPercentage', result.percentage);
+      const nights = form.useNights ? form.nights : computedNights;
+      const price = Number(form.actualPricePerNight) || 0;
+      recalcTotal(price, result.percentage, nights);
       toast('success', `Discount code applied: ${result.percentage}% off`);
     } catch (e: any) { toast('error', e.message); setAppliedDiscountCode(null); }
     finally { setDiscountCodeLoading(false); }
+  };
+
+  const removeDiscountCode = () => {
+    setAppliedDiscountCode(null);
+    setDiscountCodeInput('');
+    updateField('discountPercentage', 0);
+    const nights = form.useNights ? form.nights : computedNights;
+    const price = Number(form.actualPricePerNight) || 0;
+    recalcTotal(price, 0, nights);
   };
 
   const handleCreate = async (e: FormEvent) => {
@@ -341,65 +365,79 @@ export default function BookingsPage() {
       <Drawer open={showCreate} onClose={() => setShowCreate(false)} title="New Booking" width={560}
         footer={<div className="flex justify-end gap-3"><Button variant="secondary" onClick={() => setShowCreate(false)}>Cancel</Button><Button htmlType="submit" form="create-booking-form" disabled={!formValid} loading={submitting}>Create Booking</Button></div>}>
         <form id="create-booking-form" onSubmit={handleCreate}>
-          <div className="mb-5"><label className="text-xs font-bold tracking-[0.1em] uppercase text-outline flex items-center gap-2 mb-1"><Calendar size={12} /> Dates</label>
-            <div className="grid grid-cols-2 gap-3">
-              <div><span className="text-[10px] text-outline uppercase tracking-wide">Check-in</span><Input size="lg" type="date" value={form.checkInDate} onChange={(e) => onCheckInChange(e.target.value)} required /></div>
-              <div><span className="text-[10px] text-outline uppercase tracking-wide">Check-out</span><Input size="lg" type="date" value={form.checkOutDate} min={form.checkInDate} onChange={(e) => onCheckOutChange(e.target.value)} required /></div>
+          <div className="mb-5"><SectionHeader label="Dates" sectionKey="dates" icon={Calendar} />
+            {!collapsedSections['dates'] && <><div className="grid grid-cols-2 gap-3">
+              <div><span className="text-[10px] text-outline uppercase tracking-wide">Check-in<span className="text-error ml-0.5">*</span></span><Input size="lg" type="date" value={form.checkInDate} onChange={(e) => onCheckInChange(e.target.value)} required /></div>
+              <div><span className="text-[10px] text-outline uppercase tracking-wide">Check-out<span className="text-error ml-0.5">*</span></span><Input size="lg" type="date" value={form.checkOutDate} min={form.checkInDate} onChange={(e) => onCheckOutChange(e.target.value)} required /></div>
             </div>
-            <div className="flex items-center gap-2 mt-2"><span className="text-[10px] text-outline uppercase tracking-wide">or</span><button type="button" onClick={() => { updateField('useNights', true); onNightsChange(form.nights); }} className="text-xs text-primary underline cursor-pointer bg-transparent border-none">use nights count</button>{form.useNights && <Input size="sm" type="number" min={1} max={30} value={form.nights} onChange={(e) => onNightsChange(Number(e.target.value))} className="!w-20" />}{form.useNights && <span className="text-xs text-outline">{form.nights === 1 ? 'night' : 'nights'}</span>}</div>
+            <div className="flex items-center gap-2 mt-2"><span className="text-[10px] text-outline uppercase tracking-wide">or</span><button type="button" onClick={() => { updateField('useNights', true); onNightsChange(form.nights); }} className="text-xs text-primary underline cursor-pointer bg-transparent border-none">use nights count</button>{form.useNights && <Input size="sm" type="number" min={1} max={30} value={form.nights} onChange={(e) => onNightsChange(Number(e.target.value))} className="!w-20" />}{form.useNights && <span className="text-xs text-outline">{form.nights === 1 ? 'night' : 'nights'}</span>}</div></>}
           </div>
           <div className="mb-5">
-            <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Room</label>
-            <div className="mt-2">
+            <SectionHeader label="Room *" sectionKey="room" icon={undefined} />
+            {!collapsedSections['room'] && <div className="mt-2">
               <RoomTypeSelector rooms={rooms} allTypes={roomTypes} selectedRoomId={form.roomId} onSelectRoom={(id) => { onRoomChange(id); }} />
-            </div>
+            </div>}
           </div>
-          <div className="grid grid-cols-2 gap-4 mb-5">
-            <div><label className="text-[10px] text-outline uppercase tracking-wide">Guest Name</label><Input size="lg" placeholder="e.g. John Doe" value={form.guestName} onChange={(e) => updateField('guestName', e.target.value)} required /></div>
-            <div><label className="text-[10px] text-outline uppercase tracking-wide">Guest Phone</label><Input size="lg" placeholder="e.g. 0803xxxxxxx" value={form.guestPhone} onChange={(e) => onPhoneChange(e.target.value)} status={phoneError ? 'error' : undefined} required /></div>
+          <div className="mb-5">
+            <SectionHeader label="Guest Info" sectionKey="guest" icon={Users} />
+            {!collapsedSections['guest'] && <div className="grid grid-cols-2 gap-4 mt-2">
+            <div><label className="text-[10px] text-outline uppercase tracking-wide">Guest Name<span className="text-error ml-0.5">*</span></label><Input size="lg" placeholder="Name of Guest" value={form.guestName} onChange={(e) => updateField('guestName', e.target.value)} required /></div>
+            <div><label className="text-[10px] text-outline uppercase tracking-wide">Guest Phone<span className="text-error ml-0.5">*</span></label><Input size="lg" placeholder="e.g. 0803xxxxxxx" value={form.guestPhone} onChange={(e) => onPhoneChange(e.target.value)} status={phoneError ? 'error' : undefined} required /></div>
             {phoneError && <p className="col-span-2 -mt-2 text-xs text-error">{phoneError}</p>}
-            <div><label className="text-[10px] text-outline uppercase tracking-wide">Email (Optional)</label><Input size="lg" type="email" placeholder="e.g. johndoe@email.com" value={form.guestEmail} onChange={(e) => updateField('guestEmail', e.target.value)} /></div>
+            <div><label className="text-[10px] text-outline uppercase tracking-wide">Email (Optional)</label><Input size="lg" type="email" placeholder="guestname@email.com" value={form.guestEmail} onChange={(e) => updateField('guestEmail', e.target.value)} /></div>
             <div><label className="text-[10px] text-outline uppercase tracking-wide">No. of Guests</label><Input size="lg" type="number" min={1} placeholder="e.g. 1" value={form.numberOfGuests} onChange={(e) => updateField('numberOfGuests', Number(e.target.value))} /></div>
+            </div>}
           </div>
-          <div className="mb-5"><label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Additional Guest Info</label>
-            <div className="mt-2 space-y-3">
-              <div><label className="text-[10px] text-outline uppercase tracking-wide">Address</label><Input size="lg" placeholder="e.g. 123 Main Street" value={form.guestAddress} onChange={(e) => { updateField('guestAddress', e.target.value); setFormErrors((prev) => ({ ...prev, guestAddress: '' })); }} status={formErrors.guestAddress ? 'error' : undefined} /></div>
+          <div className="mb-5"><SectionHeader label="Additional Guest Info" sectionKey="additional" icon={undefined} />
+            {!collapsedSections['additional'] && <div className="mt-2 space-y-3">
+              <div><label className="text-[10px] text-outline uppercase tracking-wide">Address<span className="text-error ml-0.5">*</span></label><Input size="lg" placeholder="e.g. 123 Main Street" value={form.guestAddress} onChange={(e) => { updateField('guestAddress', e.target.value); setFormErrors((prev) => ({ ...prev, guestAddress: '' })); }} status={formErrors.guestAddress ? 'error' : undefined} /></div>
               {formErrors.guestAddress && <p className="text-xs text-error">{formErrors.guestAddress}</p>}
-              <div><label className="text-[10px] text-outline uppercase tracking-wide">Nationality</label><Input size="lg" placeholder="e.g. Nigerian" value={form.guestNationality} onChange={(e) => { updateField('guestNationality', e.target.value); setFormErrors((prev) => ({ ...prev, guestNationality: '' })); }} status={formErrors.guestNationality ? 'error' : undefined} /></div>
+              <div><label className="text-[10px] text-outline uppercase tracking-wide">Nationality<span className="text-error ml-0.5">*</span></label><Input size="lg" placeholder="e.g. Nigerian" value={form.guestNationality} onChange={(e) => { updateField('guestNationality', e.target.value); setFormErrors((prev) => ({ ...prev, guestNationality: '' })); }} status={formErrors.guestNationality ? 'error' : undefined} /></div>
               {formErrors.guestNationality && <p className="text-xs text-error">{formErrors.guestNationality}</p>}
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="text-[10px] text-outline uppercase tracking-wide">Date of Birth</label><Input size="lg" type="date" placeholder="e.g. 1990-01-01" value={form.guestDob} onChange={(e) => updateField('guestDob', e.target.value)} /></div>
-                <div><label className="text-[10px] text-outline uppercase tracking-wide">Gender</label><Select size="lg" className="w-full" placeholder="Select gender" value={form.guestGender || undefined} onChange={(v) => updateField('guestGender', v)}>
+                <div><label className="text-[10px] text-outline uppercase tracking-wide">Gender<span className="text-error ml-0.5">*</span></label><Select size="lg" className="w-full" placeholder="Select gender" value={form.guestGender || undefined} onChange={(v) => updateField('guestGender', v)}>
                   <Option value="male">Male</Option>
                   <Option value="female">Female</Option>
                 </Select></div>
                 <div><label className="text-[10px] text-outline uppercase tracking-wide">Phone 2 (Optional)</label><Input size="lg" placeholder="e.g. 0805xxxxxxx" value={form.guestPhone2} onChange={(e) => updateField('guestPhone2', e.target.value)} /></div>
-                <div><label className="text-[10px] text-outline uppercase tracking-wide">Coming From</label><Input size="lg" placeholder="e.g. Lagos" value={form.guestComingFrom} onChange={(e) => updateField('guestComingFrom', e.target.value)} /></div>
-                <div><label className="text-[10px] text-outline uppercase tracking-wide">State of Origin</label><Select showSearch optionFilterProp="children" size="lg" className="w-full" placeholder="Select state" value={form.guestStateOfOrigin || undefined} onChange={(v) => updateField('guestStateOfOrigin', v)}>
+                <div><label className="text-[10px] text-outline uppercase tracking-wide">Coming From<span className="text-error ml-0.5">*</span></label><Input size="lg" placeholder="e.g. Lagos" value={form.guestComingFrom} onChange={(e) => updateField('guestComingFrom', e.target.value)} /></div>
+                <div><label className="text-[10px] text-outline uppercase tracking-wide">State of Origin<span className="text-error ml-0.5">*</span></label><Select showSearch optionFilterProp="children" size="lg" className="w-full" placeholder="Select state" value={form.guestStateOfOrigin || undefined} onChange={(v) => updateField('guestStateOfOrigin', v)}>
                   {nigeriaStates.map((s) => (<Option key={s.code} value={s.name}>{s.name}</Option>))}
                 </Select></div>
-                <div><label className="text-[10px] text-outline uppercase tracking-wide">Occupation</label><Input size="lg" placeholder="e.g. Engineer" value={form.guestOccupation} onChange={(e) => updateField('guestOccupation', e.target.value)} /></div>
-                <div><label className="text-[10px] text-outline uppercase tracking-wide">Next Destination</label><Input size="lg" placeholder="e.g. Abuja" value={form.guestNextDestination} onChange={(e) => updateField('guestNextDestination', e.target.value)} /></div>
+                <div><label className="text-[10px] text-outline uppercase tracking-wide">Occupation<span className="text-error ml-0.5">*</span></label><Input size="lg" placeholder="e.g. Engineer" value={form.guestOccupation} onChange={(e) => updateField('guestOccupation', e.target.value)} /></div>
+                <div><label className="text-[10px] text-outline uppercase tracking-wide">Next Destination<span className="text-error ml-0.5">*</span></label><Input size="lg" placeholder="e.g. Abuja" value={form.guestNextDestination} onChange={(e) => updateField('guestNextDestination', e.target.value)} /></div>
                 <div><label className="text-[10px] text-outline uppercase tracking-wide">Religion (Optional)</label><Input size="lg" placeholder="e.g. Christianity" value={form.guestReligion} onChange={(e) => updateField('guestReligion', e.target.value)} /></div>
               </div>
-            </div>
+            </div>}
           </div>
-          {selectedRoom && (<div className="p-4 mb-5 rounded-lg border border-outline-variant bg-surface-container"><div className="grid grid-cols-3 gap-3"><div><span className="text-[10px] text-outline uppercase tracking-wide">Price / Night</span><Input size="sm" type="number" min={0} value={form.actualPricePerNight || ''} onChange={(e) => onPriceChange(Number(e.target.value))} status={priceError ? 'error' : undefined} /></div><div><span className="text-[10px] text-outline uppercase tracking-wide">Discount (%)</span><Input size="sm" type="number" min={0} max={100} step={1} value={form.discountPercentage || ''} onChange={(e) => onDiscountPctChange(Number(e.target.value))} /></div><div><span className="text-[10px] text-outline uppercase tracking-wide">Total Paid</span><Input size="sm" type="number" min={1} value={form.totalAmountPaid || ''} onChange={(e) => updateField('totalAmountPaid', Number(e.target.value))} /></div></div>
+          {selectedRoom && (<div className="p-4 mb-5 rounded-lg border border-outline-variant bg-surface-container">
+            <SectionHeader label="Pricing" sectionKey="pricing" icon={undefined} />
+            {!collapsedSections['pricing'] && <><div className="grid grid-cols-3 gap-3 mt-2"><div><span className="text-[10px] text-outline uppercase tracking-wide">Price / Night<span className="text-error ml-0.5">*</span></span><Input size="sm" type="number" min={0} value={form.actualPricePerNight || ''} onChange={(e) => onPriceChange(Number(e.target.value))} status={priceError ? 'error' : undefined} /></div><div><span className="text-[10px] text-outline uppercase tracking-wide">Discount (%)</span><Input size="sm" type="number" min={0} max={100} step={1} value={form.discountPercentage || ''} onChange={(e) => onDiscountPctChange(Number(e.target.value))} /></div><div><span className="text-[10px] text-outline uppercase tracking-wide">Total Paid<span className="text-error ml-0.5">*</span></span><Input size="sm" type="number" min={1} value={form.totalAmountPaid || ''} onChange={(e) => updateField('totalAmountPaid', Number(e.target.value))} /></div></div>
   <div className="flex items-center gap-2 mt-3 pt-3 border-t border-outline-variant/60">
-    <Input size="sm" placeholder="Discount code" value={discountCodeInput}
-      onChange={(e) => setDiscountCodeInput(e.target.value)}
-      onKeyDown={(e) => { if (e.key === 'Enter') applyDiscountCode(); }} />
+    {appliedDiscountCode ? (
+      <div className="flex items-center gap-2 flex-1">
+        <span className="text-xs font-mono font-bold text-primary bg-primary-container/20 px-2 py-1 rounded">{appliedDiscountCode.code}</span>
+        <span className="text-[10px] text-outline">({appliedDiscountCode.percentage}% off)</span>
+      </div>
+    ) : (
+      <Input size="sm" placeholder="Discount code" value={discountCodeInput}
+        onChange={(e) => setDiscountCodeInput(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter') applyDiscountCode(); }} />
+    )}
     <Button size="sm" loading={discountCodeLoading} disabled={!!appliedDiscountCode} onClick={applyDiscountCode}>
       {appliedDiscountCode ? 'Applied' : 'Apply'}
     </Button>
     {appliedDiscountCode && (
-      <button onClick={() => { setAppliedDiscountCode(null); setDiscountCodeInput(''); }}
+      <button onClick={removeDiscountCode}
         className="text-xs text-error hover:underline cursor-pointer whitespace-nowrap">Remove</button>
     )}
   </div>
-{priceError && <p className="mt-2 text-xs text-error">{priceError}</p>}<div className="flex flex-wrap gap-4 mt-2 text-[10px] text-outline"><span>Nights: {form.useNights ? form.nights : computedNights}</span><span>Subtotal: ₦{((Number(form.actualPricePerNight) || 0) * (form.useNights ? form.nights : computedNights)).toLocaleString()}</span>{form.discountPercentage > 0 && <span className="text-error">Discount: {form.discountPercentage}%</span>}</div></div>)}
-          <div className="mb-5"><label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Payment Method</label><div className="grid grid-cols-3 gap-2 mt-1">{paymentMethods.map((pm) => { const Icon = pm.icon; const active = form.paymentMethod === pm.key; return (<button key={pm.key} type="button" onClick={() => updateField('paymentMethod', pm.key)} className="flex flex-col items-center gap-1 p-3 rounded-lg border text-center transition-all cursor-pointer" style={{ borderColor: active ? 'var(--color-primary)' : 'var(--color-outline-variant)', background: active ? 'var(--color-primary-container)/10' : 'var(--color-surface-container-lowest)' }}><Icon size={20} style={{ color: active ? 'var(--color-primary)' : 'var(--color-outline)' }} /><span className="text-xs font-medium" style={{ color: active ? 'var(--color-on-surface)' : 'var(--color-on-surface-variant)' }}>{pm.label}</span><span className="text-[9px] leading-tight" style={{ color: active ? 'var(--color-on-surface-variant)' : 'var(--color-outline)' }}>{pm.desc}</span></button>); })}</div></div>
-          <div className="mb-5"><label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Source</label><div className="flex gap-1 mt-1">{bookingSources.map((s) => (<button key={s.key} type="button" onClick={() => updateField('bookingSource', s.key)} className="flex-1 py-2 text-xs font-medium rounded border transition-all cursor-pointer" style={{ borderColor: form.bookingSource === s.key ? 'var(--color-primary)' : 'var(--color-outline-variant)', background: form.bookingSource === s.key ? 'var(--color-primary-container)/10' : 'var(--color-surface-container-lowest)', color: form.bookingSource === s.key ? 'var(--color-on-surface)' : 'var(--color-on-surface-variant)' }}>{s.label}</button>))}</div></div>
+{priceError && <p className="mt-2 text-xs text-error">{priceError}</p>}<div className="flex flex-wrap gap-4 mt-2 text-[10px] text-outline"><span>Nights: {form.useNights ? form.nights : computedNights}</span><span>Subtotal: ₦{((Number(form.actualPricePerNight) || 0) * (form.useNights ? form.nights : computedNights)).toLocaleString()}</span>{form.discountPercentage > 0 && <span className="text-error">Discount: {form.discountPercentage}%</span>}</div></>}</div>)}
+          <div className="mb-5"><SectionHeader label="Payment Method *" sectionKey="payment" icon={undefined} />
+            {!collapsedSections['payment'] && <div className="grid grid-cols-3 gap-2 mt-1">{paymentMethods.map((pm) => { const Icon = pm.icon; const active = form.paymentMethod === pm.key; return (<button key={pm.key} type="button" onClick={() => updateField('paymentMethod', pm.key)} className="flex flex-col items-center gap-1 p-3 rounded-lg border text-center transition-all cursor-pointer" style={{ borderColor: active ? 'var(--color-primary)' : 'var(--color-outline-variant)', background: active ? 'var(--color-primary-container)/10' : 'var(--color-surface-container-lowest)' }}><Icon size={20} style={{ color: active ? 'var(--color-primary)' : 'var(--color-outline)' }} /><span className="text-xs font-medium" style={{ color: active ? 'var(--color-on-surface)' : 'var(--color-on-surface-variant)' }}>{pm.label}</span><span className="text-[9px] leading-tight" style={{ color: active ? 'var(--color-on-surface-variant)' : 'var(--color-outline)' }}>{pm.desc}</span></button>); })}</div>}</div>
+          <div className="mb-5"><SectionHeader label="Source" sectionKey="source" icon={undefined} />
+            {!collapsedSections['source'] && <div className="flex gap-1 mt-1">{bookingSources.map((s) => (<button key={s.key} type="button" onClick={() => updateField('bookingSource', s.key)} className="flex-1 py-2 text-xs font-medium rounded border transition-all cursor-pointer" style={{ borderColor: form.bookingSource === s.key ? 'var(--color-primary)' : 'var(--color-outline-variant)', background: form.bookingSource === s.key ? 'var(--color-primary-container)/10' : 'var(--color-surface-container-lowest)', color: form.bookingSource === s.key ? 'var(--color-on-surface)' : 'var(--color-on-surface-variant)' }}>{s.label}</button>))}</div>}</div>
         </form>
       </Drawer>
 

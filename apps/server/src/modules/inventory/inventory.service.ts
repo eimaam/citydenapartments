@@ -144,12 +144,16 @@ export class InventoryService {
     }
 
     let requestedByName = dto.requestedBy;
+    let departmentId = dto.departmentId;
     if (dto.requestedEmployeeId) {
-      const employee = await this.employeeModel.findById(dto.requestedEmployeeId).lean();
+      const employee = await this.employeeModel.findById(dto.requestedEmployeeId).populate('departmentId', 'name').lean();
       if (employee) {
         requestedByName = employee.name;
         if (!dto.department && employee.department) {
           dto.department = employee.department;
+        }
+        if (!departmentId && (employee as any).departmentId) {
+          departmentId = (employee as any).departmentId._id;
         }
       }
     }
@@ -167,6 +171,7 @@ export class InventoryService {
       newStock: item.currentStock,
       requestedBy: requestedByName,
       department: dto.department,
+      departmentId,
       notes: dto.notes,
       performedBy: userId,
       branchId,

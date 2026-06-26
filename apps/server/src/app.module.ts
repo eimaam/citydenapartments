@@ -22,6 +22,7 @@ import { HealthModule } from './modules/health/health.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { EmployeesModule } from './modules/employees/employees.module';
 import { DiscountCodesModule } from './modules/discount-codes/discount-codes.module';
+import { DepartmentsModule } from './modules/departments/departments.module';
 import mongoose from 'mongoose';
 
 if (AppConfig.NODE_ENV === 'development') {
@@ -65,6 +66,7 @@ if (AppConfig.NODE_ENV === 'development') {
     CustomersModule,
     EmployeesModule,
     DiscountCodesModule,
+    DepartmentsModule,
     RedisModule,
   ],
   

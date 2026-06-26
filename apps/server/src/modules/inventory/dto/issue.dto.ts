@@ -18,6 +18,10 @@ export class IssueDto {
   department?: string;
 
   @IsOptional()
+  @IsMongoId()
+  departmentId?: string;
+
+  @IsOptional()
   @IsString()
   notes?: string;
 }

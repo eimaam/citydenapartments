@@ -9,12 +9,13 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
-import { User, UserRoleEnum } from '../users/user.schema';
+import { User } from '../users/user.schema';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { SwitchBranchDto } from './dto/switch-branch.dto';
 import { RedisService } from '../redis/redis.service';
 import { CACHE_KEYS } from '../../config/cache.constants';
+import { isSuperAdmin } from '../../common/utils/role.utils';
 
 @Injectable()
 export class AuthService {
@@ -104,7 +105,7 @@ export class AuthService {
     const branchStr = dto.branchId;
     const allowed = user.allowedBranches.map((b) => b.toString());
 
-    if (!allowed.includes(branchStr) && user.role !== UserRoleEnum.SUPER_ADMIN) {
+    if (!allowed.includes(branchStr) && !isSuperAdmin(user.role)) {
       this.logger.warn(`Branch switch denied — ${user.email} tried to access unassigned branch ${branchStr}`);
       throw new BadRequestException('You are not assigned to this branch.');
     }

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button, Input, Drawer, Table, Badge, RoomStatus } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
-import { Search, Plus, Hash, Calendar } from 'lucide-react';
+import { Search, Plus, Hash, Calendar, Copy, Check } from 'lucide-react';
 import { useToast } from '../../../components/ui/Toast';
 import { discountCodesApi, type DiscountCode } from '../api/discount-codes.api';
 import { useAuth } from '../../../contexts/auth';
@@ -12,6 +12,7 @@ const LIMIT = 20;
 
 export default function DiscountCodesPage() {
   const { user } = useAuth();
+  
   const { toast } = useToast();
   const canToggle = user ? [UserRole.SuperAdmin, UserRole.GroupGM].includes(user.role as any) : false;
 
@@ -24,6 +25,7 @@ export default function DiscountCodesPage() {
   const [showGenerate, setShowGenerate] = useState(false);
   const [genForm, setGenForm] = useState({ percentage: 5, expiresAt: '' });
   const [saving, setSaving] = useState(false);
+  const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -70,7 +72,15 @@ export default function DiscountCodesPage() {
 
   const columns: TableProps<DiscountCode>['columns'] = [
     { title: 'Code', dataIndex: 'code', key: 'code', width: 150,
-      render: (v: string) => <span className="font-mono font-bold tracking-wider">{v}</span> },
+      render: (v: string, r: DiscountCode) => (
+        <div className="flex items-center gap-1.5">
+          <span className="font-mono font-bold tracking-wider">{v}</span>
+          <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(v); setCopiedCodeId(r._id); setTimeout(() => setCopiedCodeId(null), 2000); }}
+            className="p-0.5 rounded hover:bg-surface-container cursor-pointer bg-transparent border-none text-outline hover:text-primary">
+            {copiedCodeId === r._id ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
+          </button>
+        </div>
+      ) },
     { title: 'Discount', dataIndex: 'percentage', key: 'pct', width: 100,
       render: (v: number) => <span className="font-bold text-emerald-600">{v}%</span> },
     { title: 'Usage', key: 'usage', width: 80,
@@ -152,7 +162,7 @@ export default function DiscountCodesPage() {
           */}
           <div>
             <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline block mb-1">Expires At (optional)</label>
-            <Input size="lg" type="date"
+            <Input size="lg" type="date" min={format(new Date(), 'yyyy-MM-dd')}
               value={genForm.expiresAt} onChange={(e) => setGenForm({ ...genForm, expiresAt: e.target.value })} />
           </div>
         </div>

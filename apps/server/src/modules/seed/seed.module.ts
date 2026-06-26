@@ -11,6 +11,7 @@ import { InventoryItem, InventoryItemSchema } from '../inventory/inventory-item.
 import { InventoryTransaction, InventoryTransactionSchema } from '../inventory/inventory-transaction.schema';
 import { Employee, EmployeeSchema } from '../employees/employee.schema';
 import { Customer, CustomerSchema } from '../customers/customer.schema';
+import { Department, DepartmentSchema } from '../departments/department.schema';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { Customer, CustomerSchema } from '../customers/customer.schema';
       { name: InventoryTransaction.name, schema: InventoryTransactionSchema },
       { name: Employee.name, schema: EmployeeSchema },
       { name: Customer.name, schema: CustomerSchema },
+      { name: Department.name, schema: DepartmentSchema },
     ]),
   ],
   controllers: [SeedController],
