@@ -113,7 +113,7 @@ export default function DepartmentPage() {
         </div>
       </Drawer>
 
-      <Modal open={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} title="Delete Department">
+      <Modal isOpen={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} title="Delete Department">
         <p className="text-sm text-on-surface mb-4">Are you sure you want to delete <strong>{deleteConfirm?.name}</strong>? This action can be undone by an administrator.</p>
         <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={() => setDeleteConfirm(null)}>Cancel</Button>
