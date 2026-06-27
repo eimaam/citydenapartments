@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Button, Input, Select, Option, Drawer, Badge, Table } from '@citydenapartments/shared';
+import { Button, Input, Select, Option, Drawer, Badge, Table, UserRole } from '@citydenapartments/shared';
 import { RoomStatus, type RoomStatusType } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
 import { Plus, Search } from 'lucide-react';
@@ -34,6 +34,14 @@ interface PaginatedData {
   limit: number;
 }
 
+interface RoomType {
+  _id: string;
+  name: string;
+  basePrice: number;
+}
+
+const canCreate = (role: string) => role === UserRole.SuperAdmin || role === UserRole.IT;
+
 export default function AdminRoomsPage() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -47,7 +55,8 @@ export default function AdminRoomsPage() {
   const [drawer, setDrawer] = useState(false);
   const [edit, setEdit] = useState<Room | null>(null);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ roomNumber: '', maxGuests: 2, status: RoomStatus.Available as string });
+  const [form, setForm] = useState({ roomNumber: '', maxGuests: 2, status: RoomStatus.Available as string, roomTypeId: '' });
+  const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -64,13 +73,18 @@ export default function AdminRoomsPage() {
 
   useEffect(() => { setPage(1); }, [search, statusFilter]);
 
+  useEffect(() => {
+    api.get<{ items: RoomType[] }>('/room-types?limit=100').then((res) => setRoomTypes(res.items)).catch(() => {});
+  }, []);
+
   const onSearchChange = (val: string) => {
     setSearchInput(val);
     clearTimeout(searchTimer.current);
     searchTimer.current = setTimeout(() => setSearch(val), 400);
   };
 
-  const openEdit = (r: Room) => { setEdit(r); setForm({ roomNumber: r.roomNumber, maxGuests: r.maxGuests, status: r.status }); setDrawer(true); };
+  const openCreate = () => { setEdit(null); setForm({ roomNumber: '', maxGuests: 2, status: RoomStatus.Available, roomTypeId: '' }); setDrawer(true); };
+  const openEdit = (r: Room) => { setEdit(r); setForm({ roomNumber: r.roomNumber, maxGuests: r.maxGuests, status: r.status, roomTypeId: '' }); setDrawer(true); };
 
   const save = async () => {
     setSaving(true);
@@ -78,8 +92,11 @@ export default function AdminRoomsPage() {
       if (edit) {
         await api.patch(`/rooms/${edit._id}`, { roomNumber: form.roomNumber, maxGuests: form.maxGuests });
         if (form.status !== edit.status) await api.patch(`/rooms/${edit._id}/status`, { status: form.status });
+        toast('success', 'Room updated.');
+      } else {
+        await api.post('/rooms', { roomNumber: form.roomNumber, roomTypeId: form.roomTypeId, maxGuests: form.maxGuests });
+        toast('success', 'Room created.');
       }
-      toast('success', 'Room updated.');
       setDrawer(false);
       fetch();
     } catch (e: any) { toast('error', e.message); }
@@ -102,7 +119,7 @@ export default function AdminRoomsPage() {
         <div className="flex items-center gap-3">
           <Input size="sm" placeholder="Search rooms..." prefix={<Search size={14} className="text-outline" />}
             value={searchInput} onChange={(e) => onSearchChange(e.target.value)} className="!w-64" />
-          <Button size="sm" icon={<Plus size={14} />} onClick={() => toast('info', 'Create rooms from the Room Types section.')}>New Room</Button>
+          {canCreate(user?.role ?? '') && <Button size="sm" icon={<Plus size={14} />} onClick={openCreate}>New Room</Button>}
         </div>
       </div>
 
@@ -132,14 +149,23 @@ export default function AdminRoomsPage() {
           onRow={(r) => ({ onClick: () => openEdit(r), style: { cursor: 'pointer' } })}
         />
       </div>
-      <Drawer open={drawer} onClose={() => setDrawer(false)} title="Edit Room" size="sm"
-        footer={<div className="flex justify-end gap-3"><Button variant="secondary" onClick={() => setDrawer(false)}>Cancel</Button><Button loading={saving} onClick={save}>Save</Button></div>}>
+
+      <Drawer open={drawer} onClose={() => setDrawer(false)}
+        title={edit ? 'Edit Room' : 'New Room'} size="sm"
+        footer={<div className="flex justify-end gap-3"><Button variant="secondary" onClick={() => setDrawer(false)}>Cancel</Button><Button loading={saving} onClick={save}>{edit ? 'Save' : 'Create'}</Button></div>}>
         <div className="space-y-4">
           <Input size="lg" placeholder="Room Number" value={form.roomNumber} onChange={(e) => setForm({ ...form, roomNumber: e.target.value })} />
+          {!edit && (
+            <Select size="lg" className="w-full" placeholder="Select room type" value={form.roomTypeId || undefined} onChange={(v) => setForm({ ...form, roomTypeId: v })}>
+              {roomTypes.map((rt) => <Option key={rt._id} value={rt._id}>{rt.name} (₦{rt.basePrice.toLocaleString()})</Option>)}
+            </Select>
+          )}
           <Input size="lg" type="number" placeholder="Max Guests" value={form.maxGuests} onChange={(e) => setForm({ ...form, maxGuests: Number(e.target.value) })} />
-          <Select size="lg" className="w-full" value={form.status} onChange={(v) => setForm({ ...form, status: v })}>
-            {Object.values(RoomStatus).map((s) => <Option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</Option>)}
-          </Select>
+          {edit && (
+            <Select size="lg" className="w-full" value={form.status} onChange={(v) => setForm({ ...form, status: v })}>
+              {Object.values(RoomStatus).map((s) => <Option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</Option>)}
+            </Select>
+          )}
         </div>
       </Drawer>
     </div>

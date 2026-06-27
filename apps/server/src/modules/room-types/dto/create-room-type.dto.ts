@@ -3,9 +3,10 @@ import { IsString, IsNumber, IsArray, IsOptional, Min, IsMongoId } from 'class-v
 export class CreateRoomTypeDto {
   @IsString()
   name: string;
-  
+
+  @IsOptional()
   @IsMongoId()
-  branchId: string;
+  branchId?: string;
 
   @IsNumber()
   @Min(0)

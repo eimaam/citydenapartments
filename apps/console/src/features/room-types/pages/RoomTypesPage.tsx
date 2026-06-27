@@ -66,7 +66,7 @@ export default function RoomTypesPage() {
     setSaving(true);
     try {
       if (edit) await api.patch(`/room-types/${edit._id}`, form);
-      else await api.post('/room-types', { ...form, branchId: '' });
+      else await api.post('/room-types', form);
       toast('success', edit ? 'Room type updated.' : 'Room type created.');
       setDrawer(false);
       fetch();

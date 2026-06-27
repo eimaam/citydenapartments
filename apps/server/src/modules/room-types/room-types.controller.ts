@@ -31,7 +31,7 @@ export class RoomTypesController {
   @Post()
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.IT)
   create(@Body() dto: CreateRoomTypeDto, @ActiveUser() user: any) {
-    if (!isSuperAdmin(user.role)) {
+    if (!dto.branchId || !isSuperAdmin(user.role)) {
       dto.branchId = user.activeBranchId;
     }
     return this.roomTypesService.create(dto, user.id);
