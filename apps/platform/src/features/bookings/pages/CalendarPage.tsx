@@ -245,9 +245,11 @@ export default function CalendarPage() {
       const targetDate = new Date(activeDate.getFullYear(), activeDate.getMonth(), activeDate.getDate());
       
       if (targetDate >= ciDate && targetDate < coDate) {
-        if (b.roomId?._id) {
-          occupiedRooms.add(b.roomId._id);
-        }
+        (b.rooms || []).forEach((rm) => {
+          if (rm.roomId?._id) {
+            occupiedRooms.add(rm.roomId._id);
+          }
+        });
       }
     });
     
@@ -550,8 +552,10 @@ export default function CalendarPage() {
     setSubmitting(true);
     try {
       const bookingStatus = form.bookingSource === BookingSource.WalkIn ? BookingStatus.Checked_In : BookingStatus.Reserved;
+      const selectedRoomData = availableRooms.find(r => r._id === form.roomId);
       const created = await bookingsApi.create({
-        roomId: form.roomId, customerId: selectedCustomer?._id || undefined, customerPhone: form.guestPhone,
+        rooms: [{ roomId: form.roomId, actualPricePerNight: price, maxGuests: selectedRoomData?.maxGuests ?? (Number(form.numberOfGuests) || 1) }],
+        customerId: selectedCustomer?._id || undefined, customerPhone: form.guestPhone,
         guestName: form.guestName, guestPhone: form.guestPhone, guestEmail: form.guestEmail || undefined,
         guestAddress: form.guestAddress, guestNationality: form.guestNationality,
         guestDob: form.guestDob || undefined, guestPhone2: form.guestPhone2 || undefined,
@@ -559,7 +563,7 @@ export default function CalendarPage() {
         guestOccupation: form.guestOccupation, guestNextDestination: form.guestNextDestination,
         guestGender: form.guestGender, guestReligion: form.guestReligion || undefined,
         numberOfGuests: Number(form.numberOfGuests) || 1, checkInDate: form.checkInDate, checkOutDate: form.checkOutDate,
-        actualPricePerNight: price, discountPercentage: Number(form.discountPercentage) || 0,
+        discountPercentage: Number(form.discountPercentage) || 0,
         discountCode: appliedDiscountCode?.code,
         totalAmountPaid: Number(form.totalAmountPaid), paymentMethod: form.paymentMethod, bookingSource: form.bookingSource,
         bookingStatus,
@@ -914,7 +918,7 @@ export default function CalendarPage() {
       <Drawer open={!!showDetail} onClose={() => setShowDetail(null)} title="Booking Details" width={480}>
         {showDetail && (<div className="space-y-5">
           <div className="flex items-center justify-between"><div><p className="text-xs text-outline">Reference</p><div className="flex items-center gap-2"><p className="font-mono font-medium">{showDetail.bookingReference}</p><button onClick={() => { navigator.clipboard.writeText(showDetail.bookingReference); setCopiedRef(true); setTimeout(() => setCopiedRef(false), 2000); }} className="p-0.5 rounded hover:bg-surface-container cursor-pointer bg-transparent border-none text-outline hover:text-primary">{copiedRef ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}</button></div></div><Badge status={showDetail.bookingStatus} /></div>
-          <div className="grid grid-cols-2 gap-4 text-sm"><div><p className="text-xs text-outline">Guest</p><p className="font-medium">{showDetail.guestDetails.name}</p><p className="text-xs">{showDetail.guestDetails.phone}</p>{showDetail.guestDetails.email && <p className="text-xs">{showDetail.guestDetails.email}</p>}</div><div><p className="text-xs text-outline">Room</p><p className="font-medium">{showDetail.roomId?.roomNumber}</p><p className="text-xs">{showDetail.roomId?.roomTypeId?.name}</p></div><div><p className="text-xs text-outline">Check-in</p><p>{format(new Date(showDetail.checkInDate), 'EEE d MMM, yyyy')}</p></div><div><p className="text-xs text-outline">Check-out</p><p>{format(new Date(showDetail.checkOutDate), 'EEE d MMM, yyyy')}</p></div><div><p className="text-xs text-outline">Price/Night</p><p className="font-medium">₦{showDetail.actualPricePerNight?.toLocaleString()}</p></div><div><p className="text-xs text-outline">Total Paid</p><p className="font-medium">₦{showDetail.totalAmountPaid?.toLocaleString()}</p></div><div><p className="text-xs text-outline">Payment</p><p>{showDetail.paymentMethod?.replace('_', ' ')}</p></div><div><p className="text-xs text-outline">Source</p><p>{showDetail.bookingSource}</p></div></div>
+          <div className="grid grid-cols-2 gap-4 text-sm"><div><p className="text-xs text-outline">Guest</p><p className="font-medium">{showDetail.guestDetails.name}</p><p className="text-xs">{showDetail.guestDetails.phone}</p>{showDetail.guestDetails.email && <p className="text-xs">{showDetail.guestDetails.email}</p>}</div><div><p className="text-xs text-outline">Rooms</p><div className="font-medium text-sm flex flex-wrap gap-x-1">{showDetail.rooms?.map((r, i) => (<span key={r.roomId._id}>{i > 0 && <span className="text-outline-muted">, </span>}{r.roomId.roomNumber} <span className="text-[10px] text-outline-normal">({r.roomId.roomTypeId?.name})</span></span>))}</div><p className="text-xs mt-0.5">₦{(showDetail.rooms || []).reduce((s, r) => s + r.totalForRoom, 0).toLocaleString()} total</p></div><div><p className="text-xs text-outline">Check-in</p><p>{format(new Date(showDetail.checkInDate), 'EEE d MMM, yyyy')}</p></div><div><p className="text-xs text-outline">Check-out</p><p>{format(new Date(showDetail.checkOutDate), 'EEE d MMM, yyyy')}</p></div><div><p className="text-xs text-outline">Total Paid</p><p className="font-medium">₦{showDetail.totalAmountPaid?.toLocaleString()}</p></div><div><p className="text-xs text-outline">Payment</p><p>{showDetail.paymentMethod?.replace('_', ' ')}</p></div><div><p className="text-xs text-outline">Source</p><p>{showDetail.bookingSource}</p></div></div>
           <div className="pt-2 border-t border-outline-variant/60"><p className="text-xs font-bold tracking-[0.1em] uppercase text-outline mb-2">Guest Info</p><div className="grid grid-cols-2 gap-3 text-sm">{[
             ['Address', showDetail.guestDetails.address],
             ['Nationality', showDetail.guestDetails.nationality],

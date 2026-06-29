@@ -26,6 +26,17 @@ export interface BranchInfo {
   policies?: BranchPolicies;
 }
 
+export interface ReceiptRoomEntry {
+  roomId: {
+    _id: string;
+    roomNumber: string;
+    roomTypeId?: { _id: string; name: string };
+  };
+  actualPricePerNight: number;
+  totalForRoom: number;
+  maxGuests: number;
+}
+
 export interface ReceiptBooking {
   _id: string;
   bookingReference: string;
@@ -43,14 +54,10 @@ export interface ReceiptBooking {
     gender?: string;
     religion?: string;
   };
-  roomId: {
-    roomNumber: string;
-    roomTypeId?: { name: string };
-  };
+  rooms: ReceiptRoomEntry[];
   numberOfGuests: number;
   checkInDate: string;
   checkOutDate: string;
-  actualPricePerNight: number;
   discount: number;
   discountType?: DiscountTypeType;
   discountPercentage?: number;
@@ -132,6 +139,19 @@ const PRINT_STYLES = `
   .receipt-agreement { font-size: 0.7rem; line-height: 1.45; color: #333; margin-bottom: 0.75rem; }
 `;
 
+function buildRoomRowsHtml(booking: ReceiptBooking, nights: number) {
+  return (booking.rooms || []).map(r => {
+    const roomLabel = `${r.roomId.roomNumber}${r.roomId.roomTypeId ? ` — ${r.roomId.roomTypeId.name}` : ''}`;
+    return `<tr><td>Room ${roomLabel}</td><td>\u20A6${r.actualPricePerNight.toLocaleString()} \u00D7 ${nights} night${nights > 1 ? 's' : ''}</td><td>\u20A6${r.totalForRoom.toLocaleString()}</td></tr>`;
+  }).join('');
+}
+
+function buildRoomsListHtml(booking: ReceiptBooking) {
+  return (booking.rooms || []).map(r =>
+    `<p class="receipt-value">${r.roomId.roomNumber}${r.roomId.roomTypeId ? ` <span style="font-size:0.65rem;color:#888">${r.roomId.roomTypeId.name}</span>` : ''}</p>`
+  ).join('');
+}
+
 function buildPrintHtml({
   booking, branch, receptionistName, nights, subtotal, p,
 }: {
@@ -144,6 +164,9 @@ function buildPrintHtml({
   const statusLabel = booking.bookingStatus === 'checked_in' ? 'CHECKED IN'
     : booking.bookingStatus === 'checked_out' ? 'CHECKED OUT'
     : booking.bookingStatus === 'cancelled' ? 'CANCELLED' : 'CONFIRMED';
+
+  const roomRowsHtml = buildRoomRowsHtml(booking, nights);
+  const roomsHtml = buildRoomsListHtml(booking);
 
   return `<html><head><meta charset="utf-8"><title>Booking Receipt - ${booking.bookingReference}</title>
 <style>${PRINT_STYLES}</style></head><body>
@@ -168,17 +191,17 @@ function buildPrintHtml({
 </div>
 <div class="receipt-section-title">Stay Details</div>
 <div class="receipt-grid-3">
-  <div><p class="receipt-label">Room</p><p class="receipt-value">${booking.roomId.roomNumber}</p>${booking.roomId.roomTypeId ? `<p style="font-size:0.65rem;color:#888">${booking.roomId.roomTypeId.name}</p>` : ''}</div>
+  <div><p class="receipt-label">Rooms</p>${roomsHtml}</div>
   <div><p class="receipt-label">Check-in</p><p class="receipt-value">${fmtDate(booking.checkInDate)}</p><p style="font-size:0.65rem;color:#888">from ${p.checkInTime || '14:00'}</p></div>
   <div><p class="receipt-label">Check-out</p><p class="receipt-value">${fmtDate(booking.checkOutDate)}</p><p style="font-size:0.65rem;color:#888">by ${p.checkOutTime || '12:00'}</p></div>
 </div>
 <div class="receipt-section-title">Payment Summary</div>
 <table class="receipt-table">
-  <thead><tr><th>Description</th><th>Amount</th></tr></thead>
+  <thead><tr><th>Description</th><th>Rate</th><th>Amount</th></tr></thead>
   <tbody>
-    <tr><td>Room Charge (\u20A6${booking.actualPricePerNight.toLocaleString()} \u00D7 ${nights} night${nights > 1 ? 's' : ''})</td><td>\u20A6${subtotal.toLocaleString()}</td></tr>
-    ${booking.discount > 0 ? `<tr><td>Discount${booking.discountPercentage ? ` (${booking.discountPercentage}%)` : ''}${booking.discountReason ? ` - ${booking.discountReason}` : ''}</td><td>-\u20A6${booking.discount.toLocaleString()}</td></tr>` : ''}
-    <tr class="receipt-total-row"><td>Total Paid</td><td>\u20A6${booking.totalAmountPaid.toLocaleString()}</td></tr>
+    ${roomRowsHtml}
+    ${booking.discount > 0 ? `<tr><td>Discount${booking.discountPercentage ? ` (${booking.discountPercentage}%)` : ''}${booking.discountReason ? ` - ${booking.discountReason}` : ''}</td><td></td><td>-\u20A6${booking.discount.toLocaleString()}</td></tr>` : ''}
+    <tr class="receipt-total-row"><td colspan="2">Total Paid</td><td>\u20A6${booking.totalAmountPaid.toLocaleString()}</td></tr>
   </tbody>
 </table>
 <div class="receipt-grid-2" style="margin-top:0.35rem">
@@ -215,7 +238,7 @@ ${p.additionalNotes ? `<p class="receipt-label">Additional Notes</p><p class="re
 export function BookingReceipt({ booking, branch, receptionistName }: BookingReceiptProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
   const nights = calculateNights(booking.checkInDate, booking.checkOutDate);
-  const subtotal = booking.actualPricePerNight * nights;
+  const subtotal = (booking.rooms || []).reduce((sum, r) => sum + (r.totalForRoom || r.actualPricePerNight * nights), 0);
   const p = branch.policies || {};
 
   const handlePrint = useCallback(() => {
@@ -336,9 +359,13 @@ export function BookingReceipt({ booking, branch, receptionistName }: BookingRec
         <div className="receipt-section-title">Stay Details</div>
         <div className="receipt-grid-3">
           <div>
-            <p className="receipt-label">Room</p>
-            <p className="receipt-value">{booking.roomId.roomNumber}</p>
-            {booking.roomId.roomTypeId && <p style={{ fontSize: '0.65rem', color: '#888' }}>{booking.roomId.roomTypeId.name}</p>}
+            <p className="receipt-label">Rooms</p>
+            {(booking.rooms || []).map((r, i) => (
+              <div key={i}>
+                <p className="receipt-value">{r.roomId.roomNumber}</p>
+                {r.roomId.roomTypeId && <p style={{ fontSize: '0.65rem', color: '#888' }}>{r.roomId.roomTypeId.name}</p>}
+              </div>
+            ))}
           </div>
           <div>
             <p className="receipt-label">Check-in</p>
@@ -357,14 +384,18 @@ export function BookingReceipt({ booking, branch, receptionistName }: BookingRec
           <thead>
             <tr>
               <th>Description</th>
+              <th>Rate</th>
               <th>Amount</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>Room Charge (₦{booking.actualPricePerNight.toLocaleString()} × {nights} night{nights > 1 ? 's' : ''})</td>
-              <td>₦{subtotal.toLocaleString()}</td>
-            </tr>
+            {(booking.rooms || []).map((r, i) => (
+              <tr key={i}>
+                <td>Room {r.roomId.roomNumber}{r.roomId.roomTypeId ? ` — ${r.roomId.roomTypeId.name}` : ''}</td>
+                <td>₦{r.actualPricePerNight.toLocaleString()} × {nights} night{nights > 1 ? 's' : ''}</td>
+                <td>₦{r.totalForRoom.toLocaleString()}</td>
+              </tr>
+            ))}
             {booking.discount > 0 && (
               <tr>
                 <td>
@@ -372,11 +403,12 @@ export function BookingReceipt({ booking, branch, receptionistName }: BookingRec
                   {booking.discountPercentage ? ` (${booking.discountPercentage}%)` : ''}
                   {booking.discountReason ? ` - ${booking.discountReason}` : ''}
                 </td>
+                <td></td>
                 <td>-₦{booking.discount.toLocaleString()}</td>
               </tr>
             )}
             <tr className="receipt-total-row">
-              <td>Total Paid</td>
+              <td colSpan={2}>Total Paid</td>
               <td>₦{booking.totalAmountPaid.toLocaleString()}</td>
             </tr>
           </tbody>

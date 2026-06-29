@@ -6,7 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectModel, InjectConnection } from '@nestjs/mongoose';
-import { Model, Connection } from 'mongoose';
+import { Model, Connection, Types } from 'mongoose';
 import { Booking } from './booking.schema';
 import { Room, RoomStatusEnum } from '../rooms/room.schema';
 import { RoomType } from '../room-types/room-type.schema';
@@ -46,7 +46,7 @@ export class BookingsService {
     await this.breakfastLogModel.create({
       branchId: booking.branchId,
       bookingId: booking._id,
-      roomId: booking.roomId,
+      roomId: booking.rooms[0].roomId,
       guestName: booking.guestDetails.name,
       dateServed: new Date(),
       servingsClaimed: 0,
@@ -74,7 +74,7 @@ export class BookingsService {
           checkInDate: { $lt: endOfMonth },
           checkOutDate: { $gt: startOfMonth },
         })
-        .populate('roomId')
+        .populate('rooms.roomId')
         .lean(),
     ]);
 
@@ -107,7 +107,7 @@ export class BookingsService {
     const [items, total] = await Promise.all([
       this.bookingModel
         .find(filter)
-        .populate('roomId')
+        .populate('rooms.roomId')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -121,7 +121,7 @@ export class BookingsService {
   async findOne(id: string, branchId: string) {
     return this.bookingModel
       .findOne({ _id: id, branchId })
-      .populate('roomId')
+      .populate('rooms.roomId')
       .populate('bookedBy', 'firstName lastName')
       .populate('checkedInBy', 'firstName lastName')
       .populate('checkedOutBy', 'firstName lastName')
@@ -152,36 +152,8 @@ export class BookingsService {
         discountCodeDoc = await this.discountCodesService.validate(dto.discountCode, branchId);
       }
 
-      const room = await this.roomModel.findById(dto.roomId).session(session);
-      if (!room || !room.isActive) {
-        this.logger.warn(`Room not found or inactive — roomId: ${dto.roomId}`);
-        throw new BadRequestException('Room not found or inactive.');
-      }
       const targetStatus = dto.bookingStatus || BookingStatus.Checked_In;
       const isImmediateCheckIn = targetStatus === BookingStatus.Checked_In;
-
-      if (isImmediateCheckIn) {
-        if ((room.status as string) !== RoomStatusEnum.AVAILABLE) {
-          this.logger.warn(`Room status mismatch — room ${room.roomNumber} is "${room.status}", cannot book`);
-          throw new BadRequestException(`Room is currently "${room.status}" — cannot book.`);
-        }
-      }
-
-      const typeConfig = await this.roomTypeModel.findById(room.roomTypeId).session(session);
-      if (!typeConfig) {
-        throw new BadRequestException('Room type configuration not found.');
-      }
-
-      if (dto.actualPricePerNight < typeConfig.minPriceAllowed) {
-        throw new BadRequestException(
-          `Price violation. Minimum floor limit: ₦${typeConfig.minPriceAllowed}`,
-        );
-      }
-      if (dto.actualPricePerNight > typeConfig.basePrice) {
-        throw new BadRequestException(
-          `Price violation. Maximum allowed: ₦${typeConfig.basePrice}`,
-        );
-      }
 
       const nights = Math.ceil(
         (new Date(dto.checkOutDate).getTime() - new Date(dto.checkInDate).getTime()) / (1000 * 60 * 60 * 24),
@@ -190,7 +162,72 @@ export class BookingsService {
         throw new BadRequestException('Stay must be at least 1 night.');
       }
 
-      const subtotal = dto.actualPricePerNight * nights;
+      const roomEntries: Array<{
+        roomId: Types.ObjectId;
+        roomTypeId: Types.ObjectId;
+        actualPricePerNight: number;
+        totalForRoom: number;
+        maxGuests: number;
+      }> = [];
+
+      for (const roomDto of dto.rooms) {
+        const room = await this.roomModel.findById(roomDto.roomId).session(session);
+        if (!room || !room.isActive) {
+          this.logger.warn(`Room not found or inactive — roomId: ${roomDto.roomId}`);
+          throw new BadRequestException(`Room ${roomDto.roomId} not found or inactive.`);
+        }
+
+        if (isImmediateCheckIn) {
+          if ((room.status as string) !== RoomStatusEnum.AVAILABLE) {
+            this.logger.warn(`Room status mismatch — room ${room.roomNumber} is "${room.status}", cannot book`);
+            throw new BadRequestException(`Room ${room.roomNumber} is currently "${room.status}" — cannot book.`);
+          }
+        } else if ((room.status as string) === RoomStatusEnum.MAINTENANCE) {
+          this.logger.warn(`Room ${room.roomNumber} is under maintenance, cannot reserve`);
+          throw new BadRequestException(`Room ${room.roomNumber} is under maintenance — cannot book.`);
+        }
+
+        const typeConfig = await this.roomTypeModel.findById(room.roomTypeId).session(session);
+        if (!typeConfig) {
+          throw new BadRequestException('Room type configuration not found.');
+        }
+
+        if (roomDto.actualPricePerNight < typeConfig.minPriceAllowed) {
+          throw new BadRequestException(
+            `Price violation for room ${room.roomNumber}. Minimum floor limit: ₦${typeConfig.minPriceAllowed}`,
+          );
+        }
+        if (roomDto.actualPricePerNight > typeConfig.basePrice) {
+          throw new BadRequestException(
+            `Price violation for room ${room.roomNumber}. Maximum allowed: ₦${typeConfig.basePrice}`,
+          );
+        }
+
+        const dateConflict = await this.bookingModel
+          .findOne({
+            'rooms.roomId': roomDto.roomId,
+            bookingStatus: { $in: [BookingStatus.Reserved, BookingStatus.Confirmed, BookingStatus.Checked_In] },
+            $or: [
+              { checkInDate: { $lt: new Date(dto.checkOutDate) }, checkOutDate: { $gt: new Date(dto.checkInDate) } },
+            ],
+          })
+          .session(session);
+
+        if (dateConflict) {
+          this.logger.warn(`Booking conflict — Room ${room.roomNumber} already booked for these dates`);
+          throw new ConflictException(`Room ${room.roomNumber} conflict detected. This room is already reserved.`);
+        }
+
+        roomEntries.push({
+          roomId: room._id as any,
+          roomTypeId: room.roomTypeId as any,
+          actualPricePerNight: roomDto.actualPricePerNight,
+          totalForRoom: roomDto.actualPricePerNight * nights,
+          maxGuests: roomDto.maxGuests,
+        });
+      }
+
+      const subtotal = roomEntries.reduce((sum, r) => sum + r.totalForRoom, 0);
       const pct = dto.discountPercentage || 0;
       if (pct < 0 || pct > 100) {
         throw new BadRequestException('Discount percentage must be between 0 and 100.');
@@ -200,23 +237,8 @@ export class BookingsService {
 
       if (Math.abs(dto.totalAmountPaid - computedTotal) > 1) {
         throw new BadRequestException(
-          `Price mismatch. Expected ₦${computedTotal} (₦${dto.actualPricePerNight} × ${nights} nights${pct > 0 ? ` − ${pct}% discount` : ''}), got ₦${dto.totalAmountPaid}`,
+          `Price mismatch. Expected ₦${computedTotal} (₦${roomEntries.map(r => `${r.actualPricePerNight}×${nights}`).join(' + ')}${pct > 0 ? ` − ${pct}% discount` : ''}), got ₦${dto.totalAmountPaid}`,
         );
-      }
-
-      const dateConflict = await this.bookingModel
-        .findOne({
-          roomId: dto.roomId,
-          bookingStatus: { $in: [BookingStatus.Reserved, BookingStatus.Confirmed, BookingStatus.Checked_In] },
-          $or: [
-            { checkInDate: { $lt: new Date(dto.checkOutDate) }, checkOutDate: { $gt: new Date(dto.checkInDate) } },
-          ],
-        })
-        .session(session);
-
-      if (dateConflict) {
-        this.logger.warn(`Booking conflict — Room ${room.roomNumber} already booked for these dates`);
-        throw new ConflictException('Room conflict detected. This room is already reserved.');
       }
 
       const ref = `CDA-${branchId.slice(-4).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
@@ -309,13 +331,12 @@ export class BookingsService {
           {
             bookingReference: ref,
             branchId,
-            roomId: dto.roomId,
+            rooms: roomEntries,
             customerId,
             guestDetails,
             numberOfGuests: dto.numberOfGuests || 1,
             checkInDate: new Date(dto.checkInDate),
             checkOutDate: new Date(dto.checkOutDate),
-            actualPricePerNight: dto.actualPricePerNight,
             discount: computedDiscount,
             discountPercentage: pct,
             discountReason: dto.discountReason,
@@ -341,9 +362,12 @@ export class BookingsService {
       );
 
       if (isImmediateCheckIn) {
-        room.status = RoomStatusEnum.OCCUPIED as any;
-        room.updatedBy = actorId as any;
-        await room.save({ session });
+        for (const entry of roomEntries) {
+          await this.roomModel.updateOne(
+            { _id: entry.roomId },
+            { $set: { status: RoomStatusEnum.OCCUPIED, updatedBy: actorId } },
+          ).session(session);
+        }
       }
 
       await this.customerModel.updateOne(
@@ -365,7 +389,7 @@ export class BookingsService {
         await this.discountCodesService.consume(discountCodeDoc._id);
       }
 
-      this.logger.log(`Booking created — #${newBooking.bookingReference} | Room ${room.roomNumber} | Guest ${guestDetails.name} | by ${actorId}`);
+      this.logger.log(`Booking created — #${newBooking.bookingReference} | ${roomEntries.length} room(s) | Guest ${guestDetails.name} | by ${actorId}`);
       return newBooking;
     } catch (error) {
       await session.abortTransaction();
@@ -389,7 +413,6 @@ export class BookingsService {
     const today = new Date();
     const checkIn = new Date(booking.checkInDate);
     const checkOut = new Date(booking.checkOutDate);
-    // normalize to start of day for fair comparison
     const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const checkInStart = new Date(checkIn.getFullYear(), checkIn.getMonth(), checkIn.getDate());
     const checkOutStart = new Date(checkOut.getFullYear(), checkOut.getMonth(), checkOut.getDate());
@@ -399,14 +422,17 @@ export class BookingsService {
       throw new BadRequestException('Booking check-in date does not match today. Cannot check in outside the booking date range.');
     }
 
-    const room = await this.roomModel.findById(booking.roomId);
-    if (!room) {
-      this.logger.warn(`Room not found — roomId: ${booking.roomId}`);
-      throw new BadRequestException('Room not found.');
+    const roomIds = booking.rooms.map(r => r.roomId);
+    const rooms = await this.roomModel.find({ _id: { $in: roomIds } });
+    if (rooms.length !== roomIds.length) {
+      this.logger.warn(`Some rooms not found for booking ${id}`);
+      throw new BadRequestException('One or more rooms not found.');
     }
-    if (room.status as string !== RoomStatusEnum.AVAILABLE) {
-      this.logger.warn(`Room status mismatch — room ${room.roomNumber} is "${room.status}", cannot check in`);
-      throw new BadRequestException(`Room is currently "${room.status}" — cannot check in.`);
+    for (const room of rooms) {
+      if (room.status as string !== RoomStatusEnum.AVAILABLE) {
+        this.logger.warn(`Room status mismatch — room ${room.roomNumber} is "${room.status}", cannot check in`);
+        throw new BadRequestException(`Room ${room.roomNumber} is currently "${room.status}" — cannot check in.`);
+      }
     }
 
     const session = await this.connection.startSession();
@@ -424,16 +450,18 @@ export class BookingsService {
       booking.checkedInAt = new Date();
       await booking.save({ session });
 
-      room.status = RoomStatusEnum.OCCUPIED as any;
-      room.updatedBy = actorId as any;
-      await room.save({ session });
+      for (const room of rooms) {
+        room.status = RoomStatusEnum.OCCUPIED as any;
+        room.updatedBy = actorId as any;
+        await room.save({ session });
+      }
 
       await session.commitTransaction();
       await this.redis.invalidateDashboardCache(branchId);
 
       await this.expireBreakfastIfNeeded(booking, actorId);
 
-      this.logger.log(`Check-in — #${booking.bookingReference} | Room ${room.roomNumber} | Guest ${booking.guestDetails.name} | by ${actorId}`);
+      this.logger.log(`Check-in — #${booking.bookingReference} | ${rooms.length} room(s) | Guest ${booking.guestDetails.name} | by ${actorId}`);
       return booking;
     } catch (error) {
       await session.abortTransaction();
@@ -454,14 +482,17 @@ export class BookingsService {
       throw new BadRequestException(`Cannot check out a ${booking.bookingStatus} booking.`);
     }
 
-    const room = await this.roomModel.findById(booking.roomId);
-    if (!room) {
-      this.logger.warn(`Room not found — roomId: ${booking.roomId}`);
-      throw new BadRequestException('Room not found.');
+    const roomIds = booking.rooms.map(r => r.roomId);
+    const rooms = await this.roomModel.find({ _id: { $in: roomIds } });
+    if (rooms.length !== roomIds.length) {
+      this.logger.warn(`Some rooms not found for booking ${id}`);
+      throw new BadRequestException('One or more rooms not found.');
     }
-    if (room.status as string !== RoomStatusEnum.OCCUPIED) {
-      this.logger.warn(`Room status mismatch — room ${room.roomNumber} is "${room.status}", cannot check out`);
-      throw new BadRequestException(`Room is currently "${room.status}" — cannot check out.`);
+    for (const room of rooms) {
+      if (room.status as string !== RoomStatusEnum.OCCUPIED) {
+        this.logger.warn(`Room status mismatch — room ${room.roomNumber} is "${room.status}", cannot check out`);
+        throw new BadRequestException(`Room ${room.roomNumber} is currently "${room.status}" — cannot check out.`);
+      }
     }
 
     const session = await this.connection.startSession();
@@ -479,13 +510,15 @@ export class BookingsService {
       booking.checkedOutAt = new Date();
       await booking.save({ session });
 
-      room.status = RoomStatusEnum.DIRTY as any;
-      room.updatedBy = actorId as any;
-      await room.save({ session });
+      for (const room of rooms) {
+        room.status = RoomStatusEnum.DIRTY as any;
+        room.updatedBy = actorId as any;
+        await room.save({ session });
+      }
 
       await session.commitTransaction();
       await this.redis.invalidateDashboardCache(branchId);
-      this.logger.log(`Check-out — #${booking.bookingReference} | Room ${room.roomNumber} | Guest ${booking.guestDetails.name} | by ${actorId}`);
+      this.logger.log(`Check-out — #${booking.bookingReference} | ${rooms.length} room(s) | Guest ${booking.guestDetails.name} | by ${actorId}`);
       return booking;
     } catch (error) {
       await session.abortTransaction();
@@ -507,16 +540,19 @@ export class BookingsService {
     }
 
     const wasCheckedIn = booking.bookingStatus === BookingStatus.Checked_In;
-    let room: Room | null = null;
+    let rooms: Room[] = [];
     if (wasCheckedIn) {
-      room = await this.roomModel.findById(booking.roomId);
-      if (!room) {
-        this.logger.warn(`Room not found — roomId: ${booking.roomId}`);
-        throw new BadRequestException('Room not found.');
+      const roomIds = booking.rooms.map(r => r.roomId);
+      rooms = await this.roomModel.find({ _id: { $in: roomIds } });
+      if (rooms.length !== roomIds.length) {
+        this.logger.warn(`Some rooms not found for booking ${id}`);
+        throw new BadRequestException('One or more rooms not found.');
       }
-      if (room.status as string !== RoomStatusEnum.OCCUPIED) {
-        this.logger.warn(`Room status mismatch — room ${room.roomNumber} is "${room.status}", cannot release`);
-        throw new BadRequestException(`Room is currently "${room.status}" — cannot release.`);
+      for (const room of rooms) {
+        if (room.status as string !== RoomStatusEnum.OCCUPIED) {
+          this.logger.warn(`Room status mismatch — room ${room.roomNumber} is "${room.status}", cannot release`);
+          throw new BadRequestException(`Room ${room.roomNumber} is currently "${room.status}" — cannot release.`);
+        }
       }
     }
 
@@ -535,15 +571,18 @@ export class BookingsService {
       booking.checkedOutBy = actorId as any;
       await booking.save({ session });
 
-      if (wasCheckedIn && room) {
-        room.status = RoomStatusEnum.AVAILABLE as any;
-        room.updatedBy = actorId as any;
-        await room.save({ session });
+      if (wasCheckedIn) {
+        for (const room of rooms) {
+          room.status = RoomStatusEnum.AVAILABLE as any;
+          room.updatedBy = actorId as any;
+          await room.save({ session });
+        }
       }
 
       await session.commitTransaction();
       await this.redis.invalidateDashboardCache(branchId);
-      this.logger.log(`Booking cancelled — #${booking.bookingReference} | Room ${room?.roomNumber ?? 'N/A'} | Guest ${booking.guestDetails.name} | by ${actorId}`);
+      const roomNums = rooms.map(r => r.roomNumber).join(', ') || 'N/A';
+      this.logger.log(`Booking cancelled — #${booking.bookingReference} | Room(s) ${roomNums} | Guest ${booking.guestDetails.name} | by ${actorId}`);
       return booking;
     } catch (error) {
       await session.abortTransaction();

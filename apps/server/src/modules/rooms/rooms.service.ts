@@ -31,7 +31,7 @@ export class RoomsService {
           { checkInDate: { $lt: checkOut }, checkOutDate: { $gt: checkIn } },
         ],
       })
-      .distinct('roomId');
+      .distinct('rooms.roomId');
 
     return this.roomModel
       .find({

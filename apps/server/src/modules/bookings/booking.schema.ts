@@ -14,8 +14,27 @@ export class Booking extends Document {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Branch', required: true })
   branchId: MongooseSchema.Types.ObjectId;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Room', required: true })
-  roomId: MongooseSchema.Types.ObjectId;
+  @Prop({
+    type: [{
+      roomId: { type: MongooseSchema.Types.ObjectId, ref: 'Room', required: true },
+      roomTypeId: { type: MongooseSchema.Types.ObjectId, ref: 'RoomType', required: true },
+      actualPricePerNight: { type: Number, required: true },
+      totalForRoom: { type: Number, required: true },
+      maxGuests: { type: Number, required: true },
+    }],
+    required: true,
+    validate: {
+      validator: (v: any[]) => v.length > 0,
+      message: 'At least one room is required.',
+    },
+  })
+  rooms: Array<{
+    roomId: MongooseSchema.Types.ObjectId;
+    roomTypeId: MongooseSchema.Types.ObjectId;
+    actualPricePerNight: number;
+    totalForRoom: number;
+    maxGuests: number;
+  }>;
 
   @Prop({
     type: {
@@ -59,9 +78,6 @@ export class Booking extends Document {
 
   @Prop({ required: true })
   checkOutDate: Date;
-
-  @Prop({ required: true })
-  actualPricePerNight: number;
 
   @Prop({ default: 0 })
   discount: number;

@@ -591,9 +591,17 @@ export class SeedService  {
       const guestPhone = Math.random() > 0.6 ? pick(customerPhones) : `0803${String(randInt(1000000, 9999999)).padStart(7, '0')}`;
       const hasEmail = Math.random() > 0.5;
 
+      const totalForRoom = Math.max(0, pricePerNight * nights);
+
       bookingData.push({
         branchId: room.branchId,
-        roomId: room._id,
+        rooms: [{
+          roomId: room._id,
+          roomTypeId: room.roomTypeId,
+          actualPricePerNight: pricePerNight,
+          totalForRoom,
+          maxGuests: room.maxGuests,
+        }],
         guestDetails: {
           name: guestName,
           phone: guestPhone,
@@ -609,7 +617,6 @@ export class SeedService  {
         numberOfGuests: randInt(1, room.maxGuests),
         checkInDate: ci,
         checkOutDate: co,
-        actualPricePerNight: pricePerNight,
         discount: discount,
         discountPercentage: discountPct,
         totalAmountPaid: total,

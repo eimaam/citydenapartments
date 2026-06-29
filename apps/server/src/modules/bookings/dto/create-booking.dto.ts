@@ -9,13 +9,31 @@ import {
   IsNotEmpty,
   Min,
   Max,
+  ArrayMinSize,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { PaymentMethod, BookingStatus, BookingSource } from '../booking.schema';
 import { Gender, BookingStatus as BookingStatusEnum, PaymentMethod as PaymentMethodEnum, BookingSource as BookingSourceEnum } from '@citydenapartments/shared';
 
-export class CreateBookingDto {
+export class CreateRoomBookingDto {
   @IsMongoId()
   roomId: string;
+
+  @IsNumber()
+  @Min(0)
+  actualPricePerNight: number;
+
+  @IsNumber()
+  @Min(1)
+  maxGuests: number;
+}
+
+export class CreateBookingDto {
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => CreateRoomBookingDto)
+  rooms: CreateRoomBookingDto[];
 
   @IsOptional()
   @IsMongoId()
@@ -86,15 +104,6 @@ export class CreateBookingDto {
 
   @IsDateString()
   checkOutDate: string;
-
-  @IsNumber()
-  @Min(0)
-  actualPricePerNight: number;
-
-  // @IsNumber()
-  // @Min(0)
-  // @IsOptional()
-  // discount?: number;
 
   @IsOptional()
   @IsNumber()

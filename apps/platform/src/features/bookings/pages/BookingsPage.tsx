@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef, type FormEvent } from 'react';
-import { Plus, Search, Banknote, CreditCard, Building2, Users, Calendar, Copy, Check, Printer, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Search, Banknote, CreditCard, Building2, Users, Calendar, Copy, Check, Printer, ChevronDown, ChevronRight, X } from 'lucide-react';
 import { format, addDays, differenceInDays } from 'date-fns';
 import { getAllStates } from 'ng-geo-data';
 import {
@@ -18,7 +18,6 @@ import { bookingsApi, type BookingResponse, type CreateBookingPayload } from '..
 import { roomsApi, type RoomResponse } from '../../rooms/api/rooms.api';
 import { customersApi, type CustomerResponse } from '../api/customers.api';
 import { roomTypesApi, type RoomTypeResponse } from '../../room-types/api/room-types.api';
-import { RoomTypeSelector } from '../../../components/ui/RoomTypeSelector';
 import { discountCodesApi } from '../../discount-codes/api/discount-codes.api';
 
 const LIMIT = 20;
@@ -54,6 +53,12 @@ function toDateStr(d: Date) { return format(d, 'yyyy-MM-dd'); }
 function todayStr() { return toDateStr(new Date()); }
 function tomorrowStr() { return toDateStr(addDays(new Date(), 1)); }
 
+interface RoomSelection {
+  roomId: string;
+  actualPricePerNight: number;
+  maxGuests: number;
+}
+
 interface PaginatedData {
   items: BookingResponse[];
   total: number;
@@ -85,21 +90,21 @@ export default function BookingsPage() {
   const [loadingReceipt, setLoadingReceipt] = useState(false);
 
   const [form, setForm] = useState<{
-    roomId: string; guestName: string; guestPhone: string; guestEmail: string;
+    rooms: RoomSelection[]; guestName: string; guestPhone: string; guestEmail: string;
     guestAddress: string; guestNationality: string; guestDob: string; guestPhone2: string;
     guestComingFrom: string; guestStateOfOrigin: string; guestOccupation: string;
     guestNextDestination: string; guestGender: string; guestReligion: string;
     numberOfGuests: number; checkInDate: string; nights: number; checkOutDate: string;
-    useNights: boolean; actualPricePerNight: number; discountPercentage: number; totalAmountPaid: number;
+    useNights: boolean; discountPercentage: number; totalAmountPaid: number;
     paymentMethod: PaymentMethodType; bookingSource: BookingSourceType;
   }>({
-    roomId: '', guestName: '', guestPhone: '', guestEmail: '',
+    rooms: [], guestName: '', guestPhone: '', guestEmail: '',
     guestAddress: '', guestNationality: '', guestDob: '', guestPhone2: '',
     guestComingFrom: '', guestStateOfOrigin: '', guestOccupation: '',
     guestNextDestination: '', guestGender: '', guestReligion: '',
     numberOfGuests: 1,
     checkInDate: todayStr(), nights: 1, checkOutDate: tomorrowStr(), useNights: true,
-    actualPricePerNight: 0,  discountPercentage: 0, totalAmountPaid: 0,
+    discountPercentage: 0, totalAmountPaid: 0,
     paymentMethod: PaymentMethod.Cash, bookingSource: BookingSource.WalkIn,
   });
   const [phoneError, setPhoneError] = useState<string | null>(null);
@@ -127,11 +132,9 @@ export default function BookingsPage() {
     </button>
   );
 
-  const selectedRoom = useMemo(() => rooms.find((r) => r._id === form.roomId), [rooms, form.roomId]);
   const computedNights = useMemo(() => {
     if (!form.checkInDate || !form.checkOutDate) return 1;
-    const diff = Math.max(1, differenceInDays(new Date(form.checkOutDate), new Date(form.checkInDate)));
-    return diff;
+    return Math.max(1, differenceInDays(new Date(form.checkOutDate), new Date(form.checkInDate)));
   }, [form.checkInDate, form.checkOutDate]);
 
   // ── fetch ──────────────────────────────────────────────────────
@@ -146,10 +149,8 @@ export default function BookingsPage() {
 
   useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
-  // reset to page 1 when filter/search changes
   useEffect(() => { setPage(1); }, [statusFilter, search]);
 
-  // debounced search
   const onSearchChange = (val: string) => {
     setSearchInput(val);
     clearTimeout(searchTimer.current);
@@ -177,9 +178,7 @@ export default function BookingsPage() {
   const openCreate = async () => {
     const ci = todayStr();
     const co = tomorrowStr();
-    updateField('checkInDate', ci);
-    updateField('checkOutDate', co);
-    updateField('nights', 1);
+    setForm((prev) => ({ ...prev, checkInDate: ci, checkOutDate: co, nights: 1, rooms: [] }));
     setCustomerSearchPhone('');
     setCustomerResults([]);
     setSelectedCustomer(null);
@@ -190,51 +189,88 @@ export default function BookingsPage() {
 
   const updateField = (field: string, value: unknown) => setForm((prev) => ({ ...prev, [field]: value }));
 
-  const onRoomChange = (roomId: string) => {
-    updateField('roomId', roomId);
-    if (!roomId) {
-      updateField('actualPricePerNight', 0);
-      updateField('totalAmountPaid', 0);
-      setPriceError(null);
-      return;
-    }
-    const room = rooms.find((r) => r._id === roomId);
-    const roomType = roomTypes.find((rt) => rt._id === room?.roomTypeId?._id);
-    const price = roomType?.basePrice ?? 0;
-    const nights = form.useNights ? form.nights : computedNights;
-    const pct = form.discountPercentage || 0;
-    updateField('actualPricePerNight', price);
-    updateField('totalAmountPaid', Math.max(0, (price * nights) - Math.round((price * nights * pct) / 100)));
-    setPriceError(null);
-  };
-
-  const fetchAvailableRooms = useCallback(async (ci: string, co: string, currentRoomId?: string) => {
+  const fetchAvailableRooms = useCallback(async (ci: string, co: string) => {
     try {
       const fetched = await roomsApi.available(ci, co);
       setRooms(fetched);
-      if (currentRoomId && !fetched.find((r) => r._id === currentRoomId)) {
-        updateField('roomId', '');
-        updateField('actualPricePerNight', 0);
-        updateField('totalAmountPaid', 0);
-      }
     } catch { toast('error', 'Failed to load rooms.'); }
   }, [toast]);
 
-  const onNightsChange = (n: number) => { const nights = Math.max(1, n); let co = addDays(new Date(form.checkInDate), nights); updateField('nights', nights); updateField('checkOutDate', toDateStr(co)); recalcTotal(Number(form.actualPricePerNight) || 0, form.discountPercentage, nights); fetchAvailableRooms(form.checkInDate, toDateStr(co), form.roomId); };
-  const onCheckInChange = (date: string) => { updateField('checkInDate', date); const nights = form.useNights ? form.nights : computedNights; let co = addDays(new Date(date), nights); updateField('checkOutDate', toDateStr(co)); fetchAvailableRooms(date, toDateStr(co), form.roomId); };
-  const onCheckOutChange = (date: string) => { updateField('checkOutDate', date); updateField('useNights', false); const nights = Math.max(1, differenceInDays(new Date(date), new Date(form.checkInDate))); updateField('nights', nights); recalcTotal(Number(form.actualPricePerNight) || 0, form.discountPercentage, nights); fetchAvailableRooms(form.checkInDate, date, form.roomId); };
-
-  const recalcTotal = (price: number, pct: number, nights: number) => {
-    const discountAmt = Math.round((price * nights * pct) / 100);
-    updateField('totalAmountPaid', Math.max(0, (price * nights) - discountAmt));
+  const addRoom = () => {
+    setForm((prev) => ({
+      ...prev,
+      rooms: [...prev.rooms, { roomId: '', actualPricePerNight: 0, maxGuests: 1 }],
+    }));
   };
-  const onPriceChange = (price: number) => { updateField('actualPricePerNight', price); recalcTotal(price, form.discountPercentage, form.useNights ? form.nights : computedNights); };
+
+  const removeRoom = (idx: number) => {
+    setForm((prev) => {
+      const updated = prev.rooms.filter((_, i) => i !== idx);
+      return { ...prev, rooms: updated };
+    });
+    setTimeout(() => recalcAllTotals(), 0);
+  };
+
+  const updateRoom = (idx: number, field: string, value: unknown) => {
+    setForm((prev) => {
+      const updated = prev.rooms.map((r, i) => i === idx ? { ...r, [field]: value } : r);
+      return { ...prev, rooms: updated };
+    });
+  };
+
+  const onRoomSelect = (idx: number, roomId: string) => {
+    const room = rooms.find((r) => r._id === roomId);
+    const roomType = roomTypes.find((rt) => rt._id === room?.roomTypeId?._id);
+    const price = roomType?.basePrice ?? 0;
+    updateRoom(idx, 'roomId', roomId);
+    updateRoom(idx, 'actualPricePerNight', price);
+    setTimeout(() => recalcAllTotals(), 0);
+  };
+
+  const recalcAllTotals = () => {
+    const nights = form.useNights ? form.nights : computedNights;
+    const subtotal = form.rooms.reduce((sum, r) => {
+      const room = rooms.find((x) => x._id === r.roomId);
+      const roomType = roomTypes.find((rt) => rt._id === room?.roomTypeId?._id);
+      const price = r.actualPricePerNight || roomType?.basePrice || 0;
+      return sum + price * nights;
+    }, 0);
+    const pct = form.discountPercentage || 0;
+    const discountAmt = Math.round((subtotal * pct) / 100);
+    updateField('totalAmountPaid', Math.max(0, subtotal - discountAmt));
+  };
+
+  const onNightsChange = (n: number) => {
+    const nights = Math.max(1, n);
+    const co = addDays(new Date(form.checkInDate), nights);
+    updateField('nights', nights);
+    updateField('checkOutDate', toDateStr(co));
+    recalcAllTotals();
+    fetchAvailableRooms(form.checkInDate, toDateStr(co));
+  };
+
+  const onCheckInChange = (date: string) => {
+    updateField('checkInDate', date);
+    const nights = form.useNights ? form.nights : computedNights;
+    const co = addDays(new Date(date), nights);
+    updateField('checkOutDate', toDateStr(co));
+    fetchAvailableRooms(date, toDateStr(co));
+  };
+
+  const onCheckOutChange = (date: string) => {
+    updateField('checkOutDate', date);
+    updateField('useNights', false);
+    const nights = Math.max(1, differenceInDays(new Date(date), new Date(form.checkInDate)));
+    updateField('nights', nights);
+    recalcAllTotals();
+    fetchAvailableRooms(form.checkInDate, date);
+  };
+
   const onDiscountPctChange = (pct: number) => {
     updateField('discountPercentage', pct);
-    const nights = form.useNights ? form.nights : computedNights;
-    const price = Number(form.actualPricePerNight) || 0;
-    recalcTotal(price, pct, nights);
+    recalcAllTotals();
   };
+
   const onPhoneChange = (phone: string) => { updateField('guestPhone', phone); setPhoneError(validatePhone(phone)); };
 
   const applyDiscountCode = async () => {
@@ -244,9 +280,7 @@ export default function BookingsPage() {
       const result = await discountCodesApi.validate(discountCodeInput.trim());
       setAppliedDiscountCode(result);
       updateField('discountPercentage', result.percentage);
-      const nights = form.useNights ? form.nights : computedNights;
-      const price = Number(form.actualPricePerNight) || 0;
-      recalcTotal(price, result.percentage, nights);
+      recalcAllTotals();
       toast('success', `Discount code applied: ${result.percentage}% off`);
     } catch (e: any) { toast('error', e.message); setAppliedDiscountCode(null); }
     finally { setDiscountCodeLoading(false); }
@@ -256,9 +290,7 @@ export default function BookingsPage() {
     setAppliedDiscountCode(null);
     setDiscountCodeInput('');
     updateField('discountPercentage', 0);
-    const nights = form.useNights ? form.nights : computedNights;
-    const price = Number(form.actualPricePerNight) || 0;
-    recalcTotal(price, 0, nights);
+    recalcAllTotals();
   };
 
   const onCustomerSearchPhoneChange = (phone: string) => {
@@ -296,18 +328,19 @@ export default function BookingsPage() {
 
     const phoneErr = validatePhone(form.guestPhone);
     if (phoneErr) { setPhoneError(phoneErr); return; }
+    if (form.rooms.length === 0) { toast('error', 'At least one room is required.'); return; }
     if (!form.guestGender) { toast('error', 'Gender is required.'); return; }
     if (!form.guestComingFrom.trim()) { toast('error', 'Coming from is required.'); return; }
     if (!form.guestStateOfOrigin.trim()) { toast('error', 'State of origin is required.'); return; }
     if (!form.guestOccupation.trim()) { toast('error', 'Occupation is required.'); return; }
     if (!form.guestNextDestination.trim()) { toast('error', 'Next destination is required.'); return; }
-    const price = Number(form.actualPricePerNight) || 0;
     if (Number(form.totalAmountPaid) <= 0) { toast('error', 'Total amount paid must be greater than zero.'); return; }
     setSubmitting(true);
     try {
       const bookingStatus = form.bookingSource === BookingSource.WalkIn ? BookingStatus.Checked_In : BookingStatus.Reserved;
       const created = await bookingsApi.create({
-        roomId: form.roomId, customerId: selectedCustomer?._id || undefined, customerPhone: form.guestPhone,
+        rooms: form.rooms.map((r) => ({ roomId: r.roomId, actualPricePerNight: r.actualPricePerNight, maxGuests: r.maxGuests })),
+        customerId: selectedCustomer?._id || undefined, customerPhone: form.guestPhone,
         guestName: form.guestName, guestPhone: form.guestPhone, guestEmail: form.guestEmail || undefined,
         guestAddress: form.guestAddress, guestNationality: form.guestNationality,
         guestDob: form.guestDob || undefined, guestPhone2: form.guestPhone2 || undefined,
@@ -315,7 +348,7 @@ export default function BookingsPage() {
         guestOccupation: form.guestOccupation, guestNextDestination: form.guestNextDestination,
         guestGender: form.guestGender, guestReligion: form.guestReligion || undefined,
         numberOfGuests: Number(form.numberOfGuests) || 1, checkInDate: form.checkInDate, checkOutDate: form.checkOutDate,
-        actualPricePerNight: price,         discountPercentage: Number(form.discountPercentage) || 0,
+        discountPercentage: Number(form.discountPercentage) || 0,
         discountCode: appliedDiscountCode?.code,
         totalAmountPaid: Number(form.totalAmountPaid), paymentMethod: form.paymentMethod, bookingSource: form.bookingSource,
         bookingStatus,
@@ -356,16 +389,30 @@ export default function BookingsPage() {
     finally { setLoadingReceipt(false); }
   }, [toast]);
 
+  const renderRoomNumbers = (_: unknown, r: BookingResponse) => {
+    const roomStr = (r.rooms || []).map((rm) => rm.roomId?.roomNumber).filter(Boolean).join(', ');
+    if (roomStr.length > 20) return <span className="text-xs" title={roomStr}>{roomStr.slice(0, 18)}...</span>;
+    return <span className="text-xs">{roomStr || '—'}</span>;
+  };
+
   const columns: TableProps<BookingResponse>['columns'] = [
     { title: 'Reference', dataIndex: 'bookingReference', key: 'ref', width: 120, render: (_: unknown, r: BookingResponse) => <span className="font-mono text-xs">{r.bookingReference?.slice(-8)}</span> },
     { title: 'Guest', key: 'guest', render: (_: unknown, r: BookingResponse) => (<div><p className="font-medium">{r.guestDetails.name}</p><p className="text-xs opacity-60">{r.guestDetails.phone}</p></div>) },
-    { title: 'Room', dataIndex: ['roomId', 'roomNumber'], key: 'room', width: 90, responsive: ['md' as const] },
+    { title: 'Room(s)', key: 'room', width: 110, render: renderRoomNumbers, responsive: ['md' as const] },
     { title: 'Dates', key: 'dates', width: 190, render: (_: unknown, r: BookingResponse) => (<span className="text-xs">{format(new Date(r.checkInDate), 'd MMM')} — {format(new Date(r.checkOutDate), 'd MMM')}</span>) },
     { title: 'Status', dataIndex: 'bookingStatus', key: 'status', width: 120, render: (_: unknown, r: BookingResponse) => <Badge status={r.bookingStatus} /> },
     { title: 'Paid', dataIndex: 'totalAmountPaid', key: 'paid', width: 110, align: 'right' as const, render: (_: unknown, r: BookingResponse) => <span className="font-medium">₦{r.totalAmountPaid?.toLocaleString()}</span> },
   ];
 
-  const formValid = form.roomId && form.guestName && form.guestPhone && form.guestAddress.trim() && form.guestNationality.trim() && !phoneError && !priceError && Number(form.totalAmountPaid) > 0;
+  const nights = form.useNights ? form.nights : computedNights;
+  const subtotal = form.rooms.reduce((sum, r) => {
+    const room = rooms.find((x) => x._id === r.roomId);
+    const roomType = roomTypes.find((rt) => rt._id === room?.roomTypeId?._id);
+    const price = r.actualPricePerNight || roomType?.basePrice || 0;
+    return sum + price * nights;
+  }, 0);
+
+  const formValid = form.rooms.length > 0 && form.rooms.every((r) => r.roomId) && form.guestName && form.guestPhone && form.guestAddress.trim() && form.guestNationality.trim() && !phoneError && !priceError && Number(form.totalAmountPaid) > 0;
 
   return (
     <div className="p-6 md:p-8">
@@ -379,7 +426,6 @@ export default function BookingsPage() {
         </div>
       </div>
 
-      {/* Status tabs */}
       <div className="flex gap-1 mb-6 p-1 rounded bg-surface-container w-fit">
         {statusTabs.map((tab) => (
           <button key={tab.value} onClick={() => setStatusFilter(tab.value)}
@@ -390,7 +436,6 @@ export default function BookingsPage() {
         ))}
       </div>
 
-      {/* Table */}
       <div className="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden">
         <Table<BookingResponse>
           columns={columns}
@@ -410,7 +455,7 @@ export default function BookingsPage() {
       </div>
 
       {/* Create Drawer */}
-      <Drawer open={showCreate} onClose={() => setShowCreate(false)} title="New Booking" width={560}
+      <Drawer open={showCreate} onClose={() => setShowCreate(false)} title="New Booking" width={620}
         footer={<div className="flex justify-end gap-3"><Button variant="secondary" onClick={() => setShowCreate(false)}>Cancel</Button><Button htmlType="submit" form="create-booking-form" disabled={!formValid} loading={submitting}>Create Booking</Button></div>}>
         <form id="create-booking-form" onSubmit={handleCreate}>
           <div className="mb-5"><SectionHeader label="Dates" sectionKey="dates" icon={Calendar} />
@@ -423,9 +468,51 @@ export default function BookingsPage() {
             </>}
           </div>
           <div className="mb-5">
-            <SectionHeader label="Room *" sectionKey="room" icon={undefined} />
-            {!collapsedSections['room'] && <div className="mt-2">
-              <RoomTypeSelector rooms={rooms} allTypes={roomTypes} selectedRoomId={form.roomId} onSelectRoom={(id) => { onRoomChange(id); }} />
+            <SectionHeader label={`Rooms (${form.rooms.length}) *`} sectionKey="room" icon={undefined} />
+            {!collapsedSections['room'] && <div className="mt-2 space-y-3">
+              {form.rooms.map((roomSel, idx) => {
+                const selectedRoom = rooms.find((r) => r._id === roomSel.roomId);
+                const selectedType = roomTypes.find((rt) => rt._id === selectedRoom?.roomTypeId?._id);
+                return (
+                  <div key={idx} className="p-3 rounded-lg border border-outline-variant bg-surface-container-lowest">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-outline uppercase tracking-wide">Room {idx + 1}</span>
+                      {form.rooms.length > 1 && (
+                        <button type="button" onClick={() => removeRoom(idx)} className="text-error hover:text-error/80 cursor-pointer bg-transparent border-none p-0">
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <Select size="lg" className="w-full" placeholder="Select room"
+                        value={roomSel.roomId || undefined}
+                        onChange={(v) => onRoomSelect(idx, v)}>
+                        {rooms.map((r) => {
+                          const rt = roomTypes.find((x) => x._id === r.roomTypeId?._id);
+                          return <Option key={r._id} value={r._id}>{r.roomNumber}{rt ? ` — ${rt.name}` : ''}</Option>;
+                        })}
+                      </Select>
+                      <div>
+                        <span className="text-[10px] text-outline uppercase tracking-wide">Price/Night</span>
+                        <Input size="sm" type="number" min={0} value={roomSel.actualPricePerNight || ''}
+                          onChange={(e) => { updateRoom(idx, 'actualPricePerNight', Number(e.target.value)); setTimeout(() => recalcAllTotals(), 0); }} />
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-outline uppercase tracking-wide">Max Guests</span>
+                        <Input size="sm" type="number" min={1} value={roomSel.maxGuests}
+                          onChange={(e) => updateRoom(idx, 'maxGuests', Number(e.target.value))} />
+                      </div>
+                    </div>
+                    {selectedType && (
+                      <div className="mt-1 text-[10px] text-outline">Base: ₦{selectedType.basePrice.toLocaleString()} | Min: ₦{selectedType.minPriceAllowed.toLocaleString()}</div>
+                    )}
+                  </div>
+                );
+              })}
+              <button type="button" onClick={addRoom}
+                className="w-full py-2 text-xs font-medium text-primary border border-dashed border-primary/40 rounded-lg hover:bg-primary-container/10 cursor-pointer bg-transparent">
+                + Add Room
+              </button>
             </div>}
           </div>
           {/* ── Customer Lookup ── */}
@@ -494,9 +581,23 @@ export default function BookingsPage() {
               </div>
             </div>}
           </div>
-          {selectedRoom && (<div className="p-4 mb-5 rounded-lg border border-outline-variant bg-surface-container">
+          {form.rooms.length > 0 && (<div className="p-4 mb-5 rounded-lg border border-outline-variant bg-surface-container">
             <SectionHeader label="Pricing" sectionKey="pricing" icon={undefined} />
-            {!collapsedSections['pricing'] && <div className="contents"><div className="grid grid-cols-3 gap-3 mt-2"><div><span className="text-[10px] text-outline uppercase tracking-wide">Price / Night<span className="text-error ml-0.5">*</span></span><Input size="sm" type="number" min={0} value={form.actualPricePerNight || ''} onChange={(e) => onPriceChange(Number(e.target.value))} status={priceError ? 'error' : undefined} /></div><div><span className="text-[10px] text-outline uppercase tracking-wide">Discount (%)</span><Input size="sm" type="number" min={0} max={100} step={1} value={form.discountPercentage || ''} onChange={(e) => onDiscountPctChange(Number(e.target.value))} /></div><div><span className="text-[10px] text-outline uppercase tracking-wide">Total Paid<span className="text-error ml-0.5">*</span></span><Input size="sm" type="number" min={1} value={form.totalAmountPaid || ''} onChange={(e) => updateField('totalAmountPaid', Number(e.target.value))} /></div></div>
+            {!collapsedSections['pricing'] && <div className="contents"><div className="grid grid-cols-2 gap-3 mt-2">
+              <div><span className="text-[10px] text-outline uppercase tracking-wide">Discount (%)</span><Input size="sm" type="number" min={0} max={100} step={1} value={form.discountPercentage || ''} onChange={(e) => onDiscountPctChange(Number(e.target.value))} /></div>
+              <div><span className="text-[10px] text-outline uppercase tracking-wide">Total Paid<span className="text-error ml-0.5">*</span></span><Input size="sm" type="number" min={1} value={form.totalAmountPaid || ''} onChange={(e) => updateField('totalAmountPaid', Number(e.target.value))} /></div>
+            </div>
+            {form.rooms.map((r, idx) => {
+              const room = rooms.find((x) => x._id === r.roomId);
+              const roomType = roomTypes.find((rt) => rt._id === room?.roomTypeId?._id);
+              const price = r.actualPricePerNight || roomType?.basePrice || 0;
+              return (
+                <div key={idx} className="flex justify-between text-xs text-outline mt-1">
+                  <span>{room?.roomNumber || `Room ${idx + 1}`}: ₦{price.toLocaleString()} × {nights} night{nights > 1 ? 's' : ''}</span>
+                  <span>₦{(price * nights).toLocaleString()}</span>
+                </div>
+              );
+            })}
   <div className="flex items-center gap-2 mt-3 pt-3 border-t border-outline-variant/60">
     {appliedDiscountCode ? (
       <div className="flex items-center gap-2 flex-1">
@@ -516,7 +617,7 @@ export default function BookingsPage() {
         className="text-xs text-error hover:underline cursor-pointer whitespace-nowrap">Remove</button>
     )}
   </div>
-{priceError && <p className="mt-2 text-xs text-error">{priceError}</p>}<div className="flex flex-wrap gap-4 mt-2 text-[10px] text-outline"><span>Nights: {form.useNights ? form.nights : computedNights}</span><span>Subtotal: ₦{((Number(form.actualPricePerNight) || 0) * (form.useNights ? form.nights : computedNights)).toLocaleString()}</span>{form.discountPercentage > 0 && <span className="text-error">Discount: {form.discountPercentage}%</span>}</div></div>}</div>)}
+{priceError && <p className="mt-2 text-xs text-error">{priceError}</p>}<div className="flex flex-wrap gap-4 mt-2 text-[10px] text-outline"><span>Nights: {nights}</span><span>Subtotal: ₦{subtotal.toLocaleString()}</span>{form.discountPercentage > 0 && <span className="text-error">Discount: {form.discountPercentage}%</span>}</div></div>}</div>)}
           <div className="mb-5"><SectionHeader label="Payment Method *" sectionKey="payment" icon={undefined} />
             {!collapsedSections['payment'] && <div className="grid grid-cols-3 gap-2 mt-1">{paymentMethods.map((pm) => { const Icon = pm.icon; const active = form.paymentMethod === pm.key; return (<button key={pm.key} type="button" onClick={() => updateField('paymentMethod', pm.key)} className="flex flex-col items-center gap-1 p-3 rounded-lg border text-center transition-all cursor-pointer" style={{ borderColor: active ? 'var(--color-primary)' : 'var(--color-outline-variant)', background: active ? 'var(--color-primary-container)/10' : 'var(--color-surface-container-lowest)' }}><Icon size={20} style={{ color: active ? 'var(--color-primary)' : 'var(--color-outline)' }} /><span className="text-xs font-medium" style={{ color: active ? 'var(--color-on-surface)' : 'var(--color-on-surface-variant)' }}>{pm.label}</span><span className="text-[9px] leading-tight" style={{ color: active ? 'var(--color-on-surface-variant)' : 'var(--color-outline)' }}>{pm.desc}</span></button>); })}</div>}</div>
           <div className="mb-5"><SectionHeader label="Source" sectionKey="source" icon={undefined} />
@@ -528,7 +629,15 @@ export default function BookingsPage() {
       <Drawer open={!!showDetail} onClose={() => setShowDetail(null)} title="Booking Details" width={480}>
         {showDetail && (<div className="space-y-5">
           <div className="flex items-center justify-between"><div><p className="text-xs text-outline">Reference</p><div className="flex items-center gap-2"><p className="font-mono font-medium">{showDetail.bookingReference}</p><button onClick={() => { navigator.clipboard.writeText(showDetail.bookingReference); setCopiedRef(true); setTimeout(() => setCopiedRef(false), 2000); }} className="p-0.5 rounded hover:bg-surface-container cursor-pointer bg-transparent border-none text-outline hover:text-primary">{copiedRef ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}</button></div></div><Badge status={showDetail.bookingStatus} /></div>
-          <div className="grid grid-cols-2 gap-4 text-sm"><div><p className="text-xs text-outline">Guest</p><p className="font-medium">{showDetail.guestDetails.name}</p><p className="text-xs">{showDetail.guestDetails.phone}</p>{showDetail.guestDetails.email && <p className="text-xs">{showDetail.guestDetails.email}</p>}</div><div><p className="text-xs text-outline">Room</p><p className="font-medium">{showDetail.roomId?.roomNumber}</p><p className="text-xs">{showDetail.roomId?.roomTypeId?.name}</p></div><div><p className="text-xs text-outline">Check-in</p><p>{format(new Date(showDetail.checkInDate), 'EEE d MMM, yyyy')}</p></div><div><p className="text-xs text-outline">Check-out</p><p>{format(new Date(showDetail.checkOutDate), 'EEE d MMM, yyyy')}</p></div><div><p className="text-xs text-outline">Price/Night</p><p className="font-medium">₦{showDetail.actualPricePerNight?.toLocaleString()}</p></div><div><p className="text-xs text-outline">Total Paid</p><p className="font-medium">₦{showDetail.totalAmountPaid?.toLocaleString()}</p></div><div><p className="text-xs text-outline">Payment</p><p>{showDetail.paymentMethod?.replace('_', ' ')}</p></div><div><p className="text-xs text-outline">Source</p><p>{showDetail.bookingSource}</p></div></div>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div><p className="text-xs text-outline">Guest</p><p className="font-medium">{showDetail.guestDetails.name}</p><p className="text-xs">{showDetail.guestDetails.phone}</p>{showDetail.guestDetails.email && <p className="text-xs">{showDetail.guestDetails.email}</p>}</div>
+            <div><p className="text-xs text-outline">Room(s)</p>{(showDetail.rooms || []).map((r, i) => <div key={i}><p className="font-medium">{r.roomId?.roomNumber}</p><p className="text-xs">{r.roomId?.roomTypeId?.name}</p></div>)}</div>
+            <div><p className="text-xs text-outline">Check-in</p><p>{format(new Date(showDetail.checkInDate), 'EEE d MMM, yyyy')}</p></div>
+            <div><p className="text-xs text-outline">Check-out</p><p>{format(new Date(showDetail.checkOutDate), 'EEE d MMM, yyyy')}</p></div>
+            <div><p className="text-xs text-outline">Total Paid</p><p className="font-medium">₦{showDetail.totalAmountPaid?.toLocaleString()}</p></div>
+            <div><p className="text-xs text-outline">Payment</p><p>{showDetail.paymentMethod?.replace('_', ' ')}</p></div>
+            <div><p className="text-xs text-outline">Source</p><p>{showDetail.bookingSource}</p></div>
+          </div>
           <div className="pt-2 border-t border-outline-variant"><p className="text-xs font-bold tracking-[0.1em] uppercase text-outline mb-2">Guest Info</p><div className="grid grid-cols-2 gap-3 text-sm">{[
             ['Address', showDetail.guestDetails.address],
             ['Nationality', showDetail.guestDetails.nationality],

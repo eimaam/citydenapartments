@@ -22,7 +22,7 @@ interface CalendarRoom {
 
 interface CalendarBooking {
   _id: string;
-  roomId: { _id: string; roomNumber: string };
+  rooms: Array<{ roomId: { _id: string; roomNumber: string } }>;
   guestDetails: { name: string };
   checkInDate: string;
   checkOutDate: string;
@@ -163,7 +163,7 @@ export function BookingCalendar({
           {/* ── Room rows ── */}
           {rooms.flatMap((room, ri) => {
             const row = roomRowIndex(ri);
-            const roomBookings = bookings.filter(b => b.roomId._id === room._id);
+            const roomBookings = bookings.filter(b => b.rooms?.some(r => r.roomId._id === room._id));
             const cells: React.ReactNode[] = [];
 
             // 1. Room label cell
@@ -260,7 +260,7 @@ export function BookingCalendar({
                     <div className="bg-[#1e1e2e] text-white text-[11px] rounded-lg px-4 py-3 shadow-xl whitespace-nowrap border border-white/10">
                       <div className="font-bold text-sm">{booking.guestDetails.name}</div>
                       <div className="text-white/60 mt-0.5 flex items-center gap-1">
-                        <span>Room {booking.roomId.roomNumber}</span>
+                        <span>{(booking.rooms || []).map(r => r.roomId.roomNumber).join(', ')}</span>
                         <span>•</span>
                         <span className="uppercase tracking-wider text-[9px] font-semibold text-primary">
                           {room.roomTypeId?.name}

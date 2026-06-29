@@ -2,17 +2,31 @@ import { api } from '../../../lib/api';
 import type { BookingStatusType, PaymentMethodType, BookingSourceType, RoomStatusType } from '@citydenapartments/shared';
 import type { RoomResponse } from '../../rooms/api/rooms.api';
 
-export interface BookingResponse {
-  _id: string;
-  bookingReference: string;
-  branchId: string;
-  customerId?: string;
+export interface StatusHistoryEntry {
+  fromStatus: string;
+  toStatus: string;
+  changedBy?: { _id: string; firstName: string; lastName: string };
+  changedAt: string;
+}
+
+export interface RoomBookingEntry {
   roomId: {
     _id: string;
     roomNumber: string;
     roomTypeId?: { _id: string; name: string };
     status: RoomStatusType;
   };
+  actualPricePerNight: number;
+  totalForRoom: number;
+  maxGuests: number;
+}
+
+export interface BookingResponse {
+  _id: string;
+  bookingReference: string;
+  branchId: string;
+  customerId?: string;
+  rooms: RoomBookingEntry[];
   guestDetails: {
     name: string;
     phone: string;
@@ -31,7 +45,6 @@ export interface BookingResponse {
   numberOfGuests: number;
   checkInDate: string;
   checkOutDate: string;
-  actualPricePerNight: number;
   discount: number;
   discountPercentage: number;
   discountReason?: string;
@@ -41,10 +54,23 @@ export interface BookingResponse {
   bookingStatus: BookingStatusType;
   bookingSource: BookingSourceType;
   createdAt: string;
+  bookedBy?: { _id: string; firstName: string; lastName: string };
+  checkedInBy?: { _id: string; firstName: string; lastName: string };
+  checkedOutBy?: { _id: string; firstName: string; lastName: string };
+  cancelledBy?: { _id: string; firstName: string; lastName: string };
+  checkedInAt?: string;
+  checkedOutAt?: string;
+  statusHistory?: StatusHistoryEntry[];
+}
+
+export interface CreateRoomBookingPayload {
+  roomId: string;
+  actualPricePerNight: number;
+  maxGuests: number;
 }
 
 export interface CreateBookingPayload {
-  roomId: string;
+  rooms: CreateRoomBookingPayload[];
   customerId?: string;
   customerPhone?: string;
   guestName: string;
@@ -63,7 +89,6 @@ export interface CreateBookingPayload {
   numberOfGuests?: number;
   checkInDate: string;
   checkOutDate: string;
-  actualPricePerNight: number;
   discountPercentage?: number;
   discountReason?: string;
   discountCode?: string;

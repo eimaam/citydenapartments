@@ -37,16 +37,18 @@ export class BreakfastCron {
         }>;
       }>([
         { $match: { bookingStatus: BookingStatus.Checked_In } },
+        { $unwind: '$rooms' },
         {
           $lookup: {
             from: 'breakfastlogs',
-            let: { bId: '$_id' },
+            let: { bId: '$_id', rmId: '$rooms.roomId' },
             pipeline: [
               {
                 $match: {
                   $expr: {
                     $and: [
                       { $eq: ['$bookingId', '$$bId'] },
+                      { $eq: ['$roomId', '$$rmId'] },
                       { $gte: ['$dateServed', todayStart] },
                       { $lte: ['$dateServed', todayEnd] },
                     ],
@@ -64,7 +66,7 @@ export class BreakfastCron {
             bookings: {
               $push: {
                 _id: '$_id',
-                roomId: '$roomId',
+                roomId: '$rooms.roomId',
                 guestName: { $ifNull: ['$guestDetails.name', 'Unknown'] },
               },
             },
