@@ -35,6 +35,9 @@ export class Room extends Document {
   @Prop({ default: true })
   isActive: boolean;
 
+  @Prop({ type: [String], default: [] })
+  images: string[];
+
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: "User", required: true })
   createdBy: MongooseSchema.Types.ObjectId;
 

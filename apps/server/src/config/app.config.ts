@@ -15,6 +15,11 @@ interface AppConfig {
   REDIS_PORT?: number;
   REDIS_PASSWORD?: string;
   REDIS_DB?: number;
+  R2_ACCESS_KEY_ID: string;
+  R2_SECRET_ACCESS_KEY: string;
+  R2_BUCKET_NAME: string;
+  R2_PUBLIC_URL: string;
+  R2_ENDPOINT: string;
 }
 
 export const AppConfigValidationSchema = Joi.object({
@@ -29,6 +34,11 @@ export const AppConfigValidationSchema = Joi.object({
   REDIS_PORT: Joi.number().optional(),
   REDIS_PASSWORD: Joi.string().allow('').optional(),
   REDIS_DB: Joi.number().optional(),
+  R2_ACCESS_KEY_ID: Joi.string().required(),
+  R2_SECRET_ACCESS_KEY: Joi.string().required(),
+  R2_BUCKET_NAME: Joi.string().required(),
+  R2_PUBLIC_URL: Joi.string().uri().required(),
+  R2_ENDPOINT: Joi.string().uri().required(),
 });
 
 const { error, value } = AppConfigValidationSchema.validate(process.env, {

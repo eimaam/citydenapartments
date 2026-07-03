@@ -18,7 +18,7 @@ export const locations: ILocationCard[] = [
     city: 'Abuja',
     tagline: 'FEDERAL CAPITAL TERRITORY',
     imageUrl:
-      'https://images.unsplash.com/photo-1486325212027-8081e485255e?auto=format&fit=crop&w=1200&q=80',
+      'https://bucket.citydenapartments.com/abj/abuja-thumbnail.jpeg',
   },
   {
     id: 'kaduna',

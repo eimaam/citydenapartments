@@ -1,32 +1,17 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Wifi, ArrowUpRight } from 'lucide-react';
 import { SectionReveal } from '../../components/marketing/motionSection';
 import { BookingBar } from '../../components/marketing/BookingBar';
+import { formatNGN } from '@citydenapartments/shared';
+import { getRoomTypes } from '../../lib/api';
+import type { PublicRoomType } from '../../lib/api';
 
 export const KadunaPage = () => {
-  const suites = [
-    {
-      id: 'executive-studio',
-      title: 'Executive Studio',
-      description: 'Designed for travelers seeking a refined urban sanctuary.',
-      price: '$150',
-      imageUrl: 'https://images.unsplash.com/photo-1616594039964-3f59a4a3f6f9?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      id: 'deluxe-one-bedroom',
-      title: 'Deluxe One-Bedroom',
-      description: 'Expansive living spaces with premium finishes and private balcony views.',
-      price: '$250',
-      imageUrl: 'https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      id: 'presidential-two-bedrooms',
-      title: 'Presidential Two-Bedrooms',
-      description: 'The pinnacle of Kaduna residence, offering unrivaled space and privacy.',
-      price: '$400',
-      imageUrl: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=800&q=80',
-    },
-  ];
+  const [suites, setSuites] = useState<PublicRoomType[]>([]);
+
+  useEffect(() => {
+    getRoomTypes('KAD').then(setSuites).catch(() => {});
+  }, []);
 
   const landmarks = [
     {
@@ -119,7 +104,7 @@ export const KadunaPage = () => {
               href="#rooms"
               className="type-label-caps group inline-flex items-center gap-2 text-[10px] font-bold text-[#735c00] hover:text-[#554300]"
             >
-              VIEW ALL (3)
+              VIEW ALL ({suites.length})
               <ArrowUpRight className="size-3.5 transition-transform group-hover:-translate-y-px group-hover:translate-x-px" />
             </a>
           </SectionReveal>
@@ -130,14 +115,14 @@ export const KadunaPage = () => {
                 <article className="group flex flex-col bg-white border border-outline-variant/35 p-3 rounded-sm shadow-card hover:shadow-ambient transition-all duration-500">
                   <div className="overflow-hidden rounded-sm relative aspect-[4/3] w-full bg-surface-container-low">
                     <img
-                      src={suite.imageUrl}
-                      alt={suite.title}
+                      src={suite.images[0] || ''}
+                      alt={suite.name}
                       className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                     />
                   </div>
                   <div className="mt-6 flex flex-col px-2 pb-2">
                     <h3 className="font-serif text-2xl font-normal text-on-surface">
-                      {suite.title}
+                      {suite.name}
                     </h3>
                     <p className="mt-3 text-sm text-secondary min-h-[40px]">
                       {suite.description}
@@ -145,7 +130,7 @@ export const KadunaPage = () => {
                     <div className="mt-6 flex items-center justify-between border-t border-outline-variant/30 pt-4">
                       <div className="flex flex-col">
                         <span className="text-[10px] text-secondary/60 font-bold uppercase tracking-widest">STARTING FROM</span>
-                        <span className="font-serif text-lg font-bold text-on-surface">{suite.price}<span className="text-xs font-normal text-secondary">/night</span></span>
+                        <span className="font-serif text-lg font-bold text-on-surface">{formatNGN(suite.basePrice)}<span className="text-xs font-normal text-secondary">/night</span></span>
                       </div>
                       <a
                         href="#contact"

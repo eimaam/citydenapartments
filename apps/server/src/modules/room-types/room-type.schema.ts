@@ -9,6 +9,9 @@ export class RoomType extends Document {
   @Prop({ required: true, maxLength: 30 })
   name: string;
 
+  @Prop({ default: '' })
+  description: string;
+
   @Prop({ required: true })
   basePrice: number;
 

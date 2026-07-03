@@ -7,7 +7,7 @@ const navLinks: { label: string; href: string }[] = [
   { label: 'Locations', href: '#locations' },
   { label: 'Rooms', href: '#rooms' },
   { label: 'Facilities', href: '#facilities' },
-  { label: 'Gallery', href: '#gallery' },
+  { label: 'Gallery', href: '/gallery' },
   { label: 'Contact', href: '#contact' },
 ];
 

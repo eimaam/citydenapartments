@@ -6,6 +6,10 @@ export class UpdateRoomTypeDto {
   name?: string;
 
   @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
   @IsMongoId()
   branchId?: string;
 

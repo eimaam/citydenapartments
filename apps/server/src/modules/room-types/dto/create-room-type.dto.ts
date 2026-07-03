@@ -5,6 +5,10 @@ export class CreateRoomTypeDto {
   name: string;
 
   @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
   @IsMongoId()
   branchId?: string;
 

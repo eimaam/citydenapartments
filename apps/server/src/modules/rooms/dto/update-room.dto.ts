@@ -1,4 +1,4 @@
-import { IsBoolean, IsMongoId, IsOptional, IsString } from "class-validator";
+import { IsBoolean, IsMongoId, IsOptional, IsString, IsArray } from "class-validator";
 
 export class UpdateRoomDto {
     @IsMongoId()
@@ -20,4 +20,9 @@ export class UpdateRoomDto {
     @IsString()
     @IsOptional()
     maxGuests?: number
+
+    @IsArray()
+    @IsString({ each: true })
+    @IsOptional()
+    images?: string[]
 }

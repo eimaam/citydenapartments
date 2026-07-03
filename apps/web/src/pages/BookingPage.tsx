@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@citydenapartments/shared';
 import { SectionReveal } from '../components/marketing/motionSection';
+import { getRoomTypes } from '../lib/api';
+import type { PublicRoomType } from '../lib/api';
 
 // Suite data interface
 interface Suite {
@@ -33,135 +35,24 @@ interface Suite {
   reviews: { author: string; rating: number; text: string; date: string }[];
 }
 
-// Global suite database
-const SUITES_DATABASE: Suite[] = [
-  // Abuja Suites
-  {
-    id: 'skyline-executive-abuja',
-    title: 'Skyline Executive',
-    city: 'abuja',
-    cityName: 'Abuja, Nigeria',
-    priceNaira: 120000,
-    imageUrl: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80',
-    tags: ['King Size', 'Workspace'],
-    description: 'A touch of pure luxury that our property has to offer, featuring sweeping views of the capital skyline and premium mid-century modern furnishings.',
-    amenities: ['High-speed Wi-Fi', 'Smart TV with Streaming', 'Dedicated Workspace', 'Nespresso Coffee Machine', 'Walk-in Rain Shower', 'Bathrobe & Slippers'],
-    reviews: [
-      { author: 'Chidi O.', rating: 5, text: 'Absolutely spectacular view. The workspace was perfect for my remote meetings.', date: 'May 2026' },
-      { author: 'Fatima A.', rating: 5, text: 'Impeccable service. The apartment was spotless and the design is pure art.', date: 'April 2026' }
-    ]
-  },
-  {
-    id: 'panorama-suite-abuja',
-    title: 'Panorama Suite',
-    city: 'abuja',
-    cityName: 'Abuja, Nigeria',
-    priceNaira: 185000,
-    imageUrl: 'https://images.unsplash.com/photo-1616594039964-3f59a4a3f6f9?auto=format&fit=crop&w=800&q=80',
-    tags: ['Pool View', 'Kitchenette'],
-    description: 'Unrivaled view of Jabi Lake and the urban horizon. Crafted with floor-to-ceiling windows and a private terrace to enjoy Abuja sunsets.',
-    amenities: ['Private Lakeside Balcony', 'Fully Equipped Kitchenette', 'Premium Sound System', 'King Size Bed', 'Integrated Climate Control', 'In-room Laundry'],
-    reviews: [
-      { author: 'Marcus K.', rating: 5, text: 'Sitting on the balcony watching Jabi Lake at sunset is therapeutic. Highly recommended.', date: 'May 2026' }
-    ]
-  },
-  {
-    id: 'maitama-penthouse-abuja',
-    title: 'Maitama Penthouse',
-    city: 'abuja',
-    cityName: 'Abuja, Nigeria',
-    priceNaira: 250000,
-    imageUrl: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80',
-    tags: ['Private Deck', 'Mini Bar'],
-    description: 'The pinnacle of luxury living. A sprawling penthouse retreat with expansive private decks, curated art installations, and elite concierge services.',
-    amenities: ['Wrap-around Private Deck', 'Fully Stocked Premium Bar', 'Dedicated 24/7 Concierge', 'Super King Size Bed', 'Private Dining Space', 'Soaking Bathtub'],
-    reviews: [
-      { author: 'Yusuf D.', rating: 5, text: 'The highest standard of luxury in Abuja. Worth every Naira.', date: 'March 2026' }
-    ]
-  },
-  // Kaduna Suites
-  {
-    id: 'executive-studio-kaduna',
-    title: 'Executive Studio',
-    city: 'kaduna',
-    cityName: 'Kaduna, Nigeria',
-    priceNaira: 65000,
-    imageUrl: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=800&q=80',
-    tags: ['Queen Size', 'Balcony'],
-    description: 'Designed for corporate and leisure travelers seeking a refined, quiet urban sanctuary in the heart of G.R.A Kaduna.',
-    amenities: ['High-speed Wi-Fi', 'Private Balcony', 'Nespresso Coffee Station', 'Premium Linens', 'Sleek Writing Desk'],
-    reviews: [
-      { author: 'Ibrahim M.', rating: 4, text: 'Very quiet and peaceful location. Perfect retreat after working in the city.', date: 'May 2026' }
-    ]
-  },
-  {
-    id: 'the-courtyard-kaduna',
-    title: 'The Courtyard Suite',
-    city: 'kaduna',
-    cityName: 'Kaduna, Nigeria',
-    priceNaira: 85000,
-    imageUrl: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800&q=80',
-    tags: ['Pool View', 'Kitchenette'],
-    description: 'Enjoy calming views of our vertical garden courtyard. A beautifully balanced space offering direct courtyard corridor access and custom local woodworking.',
-    amenities: ['Direct Courtyard Access', 'Kitchenette with Fridge', 'Smart Climate Control', 'Dedicated Sitting Area', '4K Smart TV'],
-    reviews: [
-      { author: 'Sarah B.', rating: 5, text: 'Love the greenery views. The design feels very warm and premium.', date: 'May 2026' }
-    ]
-  },
-  {
-    id: 'deluxe-one-bedroom-kaduna',
-    title: 'Deluxe One-Bedroom',
-    city: 'kaduna',
-    cityName: 'Kaduna, Nigeria',
-    priceNaira: 110000,
-    imageUrl: 'https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80',
-    tags: ['King Size', 'Workspace'],
-    description: 'Expansive separate living and bedroom layouts featuring premium finishes, state-of-the-art climate zone control, and executive workspace amenities.',
-    amenities: ['Separate Living Area', 'Executive Workspace', 'High-Speed Internet', 'King Size Bed', 'Dual Vanity Bathroom', 'Dishwasher & Washer'],
-    reviews: [
-      { author: 'Tunde E.', rating: 5, text: 'Great business apartment. High-speed internet was incredibly stable.', date: 'April 2026' }
-    ]
-  },
-  {
-    id: 'presidential-suite-kaduna',
-    title: 'Presidential Suite',
-    city: 'kaduna',
-    cityName: 'Kaduna, Nigeria',
-    priceNaira: 180000,
-    imageUrl: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=800&q=80',
-    tags: ['Private Lounge', 'Terrace'],
-    description: 'The pinnacle of Kaduna residence, offering unrivaled space, privacy, panoramic G.R.A views, and a dedicated host/butler service.',
-    amenities: ['Grand Private Terrace', 'In-suite Private Lounge', 'Butler Service', 'Walk-in Wardrobe', 'Purity Soaking Tub', 'Exclusive Art Collection'],
-    reviews: [
-      { author: 'Amina U.', rating: 5, text: 'An extraordinary experience. The privacy and service were outstanding.', date: 'May 2026' }
-    ]
-  },
-  // Maiduguri Suites
-  {
-    id: 'oasis-studio-maiduguri',
-    title: 'Oasis Studio',
-    city: 'maiduguri',
-    cityName: 'Maiduguri, Nigeria',
-    priceNaira: 75000,
-    imageUrl: 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=800&q=80',
-    tags: ['Queen Size', 'City View'],
-    description: 'A clean, modern space designed for quiet concentration, featuring warm desert tone materials and advanced air filtration systems.',
-    amenities: ['High-efficiency Air Purifier', 'Ergonomic Desk', 'High-speed Wi-Fi', 'Premium Coffee Setup', 'Blackout Curtains'],
-    reviews: []
-  },
-  {
-    id: 'savannah-suite-maiduguri',
-    title: 'Savannah Penthouse',
-    city: 'maiduguri',
-    cityName: 'Maiduguri, Nigeria',
-    priceNaira: 160000,
-    imageUrl: 'https://images.unsplash.com/photo-1545324224-fa8b6a84d48a?auto=format&fit=crop&w=800&q=80',
-    tags: ['Panoramic Views', 'Private Deck'],
-    description: 'Enjoy sunset views of the northern plains from a spacious layout. Incorporates hand-selected local fabrics, private deck, and sunset lounge access.',
-    amenities: ['Sunset viewing deck', 'Premium Bedding', 'Espresso Machine', 'Spacious Living Zone', 'Lounge access'],
-    reviews: []
-  }
-];
+const BRANCH_CITY_MAP: Record<string, 'abuja' | 'kaduna' | 'maiduguri'> = {
+  ABJ: 'abuja',
+  KAD: 'kaduna',
+  MAI: 'maiduguri',
+};
+
+const toSuite = (rt: PublicRoomType): Suite => ({
+  id: rt.id,
+  title: rt.name,
+  city: BRANCH_CITY_MAP[rt.branch.code] || 'abuja',
+  cityName: `${rt.branch.name}, Nigeria`,
+  priceNaira: rt.basePrice,
+  imageUrl: rt.images[0] || '',
+  tags: [],
+  description: rt.description,
+  amenities: rt.amenities,
+  reviews: [],
+});
 
 export const BookingPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -169,6 +60,12 @@ export const BookingPage = () => {
 
   // Wizard state: 1 (Suite select), 2 (Details & Payment), 3 (Confirmation)
   const [step, setStep] = useState<1 | 2 | 3>(1);
+
+  // Fetch suites from API
+  const [suitesDb, setSuitesDb] = useState<Suite[]>([]);
+  useEffect(() => {
+    getRoomTypes().then((items) => setSuitesDb(items.map(toSuite))).catch(() => {});
+  }, []);
 
   // Search parameters state
   const [cityFilter, setCityFilter] = useState<string>(searchParams.get('city') || 'all');
@@ -272,7 +169,7 @@ export const BookingPage = () => {
   };
 
   // Filtered Suites list
-  const filteredSuites = SUITES_DATABASE.filter(suite => {
+  const filteredSuites = suitesDb.filter(suite => {
     const matchesCity = cityFilter === 'all' || suite.city === cityFilter;
     const matchesType = suiteTypeFilter === 'all' || 
       (suiteTypeFilter === 'studio' && suite.title.toLowerCase().includes('studio')) ||
