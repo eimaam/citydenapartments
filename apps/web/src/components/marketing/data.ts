@@ -34,6 +34,7 @@ export const locations: ILocationCard[] = [
     imageUrl:
       'https://images.unsplash.com/photo-1545324224-fa8b6a84d48a?auto=format&fit=crop&w=1200&q=80',
   },
+]
 
 
 export const amenities: IAmenityItem[] = [
