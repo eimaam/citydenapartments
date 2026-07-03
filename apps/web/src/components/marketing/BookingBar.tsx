@@ -68,7 +68,7 @@ export const BookingBar: React.FC<BookingBarProps> = ({ currentCity = 'abuja' })
           >
             <option value="abuja">Abuja, Nigeria</option>
             <option value="kaduna">Kaduna, Nigeria</option>
-            <option value="maiduguri">Maiduguri, Nigeria (Preview)</option>
+            <option value="maiduguri">Maiduguri, Nigeria</option>
           </select>
         </div>
 

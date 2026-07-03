@@ -21,9 +21,7 @@ export const Footer = () => {
           <ul className="space-y-3">
             <FooterLink href="/cities/abuja">Abuja</FooterLink>
             <FooterLink href="/cities/kaduna">Kaduna</FooterLink>
-            <FooterLink href="/cities/maiduguri">
-              Maiduguri <span className="text-[10px] text-secondary/60 font-sans tracking-normal block md:inline md:ml-1">(Planning 2025)</span>
-            </FooterLink>
+            <FooterLink href="/cities/maiduguri">Maiduguri</FooterLink>
           </ul>
         </div>
 

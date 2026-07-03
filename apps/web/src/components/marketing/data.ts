@@ -30,10 +30,9 @@ export const locations: ILocationCard[] = [
   {
     id: 'maiduguri',
     city: 'Maiduguri',
-    tagline: 'COMING SOON',
+    tagline: 'BORNO STATE CAPITAL',
     imageUrl:
       'https://images.unsplash.com/photo-1545324224-fa8b6a84d48a?auto=format&fit=crop&w=1200&q=80',
-    comingSoon: true,
   },
 ];
 export const suites: ISuiteCard[] = [

@@ -1,20 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Waves, Dumbbell, Coffee } from 'lucide-react';
-import { Button } from '@citydenapartments/shared';
 import { SectionReveal } from '../../components/marketing/motionSection';
 import { BookingBar } from '../../components/marketing/BookingBar';
 
 export const MaiduguriPage = () => {
-  const [email, setEmail] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email) {
-      setSubmitted(true);
-    }
-  };
-
   const expectations = [
     {
       icon: Waves,
@@ -47,10 +36,7 @@ export const MaiduguriPage = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/10" />
 
         <div className="relative z-10 mx-auto flex w-full max-w-[900px] flex-col items-center px-6 text-center md:px-10">
-          <SectionReveal className="mb-4 inline-flex items-center gap-1.5 border border-primary-container/40 bg-black/30 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary-container rounded-full">
-            <span>★</span> OPENING SOON
-          </SectionReveal>
-          <h1 className="font-serif text-5xl md:text-7xl font-normal tracking-tight text-white mt-4">
+          <h1 className="font-serif text-5xl md:text-7xl font-normal tracking-tight text-white">
             City Den Apartments
             <br />
             <span className="italic text-primary-container font-light">Maiduguri</span>
@@ -138,47 +124,7 @@ export const MaiduguriPage = () => {
         </div>
       </section>
 
-      {/* Be the First to Arrive (Waitlist CTA) */}
-      <section id="contact" className="scroll-mt-[5.85rem] md:scroll-mt-[6.25rem] px-[var(--spacing-margin-mobile)] py-24 lg:px-[var(--spacing-margin-desktop)] lg:py-32">
-        <div className="mx-auto w-full max-w-[820px] text-center">
-          <SectionReveal>
-            <h2 className="font-serif text-4xl md:text-5xl font-normal text-on-surface">
-              Be the First to Arrive
-            </h2>
-            <p className="mt-6 text-base text-secondary leading-relaxed max-w-2xl mx-auto italic">
-              Join our exclusive waitlist for Maiduguri and receive early access to booking, opening night invitations, and seasonal membership benefits.
-            </p>
 
-            {submitted ? (
-              <div className="mt-12 p-6 border border-[#735c00]/30 bg-[#735c00]/5 rounded-sm max-w-md mx-auto text-on-surface">
-                <p className="font-bold text-base text-[#735c00]">Thank you for joining our waitlist!</p>
-                <p className="text-sm mt-1 text-secondary">We will contact you with exclusive previews and access details.</p>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="mt-12 flex flex-col md:flex-row items-end gap-6 max-w-2xl mx-auto">
-                <div className="flex flex-col w-full text-left">
-                  <label className="text-[10px] font-bold tracking-widest text-[#7F7663] uppercase">EMAIL ADDRESS</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="YOUR@EMAIL.COM"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="mt-2 w-full border-b border-outline-variant/60 bg-transparent py-3 font-sans text-sm outline-none placeholder-on-surface-variant/30 text-on-surface focus:border-[#735c00] transition-colors"
-                  />
-                </div>
-                <Button
-                  htmlType="submit"
-                  size="lg"
-                  className="w-full md:w-auto shrink-0 !bg-[#735c00] hover:!bg-[#554300] !text-white !rounded-none font-bold tracking-widest text-xs py-4 px-8"
-                >
-                  JOIN THE WAITLIST
-                </Button>
-              </form>
-            )}
-          </SectionReveal>
-        </div>
-      </section>
     </div>
   );
 };
