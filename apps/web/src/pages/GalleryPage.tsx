@@ -14,7 +14,8 @@ export const GalleryPage = () => {
     setLoading(true);
     try {
       const data = await getGallery(pageNum, 20);
-      setItems((prev) => (pageNum === 1 ? data.items : [...prev, ...data.items]));
+      const newItems = data.items || [];
+      setItems((prev) => (pageNum === 1 ? newItems : [...prev, ...newItems]));
       setHasMore(data.hasMore);
     } catch {
       // silently fail

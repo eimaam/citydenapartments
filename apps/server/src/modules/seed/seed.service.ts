@@ -48,6 +48,48 @@ const occupations = ['Civil Servant', 'Business Owner', 'Teacher', 'Engineer', '
 const paymentMethods: Array<'cash' | 'pos_card' | 'bank_transfer'> = ['cash', 'pos_card', 'bank_transfer'];
 const bookingSources: Array<'walk_in' | 'phone' | 'online'> = ['walk_in', 'phone', 'online'];
 
+// ── R2 bucket URLs for Abuja room images ──────────────────────────
+const BUCKET = 'https://bucket.citydenapartments.com';
+
+const img = (slug: string, room: string, n: number, ext: string) =>
+  `${BUCKET}/abj/room-types/${slug}/${room}%20(${n}).${ext}`;
+
+const range = (room: string, slug: string, count: number, ext = 'JPG') =>
+  Array.from({ length: count }, (_, i) => img(slug, room, i + 1, ext));
+
+// Room → image URLs (Abuja only)
+const abjRoomImages: Record<string, string[]> = {
+  // Business Suite (A101 — 11 images, first is .jpg rest .JPG)
+  'A101': [
+    img('business-suite', 'A101', 1, 'jpg'),
+    ...range('A101', 'business-suite', 10, 'JPG'),
+  ],
+  // Deluxe Suite (A105 — 18 images, A204 — 6 images)
+  'A105': range('A105', 'deluxe-suite', 18),
+  'A204': range('A204', 'deluxe-suite', 6),
+  // Executive Suite (A001, A002, A003)
+  'A001': range('A001', 'executive-suite', 5),
+  'A002': range('A002', 'executive-suite', 5),
+  'A003': range('A003', 'executive-suite', 5),
+  // Royal Suite (B101)
+  'B101': range('B101', 'royal-suite', 5),
+  // Presidential Suite (A102, A103, A104)
+  'A102': range('A102', 'presidential-suite', 5),
+  'A103': range('A103', 'presidential-suite', 5),
+  'A104': range('A104', 'presidential-suite', 5),
+};
+
+// Room type → all images for that type (aggregated across rooms)
+const abjRTImages: Record<string, string[]> = {
+  'Deluxe Suite':      [...abjRoomImages['A105'], ...abjRoomImages['A204']],
+  'Executive Suite':   [...abjRoomImages['A001'], ...abjRoomImages['A002'], ...abjRoomImages['A003']],
+  'Royal Suite':       abjRoomImages['B101'],
+  'Business Suite':    abjRoomImages['A101'],
+  'Presidential Suite': [...abjRoomImages['A102'], ...abjRoomImages['A103'], ...abjRoomImages['A104']],
+};
+
+const unsplash = (id: string) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1200&q=80`;
+
 // ── scenario presets: [status, checkInOffset, checkOutOffset, nights] ─
 type Scenario = [string, number, number, number];
 
@@ -133,7 +175,7 @@ export class SeedService  {
     // ── branches ──
     const branches = await this.branchModel.create([
       {
-        name: 'Abuja', code: 'ABJ', address: 'Plot 123, Central Business District, Abuja', isActive: true,
+        name: 'Abuja', code: 'ABJ', address: 'No 5 Audu Ogbe Street, Jabi Abuja.', isActive: true,
         policies: {
           checkInTime: '14:00', checkOutTime: '12:00',
           earlyCheckIn: 'Early check-in is subject to availability and may incur additional charges.',
@@ -150,13 +192,13 @@ export class SeedService  {
           ],
           paymentInfo: 'Cash and card payments are accepted. A security deposit is required at check-in.',
           breakfastInfo: 'Complimentary continental breakfast served from 7:00 AM to 10:30 AM',
-          contactPhone: '+234 809 000 1234',
+          contactPhone: '0810 704 3924',
           contactEmail: 'abuja@citydenapartments.com',
           additionalNotes: 'Free WiFi is available throughout the property.',
         },
       },
       {
-        name: 'Kaduna', code: 'KAD', address: 'No 45, Ahmadu Bello Way, Kaduna', isActive: true,
+        name: 'Kaduna', code: 'KAD', address: 'Plot 24, 26 & 28 Turunku Road, off Inuwa Wada Road, Ungwan Rimi, Kaduna', isActive: true,
         policies: {
           checkInTime: '14:00', checkOutTime: '12:00',
           earlyCheckIn: 'Early check-in is subject to availability and may incur additional charges.',
@@ -173,7 +215,7 @@ export class SeedService  {
           ],
           paymentInfo: 'Cash and card payments are accepted. A security deposit is required at check-in.',
           breakfastInfo: 'Complimentary continental breakfast served from 7:00 AM to 10:30 AM',
-          contactPhone: '+234 809 000 5678',
+          contactPhone: '0701 124 0957',
           contactEmail: 'kaduna@citydenapartments.com',
           additionalNotes: 'Free WiFi is available throughout the property.',
         },
@@ -214,24 +256,24 @@ export class SeedService  {
 
     // ── room types ──
     const abujaRT = await this.roomTypeModel.create([
-      { branchId: branches[0]._id, name: 'King Suite', basePrice: 60000, minPriceAllowed: 50000, amenities: ['King Bed', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[0]._id, name: 'Deluxe Suite', basePrice: 70000, minPriceAllowed: 60000, amenities: ['Queen Bed', 'AC', 'WiFi'], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[0]._id, name: 'Executive Suite', basePrice: 80000, minPriceAllowed: 70000, amenities: ['King Bed', 'AC', 'WiFi', 'Work Desk', 'TV'], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[0]._id, name: 'Penthouse Suite', basePrice: 120000, minPriceAllowed: 100000, amenities: ['King Bed', 'Living Room', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[0]._id, name: 'Royal Suite', basePrice: 150000, minPriceAllowed: 130000, amenities: ['King Bed', 'Living Room', 'Kitchenette', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[0]._id, name: 'Business Suite', basePrice: 160000, minPriceAllowed: 140000, amenities: ['King Bed', 'Living Room', 'Work Desk', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[0]._id, name: 'Presidential Suite', basePrice: 400000, minPriceAllowed: 350000, amenities: ['King Bed', 'Living Room', 'Dining', 'Jacuzzi', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[0]._id, name: 'King Suite', description: 'An intimate layout with sculpted light, tactile finishes, and a calm palette for effortless daily rhythm.', basePrice: 60000, minPriceAllowed: 50000, amenities: ['King Bed', 'AC', 'WiFi', 'TV'], images: [unsplash('photo-1616594039964-3f59a4a3f6f9')], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[0]._id, name: 'Deluxe Suite', description: 'Enhanced comfort featuring premium materials and a spacious layout designed for extended relaxation.', basePrice: 70000, minPriceAllowed: 60000, amenities: ['Queen Bed', 'AC', 'WiFi'], images: abjRTImages['Deluxe Suite'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[0]._id, name: 'Executive Suite', description: 'Sophisticated design meets functional luxury, perfect for the modern traveler seeking a refined work-life balance.', basePrice: 80000, minPriceAllowed: 70000, amenities: ['King Bed', 'AC', 'WiFi', 'Work Desk', 'TV'], images: abjRTImages['Executive Suite'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[0]._id, name: 'Penthouse Suite', description: 'Unrivaled views and expansive living spaces defined by high ceilings and bespoke interior craftsmanship.', basePrice: 120000, minPriceAllowed: 100000, amenities: ['King Bed', 'Living Room', 'AC', 'WiFi', 'TV'], images: [unsplash('photo-1582719478250-c89cae4dc85b')], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[0]._id, name: 'Royal Suite', description: 'Palatial living with grand architectural details and curated art pieces for a truly majestic experience.', basePrice: 150000, minPriceAllowed: 130000, amenities: ['King Bed', 'Living Room', 'Kitchenette', 'AC', 'WiFi', 'TV'], images: abjRTImages['Royal Suite'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[0]._id, name: 'Business Suite', description: 'An efficient yet elegant environment equipped with cutting-edge technology and a streamlined aesthetic.', basePrice: 160000, minPriceAllowed: 140000, amenities: ['King Bed', 'Living Room', 'Work Desk', 'AC', 'WiFi', 'TV'], images: abjRTImages['Business Suite'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[0]._id, name: 'Presidential Suite', description: 'The pinnacle of luxury, offering ultimate privacy, 360-degree views, and personalized world-class service.', basePrice: 400000, minPriceAllowed: 350000, amenities: ['King Bed', 'Living Room', 'Dining', 'Jacuzzi', 'AC', 'WiFi', 'TV'], images: abjRTImages['Presidential Suite'], createdBy: admin._id, updatedBy: admin._id },
     ]);
     const kadunaRT = await this.roomTypeModel.create([
-      { branchId: branches[1]._id, name: 'Luxury Standard', basePrice: 53750, minPriceAllowed: 43000, amenities: ['Queen Bed', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[1]._id, name: 'Super Luxury', basePrice: 75250, minPriceAllowed: 60000, amenities: ['King Bed', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[1]._id, name: 'Executive Luxury', basePrice: 86000, minPriceAllowed: 68800, amenities: ['King Bed', 'AC', 'WiFi', 'Work Desk', 'TV'], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[1]._id, name: 'Super Deluxe Suite', basePrice: 161250, minPriceAllowed: 129000, amenities: ['King Bed', 'Living Room', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[1]._id, name: 'Executive Suite', basePrice: 193500, minPriceAllowed: 154800, amenities: ['King Bed', 'Living Room', 'Work Desk', 'AC', 'WiFi', 'TV'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[1]._id, name: 'Luxury Standard', description: 'Designed for travelers seeking a refined urban sanctuary with essential comforts.', basePrice: 53750, minPriceAllowed: 43000, amenities: ['Queen Bed', 'AC', 'WiFi', 'TV'], images: ['https://images.unsplash.com/photo-1616594039964-3f59a4a3f6f9?auto=format&fit=crop&w=1200&q=80'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[1]._id, name: 'Super Luxury', description: 'Premium comfort with king-size amenities and superior finishes throughout.', basePrice: 75250, minPriceAllowed: 60000, amenities: ['King Bed', 'AC', 'WiFi', 'TV'], images: ['https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[1]._id, name: 'Executive Luxury', description: 'Sophisticated design with dedicated workspace and premium comfort for the discerning traveler.', basePrice: 86000, minPriceAllowed: 68800, amenities: ['King Bed', 'AC', 'WiFi', 'Work Desk', 'TV'], images: ['https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1200&q=80'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[1]._id, name: 'Super Deluxe Suite', description: 'Expansive living spaces with separate lounge area and premium finishes.', basePrice: 161250, minPriceAllowed: 129000, amenities: ['King Bed', 'Living Room', 'AC', 'WiFi', 'TV'], images: ['https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[1]._id, name: 'Executive Suite', description: 'The pinnacle of Kaduna residence, offering unrivaled space and executive-level amenities.', basePrice: 193500, minPriceAllowed: 154800, amenities: ['King Bed', 'Living Room', 'Work Desk', 'AC', 'WiFi', 'TV'], images: ['https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1200&q=80'], createdBy: admin._id, updatedBy: admin._id },
     ]);
     const maiRT = await this.roomTypeModel.create([
-      { branchId: branches[2]._id, name: 'Deluxe Suite', basePrice: 50000, minPriceAllowed: 40000, amenities: ['Queen Bed', 'AC', 'WiFi'], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[2]._id, name: 'Standard Room', basePrice: 30000, minPriceAllowed: 25000, amenities: ['Queen Bed', 'AC'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[2]._id, name: 'Deluxe Suite', description: 'Comfortable queen-size accommodation with modern amenities for a relaxing stay.', basePrice: 50000, minPriceAllowed: 40000, amenities: ['Queen Bed', 'AC', 'WiFi'], images: ['https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[2]._id, name: 'Standard Room', description: 'Clean, comfortable, and affordable accommodation with essential amenities.', basePrice: 30000, minPriceAllowed: 25000, amenities: ['Queen Bed', 'AC'], images: ['https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1200&q=80'], createdBy: admin._id, updatedBy: admin._id },
     ]);
 
     this.logger.log(`Seed — room types created: ${abujaRT.length} Abuja + ${kadunaRT.length} Kaduna + ${maiRT.length} Maiduguri`);
@@ -284,6 +326,7 @@ export class SeedService  {
         roomNumber: r.num,
         maxGuests: r.max,
         status: RoomStatusEnum.AVAILABLE,
+        images: r.branch === 0 ? (abjRoomImages[r.num] || []) : [],
         createdBy: admin._id,
         updatedBy: admin._id,
       })),

@@ -26,12 +26,6 @@ export const MaiduguriPage = () => {
     <div className="flex flex-col bg-[#FAF8F6]">
       {/* Hero Section */}
       <section className="relative flex min-h-[90vh] w-full flex-col items-center justify-center overflow-hidden bg-inverse-surface pt-24 pb-20 md:min-h-[95vh]">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1545324224-fa8b6a84d48a?auto=format&fit=crop&w=2000&q=80')`,
-          }}
-        />
         <div className="absolute inset-0 bg-black/35" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/10" />
 
@@ -66,27 +60,10 @@ export const MaiduguriPage = () => {
                 </p>
               </SectionReveal>
 
-              {/* Stats Layout */}
-              <SectionReveal className="mt-12 md:mt-0 grid grid-cols-2 gap-8 border-t border-outline-variant/40 pt-8">
-                <div className="flex flex-col">
-                  <span className="font-serif text-5xl md:text-6xl font-light text-on-surface">42</span>
-                  <span className="text-[9px] font-bold tracking-widest text-secondary/70 uppercase mt-2">EXECUTIVE SUITES</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="font-serif text-5xl md:text-6xl font-light text-on-surface">01</span>
-                  <span className="text-[9px] font-bold tracking-widest text-secondary/70 uppercase mt-2">SIGNATURE LOUNGE</span>
-                </div>
-              </SectionReveal>
+
             </div>
 
-            {/* Right Column (Image) */}
-            <SectionReveal className="rounded-sm overflow-hidden h-[450px] md:h-full shadow-ambient min-h-[500px]">
-              <img
-                src="https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=80"
-                alt="Maiduguri bedroom overlooking plains"
-                className="size-full object-cover"
-              />
-            </SectionReveal>
+
           </div>
         </div>
       </section>

@@ -33,6 +33,9 @@ interface Suite {
   description: string;
   amenities: string[];
   reviews: { author: string; rating: number; text: string; date: string }[];
+  address: string;
+  contactPhone: string;
+  contactEmail: string;
 }
 
 const BRANCH_CITY_MAP: Record<string, 'abuja' | 'kaduna' | 'maiduguri'> = {
@@ -52,6 +55,9 @@ const toSuite = (rt: PublicRoomType): Suite => ({
   description: rt.description,
   amenities: rt.amenities,
   reviews: [],
+  address: rt.branch.address,
+  contactPhone: rt.branch.contactPhone,
+  contactEmail: rt.branch.contactEmail,
 });
 
 export const BookingPage = () => {
@@ -790,27 +796,25 @@ export const BookingPage = () => {
               {/* Map Layout */}
               <div className="bg-white border border-outline-variant/35 p-4 rounded-sm shadow-sm">
                 <div className="overflow-hidden rounded-sm relative aspect-[16/9] w-full bg-surface-container-low mb-4">
-                  <img
-                    src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=800&q=80"
-                    alt="Map Location"
-                    className="size-full object-cover"
+                  <iframe
+                    src={
+                      selectedSuite.city === 'abuja'
+                        ? 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3939.940917111082!2d7.426410000000002!3d9.0691474!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x104e74d813aa5555%3A0x9dde89910b8c07ca!2s5%20Audu%20Ogbe%20St%2C%20Jabi%2C%20Abuja%20900108%2C%20Federal%20Capital%20Territory!5e0!3m2!1sen!2sng!4v1783096157239!5m2!1sen!2sng'
+                        : selectedSuite.city === 'kaduna'
+                        ? 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3922.436011058829!2d7.456493775717975!3d10.545013363418246!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x11b2b50047b0b985%3A0xbb0c01b2e4bb4ec6!2sCITY%20DEN%20APARTMENT!5e0!3m2!1sen!2sng!4v1783096211779!5m2!1sen!2sng'
+                        : 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3905.4395400736767!2d13.150351275728267!3d11.804458439389704!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x11049f00722ef797%3A0x7d09be4ee458df8c!2sCITY%20DEN%20APARTMENTS%20MAIDUGURI!5e0!3m2!1sen!2sng!4v1783096250430!5m2!1sen!2sng'
+                    }
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0, position: 'absolute', inset: 0 }}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    title={`City Den ${selectedSuite.cityName.split(',')[0]} location`}
                   />
-                  <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
-                    <a
-                      href={`https://maps.google.com/?q=City+Den+${selectedSuite.cityName.split(',')[0]}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-white text-on-surface font-sans text-xs font-bold uppercase tracking-widest px-4 py-2.5 shadow-md flex items-center gap-1.5"
-                    >
-                      📍 View on Maps
-                    </a>
-                  </div>
                 </div>
-                <p className="text-xs font-semibold text-on-surface font-sans">
-                  {selectedSuite.city === 'abuja' && '11, Jabi Lake View Drive, Central Business District, Abuja, Nigeria'}
-                  {selectedSuite.city === 'kaduna' && 'No. 12, Isa Kaita Road, G.R.A, Kaduna, Nigeria'}
-                  {selectedSuite.city === 'maiduguri' && 'Savannah Drive, GRA Extension, Maiduguri, Nigeria'}
-                </p>
+                <p className="text-xs font-semibold text-on-surface font-sans">{selectedSuite.address}</p>
+                <p className="text-xs text-secondary/80 font-sans mt-1">{selectedSuite.contactPhone}</p>
               </div>
 
               {/* Need Assistance Card */}
@@ -820,11 +824,11 @@ export const BookingPage = () => {
                   Our dedicated guest relations team is available around the clock to ensure your stay is perfect before you even arrive.
                 </p>
                 <div className="mt-6 flex flex-col gap-4 text-xs font-semibold">
-                  <a href="tel:+2348002489336" className="flex items-center gap-3 text-white hover:text-white/85 transition-colors">
-                    <Phone className="size-4 text-[#C9A23E]" /> +234 (0) 800 CITYDEN
+                  <a href={`tel:${selectedSuite.contactPhone.replace(/\s/g, '')}`} className="flex items-center gap-3 text-white hover:text-white/85 transition-colors">
+                    <Phone className="size-4 text-[#C9A23E]" /> {selectedSuite.contactPhone}
                   </a>
-                  <a href="mailto:concierge@cityden.com" className="flex items-center gap-3 text-white hover:text-white/85 transition-colors">
-                    <Mail className="size-4 text-[#C9A23E]" /> concierge@cityden.com
+                  <a href={`mailto:${selectedSuite.contactEmail}`} className="flex items-center gap-3 text-white hover:text-white/85 transition-colors">
+                    <Mail className="size-4 text-[#C9A23E]" /> {selectedSuite.contactEmail}
                   </a>
                   <span className="flex items-center gap-3 text-white/95">
                     <MessageSquare className="size-4 text-[#C9A23E]" /> Live Chat via Member App
@@ -1042,7 +1046,7 @@ export const BookingPage = () => {
 
               {/* Receipt Footer */}
               <div className="text-center text-[10px] text-secondary/70 leading-relaxed italic border-t border-outline-variant/20 pt-4">
-                Thank you for your business. For refunds or change request policies, please review your booking details or contact concierge@cityden.com.
+                Thank you for your business. For refunds or change request policies, please review your booking details or contact {selectedSuite.contactEmail}.
               </div>
 
               <div className="mt-8 flex justify-end gap-3 no-print">

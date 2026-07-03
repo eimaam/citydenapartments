@@ -26,7 +26,7 @@ export const LandingPage = () => {
 
   useEffect(() => {
     getRoomTypes('ABJ').then((items) => setSuites(items.map(toSuiteCard))).catch(() => {});
-    getGallery(1, 4).then((res) => setGalleryImages(res.items.map((i) => i.url))).catch(() => {});
+    getGallery(1, 10).then((res) => setGalleryImages(res.items.map((i) => i.url))).catch(() => {});
   }, []);
 
   return (
@@ -38,7 +38,7 @@ export const LandingPage = () => {
       <PhilosophySection />
       <SuitesSection suites={suites.length > 0 ? suites : undefined} />
       <AmenitiesSection />
-      <GallerySection images={galleryImages.length > 0 ? galleryImages : undefined} />
+      {galleryImages.length > 0 && <GallerySection images={galleryImages} />}
       <CtaSection />
     </div>
   );

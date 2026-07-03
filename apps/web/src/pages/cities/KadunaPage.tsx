@@ -32,12 +32,6 @@ export const KadunaPage = () => {
     <div className="flex flex-col bg-[#FAF8F6]">
       {/* Hero Section */}
       <section className="relative flex min-h-[90vh] w-full flex-col items-center justify-center overflow-hidden bg-inverse-surface pt-24 pb-20 md:min-h-[95vh]">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?auto=format&fit=crop&w=2000&q=80')`,
-          }}
-        />
         <div className="absolute inset-0 bg-black/35" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/10" />
 
@@ -73,19 +67,12 @@ export const KadunaPage = () => {
               <SectionReveal className="mt-12 md:mt-0 border-t border-outline-variant/40 pt-6">
                 <p className="font-sans text-xs font-bold text-secondary uppercase tracking-widest">LOCATION ADDRESS</p>
                 <p className="mt-2 font-serif text-sm text-on-surface">
-                  No. 12, Isa Kaita Road, G.R.A, Kaduna, Nigeria
+                  {suites[0]?.branch?.address || 'Plot 24, 26 & 28 Turunku Road, off Inuwa Wada Road, Ungwan Rimi, Kaduna'}
                 </p>
               </SectionReveal>
             </div>
 
-            {/* Right Column (Image) */}
-            <SectionReveal className="rounded-sm overflow-hidden h-[450px] md:h-full shadow-ambient min-h-[500px]">
-              <img
-                src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80"
-                alt="Kaduna living room garden view"
-                className="size-full object-cover"
-              />
-            </SectionReveal>
+
           </div>
         </div>
       </section>
@@ -147,7 +134,7 @@ export const KadunaPage = () => {
         </div>
       </section>
 
-      {/* Curated Facilities Section */}
+      {/* Curated Facilities */}
       <section id="facilities" className="scroll-mt-[5.85rem] md:scroll-mt-[6.25rem] px-[var(--spacing-margin-mobile)] py-20 lg:px-[var(--spacing-margin-desktop)] lg:py-28">
         <div className="mx-auto w-full max-w-[1240px]">
           <SectionReveal className="text-center mb-16">
@@ -157,61 +144,17 @@ export const KadunaPage = () => {
             </h2>
           </SectionReveal>
 
-          {/* Grid Layout matching the mockup exactly */}
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3 h-auto md:h-[600px]">
-            {/* Left Tall Column (Fitness Center) */}
-            <SectionReveal className="h-[400px] md:h-full rounded-sm overflow-hidden relative group shadow-card">
-              <img
-                src="https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80"
-                alt="Fitness center"
-                className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-              <div className="absolute bottom-6 left-6 text-white">
-                <p className="font-serif text-2xl font-normal leading-tight">State-of-the-Art Fitness Center</p>
+          <div className="flex justify-center">
+            <SectionReveal className="flex flex-col justify-center bg-white border border-outline-variant/35 rounded-sm p-8 shadow-card hover:shadow-ambient transition-all duration-500 max-w-md">
+              <div className="size-10 rounded-sm bg-[#735c00]/5 text-[#735c00] flex items-center justify-center mb-4">
+                <Wifi className="size-5" />
               </div>
-            </SectionReveal>
-
-            {/* Middle Column (Fiber Optic Connectivity + Concierge & Security image) */}
-            <div className="grid grid-rows-2 gap-6 h-full">
-              {/* Row 1: Fiber Optic Connectivity Card */}
-              <SectionReveal className="flex flex-col justify-center bg-white border border-outline-variant/35 rounded-sm p-8 shadow-card hover:shadow-ambient transition-all duration-500">
-                <div className="size-10 rounded-sm bg-[#735c00]/5 text-[#735c00] flex items-center justify-center mb-4">
-                  <Wifi className="size-5" />
-                </div>
-                <h4 className="font-sans text-base font-bold text-on-surface uppercase tracking-widest">
-                  Fiber Optic Connectivity
-                </h4>
-                <p className="mt-2 text-sm text-secondary leading-relaxed">
-                  High-speed connection throughout the entire estate.
-                </p>
-              </SectionReveal>
-
-              {/* Row 2: 24/7 Concierge Image with Overlay */}
-              <SectionReveal className="rounded-sm overflow-hidden relative group shadow-card">
-                <img
-                  src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
-                  alt="Concierge and Security"
-                  className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                <div className="absolute bottom-6 left-6 text-white">
-                  <p className="font-serif text-xl font-normal leading-tight">24/7 Concierge & Security</p>
-                </div>
-              </SectionReveal>
-            </div>
-
-            {/* Right Tall Column (Private Gardens) */}
-            <SectionReveal className="h-[400px] md:h-full rounded-sm overflow-hidden relative group shadow-card">
-              <img
-                src="https://images.unsplash.com/photo-1558236711-33820b827cb6?auto=format&fit=crop&w=800&q=80"
-                alt="Private gardens at night"
-                className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-              <div className="absolute bottom-6 left-6 text-white">
-                <p className="font-serif text-2xl font-normal leading-tight">Private Gardens</p>
-              </div>
+              <h4 className="font-sans text-base font-bold text-on-surface uppercase tracking-widest">
+                Fiber Optic Connectivity
+              </h4>
+              <p className="mt-2 text-sm text-secondary leading-relaxed">
+                High-speed connection throughout the entire estate.
+              </p>
             </SectionReveal>
           </div>
         </div>

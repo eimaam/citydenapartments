@@ -12,6 +12,9 @@ export interface PublicRoomType {
     id: string;
     name: string;
     code: string;
+    address: string;
+    contactPhone: string;
+    contactEmail: string;
   };
 }
 

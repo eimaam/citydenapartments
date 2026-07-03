@@ -32,32 +32,10 @@ export const AbujaPage = () => {
     },
   ];
 
-  const neighborhoodImages = {
-    jabiLake: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800&q=80',
-    facade: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80',
-    millenniumPark: 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&w=800&q=80',
-    centralArea: 'https://images.unsplash.com/photo-1543007630-9710e4a00a20?auto=format&fit=crop&w=800&q=80',
-  };
-
-  const galleryImages = [
-    'https://images.unsplash.com/photo-1616594039964-3f59a4a3f6f9?auto=format&fit=crop&w=600&q=80',
-    'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=600&q=80',
-    'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=600&q=80',
-    'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=600&q=80',
-    'https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=600&q=80',
-    'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80',
-  ];
-
   return (
     <div className="flex flex-col bg-[#FAF8F6]">
       {/* Hero Section */}
       <section className="relative flex min-h-[90vh] w-full flex-col items-center justify-center overflow-hidden bg-inverse-surface pt-24 md:min-h-[95vh]">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1548345680-f5475ea5df84?auto=format&fit=crop&w=2000&q=80')`,
-          }}
-        />
         <div className="absolute inset-0 bg-black/35" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/10" />
 
@@ -84,9 +62,7 @@ export const AbujaPage = () => {
             <SectionReveal className="flex flex-col border-l border-primary/40 pl-6">
               <span className="text-[11px] font-bold tracking-widest text-primary uppercase">THE LOCATION</span>
               <p className="mt-3 font-serif text-sm leading-relaxed text-secondary">
-                11, Jabi Lake View Drive,
-                <br />
-                Central Business District, Abuja
+                {suites[0]?.branch?.address || 'No 5 Audu Ogbe Street, Jabi Abuja.'}
               </p>
             </SectionReveal>
 
@@ -150,17 +126,7 @@ export const AbujaPage = () => {
       {/* Elevated Experiences Section */}
       <section id="facilities" className="scroll-mt-[5.85rem] md:scroll-mt-[6.25rem] px-[var(--spacing-margin-mobile)] py-20 lg:px-[var(--spacing-margin-desktop)] lg:py-28">
         <div className="mx-auto w-full max-w-[1240px]">
-          <div className="grid grid-cols-1 gap-12 items-center md:grid-cols-2">
-            {/* Left Image */}
-            <SectionReveal className="rounded-sm overflow-hidden aspect-[16/10] bg-surface-container shadow-ambient">
-              <img
-                src="https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?auto=format&fit=crop&w=1200&q=80"
-                alt="Rooftop pool sunset view"
-                className="size-full object-cover"
-              />
-            </SectionReveal>
-
-            {/* Right Content */}
+          <div className="grid grid-cols-1 gap-12 items-center md:grid-cols-1">
             <div className="flex flex-col">
               <SectionReveal>
                 <h2 className="font-serif text-3xl md:text-4xl font-normal tracking-tight text-on-surface mb-8">
@@ -193,113 +159,12 @@ export const AbujaPage = () => {
         </div>
       </section>
 
-      {/* Abuja Neighborhood Section */}
-      <section className="bg-[#F6F4F1] px-[var(--spacing-margin-mobile)] py-20 lg:px-[var(--spacing-margin-desktop)] lg:py-28">
-        <div className="mx-auto w-full max-w-[1240px]">
-          <SectionReveal className="flex items-end justify-between border-b border-outline-variant/40 pb-6 mb-12">
-            <h2 className="font-serif text-3xl font-normal text-on-surface md:text-4xl">
-              Abuja Neighborhood
-            </h2>
-            <span className="text-[11px] font-bold tracking-widest text-[#7F7663] uppercase">
-              WUSE II / JABI DISTRICT
-            </span>
-          </SectionReveal>
 
-          {/* Grid Layout matching the mockup exactly */}
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 h-auto md:h-[650px]">
-            {/* Left Big Vertical Card */}
-            <SectionReveal className="h-[400px] md:h-full rounded-sm overflow-hidden relative group shadow-card">
-              <img
-                src={neighborhoodImages.jabiLake}
-                alt="Jabi Lake sunset"
-                className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-              <div className="absolute bottom-6 left-6 text-white">
-                <p className="font-serif text-2xl font-normal leading-tight">Jabi Lake</p>
-                <p className="text-[10px] font-bold tracking-widest text-primary-container/80 uppercase mt-1">SUNSET & BOAT RIDES</p>
-              </div>
-            </SectionReveal>
 
-            {/* Right Sub-grid */}
-            <div className="grid grid-rows-2 gap-6 h-full">
-              {/* Row 1: Building Exterior */}
-              <SectionReveal className="h-[250px] md:h-full rounded-sm overflow-hidden relative group shadow-card">
-                <img
-                  src={neighborhoodImages.facade}
-                  alt="Building Exterior"
-                  className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-black/15" />
-              </SectionReveal>
 
-              {/* Row 2: 2 Column Grid */}
-              <div className="grid grid-cols-2 gap-6 h-full">
-                {/* Millennium Park */}
-                <SectionReveal className="h-[200px] md:h-full rounded-sm overflow-hidden relative group shadow-card">
-                  <img
-                    src={neighborhoodImages.millenniumPark}
-                    alt="Millennium Park"
-                    className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  <div className="absolute bottom-4 left-4 text-white">
-                    <p className="font-serif text-lg font-normal leading-tight">Millennium Park</p>
-                    <p className="text-[8px] font-bold tracking-widest text-primary-container/80 uppercase mt-1">ABUJA / PICNIC AREA</p>
-                  </div>
-                </SectionReveal>
-
-                {/* Central Area */}
-                <SectionReveal className="h-[200px] md:h-full rounded-sm overflow-hidden relative group shadow-card">
-                  <img
-                    src={neighborhoodImages.centralArea}
-                    alt="Central Area"
-                    className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  <div className="absolute bottom-4 left-4 text-white">
-                    <p className="font-serif text-lg font-normal leading-tight">Central Area</p>
-                    <p className="text-[8px] font-bold tracking-widest text-primary-container/80 uppercase mt-1">5 MINS / COMMERCIAL HUB</p>
-                  </div>
-                </SectionReveal>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* The Gallery Section */}
-      <section id="gallery" className="scroll-mt-[5.85rem] md:scroll-mt-[6.25rem] px-[var(--spacing-margin-mobile)] py-20 lg:px-[var(--spacing-margin-desktop)] lg:py-28">
-        <div className="mx-auto w-full max-w-[1240px]">
-          <SectionReveal className="text-center mb-16">
-            <h2 className="font-serif text-4xl font-normal italic tracking-tight text-on-surface">
-              The Gallery
-            </h2>
-            <div className="h-0.5 w-16 bg-[#735c00] mx-auto mt-4" />
-          </SectionReveal>
-
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-            {galleryImages.map((img, index) => (
-              <SectionReveal key={index} delay={index * 0.05} className="aspect-[4/3] rounded-sm overflow-hidden shadow-card group">
-                <img
-                  src={img}
-                  alt="City Den Abuja Gallery"
-                  className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                />
-              </SectionReveal>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* Your Urban Sanctuary Awaits (CTA) */}
       <section className="relative w-full py-28 md:py-36 bg-inverse-surface overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=2000&q=80')`,
-          }}
-        />
         <div className="absolute inset-0 bg-black/60" />
         <div className="relative z-10 mx-auto flex max-w-[700px] flex-col items-center px-6 text-center text-white">
           <SectionReveal>

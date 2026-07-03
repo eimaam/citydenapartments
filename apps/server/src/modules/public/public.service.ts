@@ -37,7 +37,7 @@ export class PublicService {
 
     const roomTypes = await this.roomTypeModel
       .find(filter)
-      .populate('branchId', 'name code')
+      .populate('branchId', 'name code address policies')
       .lean();
 
     const items = roomTypes.map((rt) => ({
@@ -52,6 +52,9 @@ export class PublicService {
         id: ((rt.branchId as any)?._id || rt.branchId).toString(),
         name: (rt.branchId as any)?.name || '',
         code: (rt.branchId as any)?.code || '',
+        address: (rt.branchId as any)?.address || '',
+        contactPhone: (rt.branchId as any)?.policies?.contactPhone || '',
+        contactEmail: (rt.branchId as any)?.policies?.contactEmail || '',
       },
     }));
 
