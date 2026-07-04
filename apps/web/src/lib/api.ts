@@ -36,7 +36,8 @@ interface RoomsResponse {
 async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`API error: ${res.status} ${res.statusText}`);
-  return res.json();
+  const body = await res.json();
+  return body.data as T;
 }
 
 export async function getRoomTypes(branchCode?: string): Promise<PublicRoomType[]> {
