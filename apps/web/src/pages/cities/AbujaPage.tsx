@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Waves, Award, Dumbbell } from 'lucide-react';
 import { Button } from '@citydenapartments/shared';
 import { HeroEntrance, SectionReveal } from '../../components/marketing/motionSection';
@@ -94,6 +95,7 @@ export const AbujaPage = () => {
                       src={suite.images[0] || ''}
                       alt={suite.name}
                       className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                     />
                   </div>
                   <div className="mt-6 flex flex-col px-2 pb-2">
@@ -108,12 +110,12 @@ export const AbujaPage = () => {
                         <span className="text-[10px] text-secondary/60 font-bold uppercase tracking-widest">STARTING FROM</span>
                         <span className="font-serif text-lg font-bold text-on-surface">{formatNGN(suite.basePrice)}<span className="text-xs font-normal text-secondary">/night</span></span>
                       </div>
-                      <a
-                        href="#contact"
+                      <Link
+                        to="/book?city=abuja"
                         className="text-xs font-bold tracking-widest text-[#735c00] hover:text-[#554300] border-b border-[#735c00]/30 hover:border-[#554300]/80 pb-0.5 uppercase transition-colors"
                       >
                         BOOK NOW
-                      </a>
+                      </Link>
                     </div>
                   </div>
                 </article>
@@ -175,19 +177,23 @@ export const AbujaPage = () => {
               Experience the best of Abuja in our luxury serviced apartments.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4">
-              <Button
-                size="lg"
-                className="!bg-[#735c00] hover:!bg-[#554300] !text-white !rounded-none font-bold tracking-widest text-xs px-8 py-4"
-              >
-                BOOK NOW
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-white !text-white hover:bg-white/10 !rounded-none font-bold tracking-widest text-xs px-8 py-4"
-              >
-                EXPLORE SUITES
-              </Button>
+              <Link to="/book?city=abuja">
+                <Button
+                  size="lg"
+                  className="!bg-[#735c00] hover:!bg-[#554300] !text-white !rounded-none font-bold tracking-widest text-xs px-8 py-4"
+                >
+                  BOOK NOW
+                </Button>
+              </Link>
+              <Link to="/cities/abuja#rooms">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-white !text-white hover:bg-white/10 !rounded-none font-bold tracking-widest text-xs px-8 py-4"
+                >
+                  EXPLORE SUITES
+                </Button>
+              </Link>
             </div>
           </SectionReveal>
         </div>

@@ -5,7 +5,6 @@ export interface PublicRoomType {
   name: string;
   description: string;
   basePrice: number;
-  minPriceAllowed: number;
   amenities: string[];
   images: string[];
   branch: {

@@ -41,6 +41,7 @@ export const SuitesSection = ({
                     src={suite.imageUrl}
                     alt=""
                     className="aspect-[4/3] w-full object-cover transition-all duration-700 ease-out group-hover:scale-[1.2]"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                   />
                 </div>
                 <h3 className="mt-8 font-serif text-3xl font-normal tracking-tight text-on-surface">{suite.title}</h3>

@@ -345,6 +345,7 @@ export const BookingPage = () => {
                       src={suite.imageUrl}
                       alt={suite.title}
                       className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                     />
                     <div className="absolute top-4 right-4 bg-black/65 text-white text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-sm backdrop-blur-xs">
                       {suite.cityName.split(',')[0]}
@@ -586,6 +587,7 @@ export const BookingPage = () => {
                   src={selectedSuite.imageUrl}
                   alt={selectedSuite.title}
                   className="size-full object-cover"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                 />
               </div>
 
@@ -894,6 +896,7 @@ export const BookingPage = () => {
                   src={detailedSuiteView.imageUrl}
                   alt={detailedSuiteView.title}
                   className="size-full object-cover"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                 />
               </div>
 

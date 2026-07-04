@@ -45,7 +45,6 @@ export class PublicService {
       name: rt.name,
       description: (rt as any).description || '',
       basePrice: rt.basePrice,
-      minPriceAllowed: rt.minPriceAllowed,
       amenities: (rt as any).amenities || [],
       images: (rt as any).images || [],
       branch: {

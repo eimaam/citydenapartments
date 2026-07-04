@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Wifi, ArrowUpRight } from 'lucide-react';
 import { SectionReveal } from '../../components/marketing/motionSection';
 import { BookingBar } from '../../components/marketing/BookingBar';
@@ -105,6 +106,7 @@ export const KadunaPage = () => {
                       src={suite.images[0] || ''}
                       alt={suite.name}
                       className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                     />
                   </div>
                   <div className="mt-6 flex flex-col px-2 pb-2">
@@ -119,12 +121,12 @@ export const KadunaPage = () => {
                         <span className="text-[10px] text-secondary/60 font-bold uppercase tracking-widest">STARTING FROM</span>
                         <span className="font-serif text-lg font-bold text-on-surface">{formatNGN(suite.basePrice)}<span className="text-xs font-normal text-secondary">/night</span></span>
                       </div>
-                      <a
-                        href="#contact"
+                      <Link
+                        to="/book?city=kaduna"
                         className="text-xs font-bold tracking-widest text-[#735c00] hover:text-[#554300] border-b border-[#735c00]/30 hover:border-[#554300]/80 pb-0.5 uppercase transition-colors"
                       >
                         BOOK NOW
-                      </a>
+                      </Link>
                     </div>
                   </div>
                 </article>
