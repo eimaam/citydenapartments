@@ -4,6 +4,8 @@ import { SectionReveal } from './motionSection';
 import { formatNGN } from '@citydenapartments/shared';
 import type { ISuiteCard } from './types';
 
+const FALLBACK_SUITE_IMAGE = 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80';
+
 interface SuitesSectionProps {
   suites?: ISuiteCard[];
   title?: string;
@@ -38,10 +40,10 @@ export const SuitesSection = ({
               <article className="group flex flex-col">
                 <div className="overflow-hidden rounded-sm">
                   <img
-                    src={suite.imageUrl}
+                    src={suite.imageUrl || FALLBACK_SUITE_IMAGE}
                     alt=""
                     className="aspect-[4/3] w-full object-cover transition-all duration-700 ease-out group-hover:scale-[1.2]"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                    onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_SUITE_IMAGE }}
                   />
                 </div>
                 <h3 className="mt-8 font-serif text-3xl font-normal tracking-tight text-on-surface">{suite.title}</h3>

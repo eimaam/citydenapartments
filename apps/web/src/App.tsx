@@ -5,6 +5,7 @@ import { LandingPage } from './pages/LandingPage'
 import { CityPage } from './pages/CityPage'
 import { BookingPage } from './pages/BookingPage'
 import { GalleryPage } from './pages/GalleryPage'
+import { ContactPage } from './pages/ContactPage'
 
 const App = () => {
   return (
@@ -15,6 +16,7 @@ const App = () => {
         <Route path="/cities/:cityId" element={<CityPage />} />
         <Route path="/book" element={<BookingPage />} />
         <Route path="/gallery" element={<GalleryPage />} />
+        <Route path="/contact" element={<ContactPage />} />
       </Routes>
     </MainLayout>
   )

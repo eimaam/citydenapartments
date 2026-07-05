@@ -54,7 +54,7 @@ export const BookingBar: React.FC<BookingBarProps> = ({ currentCity = 'abuja' })
   const todayStr = formatDate(new Date());
 
   return (
-    <div className="absolute bottom-0 left-1/2 z-20 w-[92%] max-w-[1140px] -translate-x-1/2 translate-y-1/2 rounded-sm border border-outline-variant/60 bg-white p-4 shadow-ambient md:p-6 transition-all duration-300">
+    <div className="absolute bottom-0 left-1/2 z-20 w-[92%] max-w-[1140px] -translate-x-1/2 translate-y-1/2 rounded-sm border border-outline-variant/60 bg-white p-4 shadow-[0_8px_30px_rgba(0,0,0,0.12)] md:p-6 transition-all duration-300">
       <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-12 items-end">
         {/* Destination Selection */}
         <div className="lg:col-span-3 flex flex-col border-b border-outline-variant/40 pb-2 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-4">
