@@ -26,6 +26,10 @@ export class UpdateEmployeeDto {
   position?: string;
 
   @IsOptional()
+  @IsMongoId()
+  branchId?: string;
+
+  @IsOptional()
   @IsBoolean()
   isActive?: boolean;
 }
