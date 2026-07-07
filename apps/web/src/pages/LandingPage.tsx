@@ -11,6 +11,7 @@ import {
 import { getRoomTypes, getGallery } from '../lib/api';
 import type { PublicRoomType } from '../lib/api';
 import type { ISuiteCard } from '../components/marketing/types';
+import { SEOHead } from '../components/SEOHead';
 
 const toSuiteCard = (rt: PublicRoomType): ISuiteCard => ({
   id: rt.id,
@@ -31,6 +32,7 @@ export const LandingPage = () => {
 
   return (
     <div className="flex flex-col">
+      <SEOHead />
       <HeroSection 
       image="https://pub-644677a999f742b39f8a60416322206c.r2.dev/abj/hero.jpeg"
       />

@@ -2,6 +2,7 @@ import React from 'react';
 import { MapPin, Phone, Mail, Clock, ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { SectionReveal } from '../components/marketing/motionSection';
+import { SEOHead } from '../components/SEOHead';
 import {
   BRANCH_CONTACTS,
   BRANCH_COORDINATES,
@@ -17,6 +18,11 @@ const branches = [
 export const ContactPage = () => {
   return (
     <div className="flex flex-col bg-[#FAF8F6]">
+      <SEOHead
+        title="Contact Us"
+        description="Get in touch with City Den Apartments. Find contact details for our locations in Abuja, Kaduna, and Maiduguri."
+        canonical="/contact"
+      />
       {/* Hero */}
       <section className="relative flex min-h-[40vh] w-full flex-col items-center justify-center overflow-hidden bg-inverse-surface pt-24 md:min-h-[45vh]">
         <div className="absolute inset-0 bg-black/40" />

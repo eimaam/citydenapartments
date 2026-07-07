@@ -6,6 +6,7 @@ import { BookingBar } from '../../components/marketing/BookingBar';
 import { formatNGN } from '@citydenapartments/shared';
 import { getRoomTypes } from '../../lib/api';
 import type { PublicRoomType } from '../../lib/api';
+import { SEOHead } from '../../components/SEOHead';
 import {
   BRANCH_COORDINATES,
   BRANCH_CONTACTS,
@@ -58,6 +59,11 @@ export const MaiduguriPage = () => {
 
   return (
     <div className="flex flex-col bg-[#FAF8F6]">
+      <SEOHead
+        title="Maiduguri"
+        description="Luxury serviced apartments in Maiduguri — Borno State. Premium accommodation with modern amenities for business and leisure travelers in Northern Nigeria."
+        canonical="/cities/maiduguri"
+      />
       {/* Hero Section */}
       <section className="relative flex min-h-[70vh] w-full flex-col items-center justify-center overflow-hidden pt-24 md:min-h-[75vh]">
         <div className="absolute inset-0">

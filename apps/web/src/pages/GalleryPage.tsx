@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { X } from 'lucide-react';
 import { getGallery } from '../lib/api';
 import type { GalleryItem } from '../lib/api';
+import { SEOHead } from '../components/SEOHead';
 
 export const GalleryPage = () => {
   const [items, setItems] = useState<GalleryItem[]>([]);
@@ -36,6 +37,11 @@ export const GalleryPage = () => {
 
   return (
     <div className="min-h-screen bg-[#FAF8F6] pt-[5.85rem] md:pt-[6.25rem]">
+      <SEOHead
+        title="Gallery"
+        description="Explore our curated gallery of City Den Apartments — luxury interiors, serene spaces, and premium amenities across Abuja, Kaduna, and Maiduguri."
+        canonical="/gallery"
+      />
       {/* Header */}
       <section className="px-[var(--spacing-margin-mobile)] py-16 lg:px-[var(--spacing-margin-desktop)]">
         <div className="mx-auto w-full max-w-[1240px] text-center">

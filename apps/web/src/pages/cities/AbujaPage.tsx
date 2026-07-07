@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Waves, Award, Dumbbell, MapPin, Navigation } from 'lucide-react';
+import { Waves, Award, Dumbbell, Navigation } from 'lucide-react';
 import { Button } from '@citydenapartments/shared';
 import { HeroEntrance, SectionReveal } from '../../components/marketing/motionSection';
 import { BookingBar } from '../../components/marketing/BookingBar';
 import { formatNGN } from '@citydenapartments/shared';
 import { getRoomTypes } from '../../lib/api';
 import type { PublicRoomType } from '../../lib/api';
+import { SEOHead } from '../../components/SEOHead';
 import {
   BRANCH_COORDINATES,
   BRANCH_CONTACTS,
@@ -57,6 +58,11 @@ export const AbujaPage = () => {
 
   return (
     <div className="flex flex-col bg-[#FAF8F6]">
+      <SEOHead
+        title="Abuja"
+        description="Luxury serviced apartments in Abuja — Jabi. Premium accommodation near Jabi Lake with world-class amenities for business and leisure travelers."
+        canonical="/cities/abuja"
+      />
       {/* Hero Section */}
       <section className="relative flex min-h-[70vh] w-full flex-col items-center justify-center overflow-hidden pt-24 md:min-h-[75vh]">
         <div className="absolute inset-0">

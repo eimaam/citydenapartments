@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { SEOHead } from '../components/SEOHead';
 import { 
   Calendar, 
   Users, 
@@ -241,6 +242,11 @@ export const BookingPage = () => {
 
   return (
     <div className="min-h-screen bg-[#FAF8F6] pt-[5.85rem] md:pt-[6.25rem] pb-24 text-on-surface">
+      <SEOHead
+        title="Book a Suite"
+        description="Book your luxury suite at City Den Apartments. Choose from premium accommodations in Abuja, Kaduna, and Maiduguri."
+        canonical="/book"
+      />
       {/* Step Indicator Header */}
       <div className="sticky top-[5.85rem] md:top-[6.25rem] z-30 flex justify-center items-center gap-4 md:gap-8 py-5 border-b border-outline-variant/30 bg-white shadow-sm px-4">
         <button 
