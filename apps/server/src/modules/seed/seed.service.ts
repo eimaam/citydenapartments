@@ -14,7 +14,7 @@ import { Employee } from '../employees/employee.schema';
 import { Department } from '../departments/department.schema';
 import { Customer } from '../customers/customer.schema';
 
-// ── random helpers ──────────────────────────────────────────────
+// random helpers────────────────────────────────────────────
 const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 const randNaira = (min: number, max: number) => randInt(min / 1000, max / 1000) * 1000;
@@ -23,7 +23,7 @@ function daysAgo(n: number) { return subDays(new Date(), n); }
 function daysFromNow(n: number) { return addDays(new Date(), n); }
 function ref(prefix: string, n: number) { return `${prefix}-${String(n).padStart(3, '0')}`; }
 
-// ── data pools ───────────────────────────────────────────────────
+// data pools─────────────────────────────────────────────────
 const firstNames = [
   'Chidi', 'Amara', 'Ngozi', 'Obinna', 'Fatima', 'Ibrahim', 'Zainab', 'Tunde',
   'Chioma', 'Emeka', 'Bolanle', 'Yusuf', 'Aisha', 'Musa', 'Halima', 'Olumide',
@@ -48,7 +48,7 @@ const occupations = ['Civil Servant', 'Business Owner', 'Teacher', 'Engineer', '
 const paymentMethods: Array<'cash' | 'pos_card' | 'bank_transfer'> = ['cash', 'pos_card', 'bank_transfer'];
 const bookingSources: Array<'walk_in' | 'phone' | 'online'> = ['walk_in', 'phone', 'online'];
 
-// ── R2 bucket URLs for Abuja room images ──────────────────────────
+// R2 bucket URLs for Abuja room images────────────────────────
 const BUCKET = 'https://bucket.citydenapartments.com';
 
 const img = (slug: string, room: string, n: number, ext: string) =>
@@ -85,7 +85,57 @@ const abjRTImages: Record<string, string[]> = {
   'Presidential Suite': [...abjRoomImages['A102'], ...abjRoomImages['A103'], ...abjRoomImages['A104']],
 };
 
-// ── scenario presets: [status, checkInOffset, checkOutOffset, nights] ─
+// ── Kaduna image URLs ────────────────────────────────────────────
+const kadRTImages: Record<string, string[]> = {
+  'Luxury Standard': [
+    `${BUCKET}/kaduna/room-types/luxury-standard/WhatsApp%20Image%202026-05-13%20at%2011.09.41%20AM.jpeg`,
+    `${BUCKET}/kaduna/room-types/luxury-standard/WhatsApp%20Image%202026-05-13%20at%2011.09.43%20AM.jpeg`,
+    `${BUCKET}/kaduna/room-types/luxury-standard/WhatsApp%20Image%202026-05-13%20at%2011.09.43%20AM%20(1).jpeg`,
+    `${BUCKET}/kaduna/room-types/luxury-standard/WhatsApp%20Image%202026-05-13%20at%2011.09.43%20AM%20(2).jpeg`,
+    `${BUCKET}/kaduna/room-types/luxury-standard/WhatsApp%20Image%202026-05-13%20at%2011.09.43%20AM%20(3).jpeg`,
+    `${BUCKET}/kaduna/room-types/luxury-standard/WhatsApp%20Image%202026-05-13%20at%2011.09.43%20AM%20(4).jpeg`,
+    `${BUCKET}/kaduna/room-types/luxury-standard/WhatsApp%20Image%202026-05-13%20at%2011.09.43%20AM%20(5).jpeg`,
+    `${BUCKET}/kaduna/room-types/luxury-standard/WhatsApp%20Image%202026-05-13%20at%2011.09.43%20AM%20(6).jpeg`,
+    `${BUCKET}/kaduna/room-types/luxury-standard/WhatsApp%20Image%202026-05-13%20at%2011.11.42%20AM.jpeg`,
+    `${BUCKET}/kaduna/room-types/luxury-standard/WhatsApp%20Image%202026-05-13%20at%2011.11.43%20AM%20(1).jpeg`,
+  ],
+  'Super Luxury': [
+    `${BUCKET}/kaduna/room-types/super-luxury/WhatsApp%20Image%202026-05-13%20at%2011.16.10%20AM.jpeg`,
+    `${BUCKET}/kaduna/room-types/super-luxury/WhatsApp%20Image%202026-05-13%20at%2011.16.10%20AM%20(1).jpeg`,
+    `${BUCKET}/kaduna/room-types/super-luxury/WhatsApp%20Image%202026-05-13%20at%2011.16.10%20AM%20(2).jpeg`,
+    `${BUCKET}/kaduna/room-types/super-luxury/WhatsApp%20Image%202026-05-13%20at%2011.16.10%20AM%20(3).jpeg`,
+    `${BUCKET}/kaduna/room-types/super-luxury/WhatsApp%20Image%202026-05-13%20at%2011.16.11%20AM.jpeg`,
+    `${BUCKET}/kaduna/room-types/super-luxury/WhatsApp%20Image%202026-05-13%20at%2011.16.11%20AM%20(1).jpeg`,
+    `${BUCKET}/kaduna/room-types/super-luxury/WhatsApp%20Image%202026-05-13%20at%2011.16.11%20AM%20(2).jpeg`,
+    `${BUCKET}/kaduna/room-types/super-luxury/WhatsApp%20Image%202026-05-13%20at%2011.16.11%20AM%20(3).jpeg`,
+  ],
+  'Executive Luxury': [
+    `${BUCKET}/kaduna/room-types/executive-luxury/WhatsApp%20Image%202026-05-13%20at%2011.17.57%20AM.jpeg`,
+    `${BUCKET}/kaduna/room-types/executive-luxury/WhatsApp%20Image%202026-05-13%20at%2011.17.57%20AM%20(1).jpeg`,
+    `${BUCKET}/kaduna/room-types/executive-luxury/WhatsApp%20Image%202026-05-13%20at%2011.17.57%20AM%20(2).jpeg`,
+    `${BUCKET}/kaduna/room-types/executive-luxury/WhatsApp%20Image%202026-05-13%20at%2011.17.57%20AM%20(3).jpeg`,
+    `${BUCKET}/kaduna/room-types/executive-luxury/WhatsApp%20Image%202026-05-13%20at%2011.17.58%20AM.jpeg`,
+    `${BUCKET}/kaduna/room-types/executive-luxury/WhatsApp%20Image%202026-05-13%20at%2011.17.58%20AM%20(1).jpeg`,
+    `${BUCKET}/kaduna/room-types/executive-luxury/WhatsApp%20Image%202026-05-13%20at%2011.17.58%20AM%20(2).jpeg`,
+  ],
+  'Super Deluxe Suite': [
+    `${BUCKET}/kaduna/room-types/super-deluxe-suite/WhatsApp%20Image%202026-05-13%20at%2011.21.03%20AM.jpeg`,
+    `${BUCKET}/kaduna/room-types/super-deluxe-suite/WhatsApp%20Image%202026-05-13%20at%2011.21.03%20AM%20(1).jpeg`,
+    `${BUCKET}/kaduna/room-types/super-deluxe-suite/WhatsApp%20Image%202026-05-13%20at%2011.21.03%20AM%20-%20Copy.jpeg`,
+    `${BUCKET}/kaduna/room-types/super-deluxe-suite/WhatsApp%20Image%202026-05-13%20at%2011.21.03%20AM%20(1)%20-%20Copy.jpeg`,
+    `${BUCKET}/kaduna/room-types/super-deluxe-suite/WhatsApp%20Image%202026-05-13%20at%2011.21.04%20AM%20-%20Copy.jpeg`,
+  ],
+  'Executive Suite': [
+    `${BUCKET}/kaduna/room-types/executive-suite/3f02b5dd-b297-40a6-8426-b6f0553c32de.JPG`,
+    `${BUCKET}/kaduna/room-types/executive-suite/428e56f6-199f-48a0-87af-f03c89d67051.JPG`,
+    `${BUCKET}/kaduna/room-types/executive-suite/600fffad-ac61-45dd-9435-cdf58acb9472.JPG`,
+    `${BUCKET}/kaduna/room-types/executive-suite/6b26d6d1-e719-4dfc-8fa5-2e32b1a4b0e8.JPG`,
+    `${BUCKET}/kaduna/room-types/executive-suite/73da6b6f-6619-4052-9384-2b32fb285eac.JPG`,
+    `${BUCKET}/kaduna/room-types/executive-suite/88ec2349-4ae6-41cc-85bb-d6c46ae0e149.JPG`,
+  ],
+};
+
+// scenario presets: [status, checkInOffset, checkOutOffset, nights] ─
 type Scenario = [string, number, number, number];
 
 const scenarios: Scenario[] = [
@@ -167,7 +217,7 @@ export class SeedService  {
 
     const hashedPassword = await bcrypt.hash('admin123', 12);
 
-    // ── branches ──
+    // branches
     const branches = await this.branchModel.create([
       {
         name: 'Abuja', code: 'ABJ', address: 'No 5 Audu Ogbe Street, Jabi Abuja.', isActive: true,
@@ -242,14 +292,14 @@ export class SeedService  {
 
     this.logger.log(`Seed — branches created: ${branches.length}`);
 
-    // ── admin ──
+    // admin
     const admin = await this.userModel.create({
       email: 'admin@cityden.com', password: hashedPassword, name: 'Super Admin',
       role: 'SuperAdmin', allowedBranches: branches.map((b) => b._id),
       activeBranchId: null, isActive: true, passwordChangedAt: new Date(),
     });
 
-    // ── room types ──
+    // room types
     const abujaRT = await this.roomTypeModel.create([
       { branchId: branches[0]._id, name: 'King Suite', description: 'An intimate layout with sculpted light, tactile finishes, and a calm palette for effortless daily rhythm.', basePrice: 60000, minPriceAllowed: 50000, amenities: ['King Bed', 'AC', 'WiFi', 'TV'], images: [], createdBy: admin._id, updatedBy: admin._id },
       { branchId: branches[0]._id, name: 'Deluxe Suite', description: 'Enhanced comfort featuring premium materials and a spacious layout designed for extended relaxation.', basePrice: 70000, minPriceAllowed: 60000, amenities: ['Queen Bed', 'AC', 'WiFi'], images: abjRTImages['Deluxe Suite'], createdBy: admin._id, updatedBy: admin._id },
@@ -260,11 +310,11 @@ export class SeedService  {
       { branchId: branches[0]._id, name: 'Presidential Suite', description: 'The pinnacle of luxury, offering ultimate privacy, 360-degree views, and personalized world-class service.', basePrice: 400000, minPriceAllowed: 350000, amenities: ['King Bed', 'Living Room', 'Dining', 'Jacuzzi', 'AC', 'WiFi', 'TV'], images: abjRTImages['Presidential Suite'], createdBy: admin._id, updatedBy: admin._id },
     ]);
     const kadunaRT = await this.roomTypeModel.create([
-      { branchId: branches[1]._id, name: 'Luxury Standard', description: 'Designed for travelers seeking a refined urban sanctuary with essential comforts.', basePrice: 53750, minPriceAllowed: 43000, amenities: ['Queen Bed', 'AC', 'WiFi', 'TV'], images: [], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[1]._id, name: 'Super Luxury', description: 'Premium comfort with king-size amenities and superior finishes throughout.', basePrice: 75250, minPriceAllowed: 60000, amenities: ['King Bed', 'AC', 'WiFi', 'TV'], images: [], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[1]._id, name: 'Executive Luxury', description: 'Sophisticated design with dedicated workspace and premium comfort for the discerning traveler.', basePrice: 86000, minPriceAllowed: 68800, amenities: ['King Bed', 'AC', 'WiFi', 'Work Desk', 'TV'], images: [], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[1]._id, name: 'Super Deluxe Suite', description: 'Expansive living spaces with separate lounge area and premium finishes.', basePrice: 161250, minPriceAllowed: 129000, amenities: ['King Bed', 'Living Room', 'AC', 'WiFi', 'TV'], images: [], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[1]._id, name: 'Executive Suite', description: 'The pinnacle of Kaduna residence, offering unrivaled space and executive-level amenities.', basePrice: 193500, minPriceAllowed: 154800, amenities: ['King Bed', 'Living Room', 'Work Desk', 'AC', 'WiFi', 'TV'], images: [], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[1]._id, name: 'Luxury Standard', description: 'Designed for travelers seeking a refined urban sanctuary with essential comforts.', basePrice: 53750, minPriceAllowed: 43000, amenities: ['Queen Bed', 'AC', 'WiFi', 'TV'], images: kadRTImages['Luxury Standard'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[1]._id, name: 'Super Luxury', description: 'Premium comfort with king-size amenities and superior finishes throughout.', basePrice: 75250, minPriceAllowed: 60000, amenities: ['King Bed', 'AC', 'WiFi', 'TV'], images: kadRTImages['Super Luxury'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[1]._id, name: 'Executive Luxury', description: 'Sophisticated design with dedicated workspace and premium comfort for the discerning traveler.', basePrice: 86000, minPriceAllowed: 68800, amenities: ['King Bed', 'AC', 'WiFi', 'Work Desk', 'TV'], images: kadRTImages['Executive Luxury'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[1]._id, name: 'Super Deluxe Suite', description: 'Expansive living spaces with separate lounge area and premium finishes.', basePrice: 161250, minPriceAllowed: 129000, amenities: ['King Bed', 'Living Room', 'AC', 'WiFi', 'TV'], images: kadRTImages['Super Deluxe Suite'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[1]._id, name: 'Executive Suite', description: 'The pinnacle of Kaduna residence, offering unrivaled space and executive-level amenities.', basePrice: 193500, minPriceAllowed: 154800, amenities: ['King Bed', 'Living Room', 'Work Desk', 'AC', 'WiFi', 'TV'], images: kadRTImages['Executive Suite'], createdBy: admin._id, updatedBy: admin._id },
     ]);
     const maiRT = await this.roomTypeModel.create([
       { branchId: branches[2]._id, name: 'Deluxe Suite', description: 'Comfortable queen-size accommodation with modern amenities for a relaxing stay.', basePrice: 50000, minPriceAllowed: 40000, amenities: ['Queen Bed', 'AC', 'WiFi'], images: [], createdBy: admin._id, updatedBy: admin._id },
@@ -273,7 +323,7 @@ export class SeedService  {
 
     this.logger.log(`Seed — room types created: ${abujaRT.length} Abuja + ${kadunaRT.length} Kaduna + ${maiRT.length} Maiduguri`);
 
-    // ── rooms (references for seeding bookings) ──
+    // rooms (references for seeding bookings)
     const roomDefs = [
       // Abuja — King Suite (rt 0)
       { branch: 0, rt: 0, num: 'B104', max: 2 }, { branch: 0, rt: 0, num: 'B203', max: 2 },
@@ -329,7 +379,7 @@ export class SeedService  {
 
     this.logger.log(`Seed — rooms created: ${rooms.length}`);
 
-    // ── staff ──
+    // staff
     const now = new Date();
     await this.userModel.create([
       { email: 'reception@cityden.com', password: hashedPassword, name: 'Amara Reception', role: 'Reception', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true, passwordChangedAt: now },
@@ -343,13 +393,13 @@ export class SeedService  {
       { email: 'fm-maiduguri@cityden.com', password: hashedPassword, name: 'Ibrahim Facility Manager', role: 'FacilityManager', allowedBranches: [branches[2]._id], activeBranchId: branches[2]._id, isActive: true, passwordChangedAt: now },
     ]);
 
-    // ── Group GM ──
+    // Group GM
     await this.userModel.create({
       email: 'groupgm@cityden.com', password: hashedPassword, name: 'Dr. Okafor Group GM',
       role: 'GroupGM', allowedBranches: branches.map((b) => b._id), activeBranchId: null, isActive: true, passwordChangedAt: now,
     });
 
-    // ── store staff ──
+    // store staff
     const storeKeeper = await this.userModel.create({
       email: 'storekeeper@cityden.com', password: hashedPassword, name: 'Emeka Store',
       role: 'StoreKeeper', allowedBranches: [branches[0]._id], activeBranchId: branches[0]._id, isActive: true, passwordChangedAt: now,
@@ -361,7 +411,7 @@ export class SeedService  {
 
     this.logger.log(`Seed — users created: 1 admin + 1 group gm + 3 facility managers + 1 front office + 1 accountant + 1 it + 2 store staff + kitchen + reception + housekeeper`);
 
-    // ── inventory items ─────────────────────────────────────────
+    // inventory items───────────────────────────────────────
     const itemDefs = [
       { name: 'Bar Soap', category: 'Toiletries', unit: 'pcs' },
       { name: 'Shampoo', category: 'Toiletries', unit: 'bottles' },
@@ -420,7 +470,7 @@ export class SeedService  {
 
     this.logger.log(`Seed — inventory items created: ${createdItems.length} across ${branches.length} branches`);
 
-    // ── departments ──────────────────────────────────────────────────
+    // departments────────────────────────────────────────────────
     const deptDefs = [
       { branchIdx: 0, name: 'Management', description: 'Branch management and administration' },
       { branchIdx: 0, name: 'Front Desk', description: 'Reception and guest services' },
@@ -460,7 +510,7 @@ export class SeedService  {
       deptsByBranch[branchIdx][d.name] = d._id.toString();
     }
 
-    // ── employees ────────────────────────────────────────────────────
+    // employees──────────────────────────────────────────────────
     const staffByBranch: Array<{ branchIdx: number; staff: Array<{ name: string; email: string; phone: string; position: string; deptName: string }> }> = [
       {
         branchIdx: 0, // Abuja
@@ -494,24 +544,26 @@ export class SeedService  {
       {
         branchIdx: 2, // Maiduguri
         staff: [
-          { name: 'Muhammed Tahiru', email: 'muhammed.tahiru@citydenapartments.com', phone: '08039686719', position: 'General Manager', deptName: 'Management' },
-          { name: 'Dorcas Musa Waba', email: 'dorcas.waba@citydenapartments.com', phone: '08063269302', position: 'Receptionist', deptName: 'Front Desk' },
-          { name: 'Micheal Cynthia', email: 'micheal.cynthia@citydenapartments.com', phone: '09166818195', position: 'Receptionist', deptName: 'Front Desk' },
-          { name: 'Aziz Hayatu Dzarma', email: 'aziz.dzarma@citydenapartments.com', phone: '07063542501', position: 'Receptionist', deptName: 'Front Desk' },
-          { name: 'Ibrahim Dauda', email: 'ibrahim.dauda@citydenapartments.com', phone: '07073767344', position: 'Housekeeper', deptName: 'Housekeeping' },
-          { name: 'Amos Chaka', email: 'amos.chaka@citydenapartments.com', phone: '09131571180', position: 'Housekeeper', deptName: 'Housekeeping' },
-          { name: 'David Monday', email: 'david.monday@citydenapartments.com', phone: '07034165082', position: 'Housekeeper', deptName: 'Housekeeping' },
-          { name: 'Asmau Adamu', email: 'asmau.adamu@citydenapartments.com', phone: '08100662213', position: 'Housekeeper', deptName: 'Housekeeping' },
-          { name: 'Kolomi Akter', email: 'kolomi.akter@citydenapartments.com', phone: '08036740067', position: 'Gardener', deptName: 'Housekeeping' },
-          { name: 'Muhammed Bashir Bukar', email: 'muhammed.bukar@citydenapartments.com', phone: '07067171793', position: 'Gardener', deptName: 'Housekeeping' },
-          { name: 'Asura James', email: 'asura.james@citydenapartments.com', phone: '07064909810', position: 'Laundry', deptName: 'Laundry' },
-          { name: 'Barkah Boniface', email: 'barkah.boniface@citydenapartments.com', phone: '09021625954', position: 'Laundry', deptName: 'Laundry' },
-          { name: 'Haruna Matagak', email: 'haruna.matagak@citydenapartments.com', phone: '08034760483', position: 'Senior Chef', deptName: 'Kitchen' },
-          { name: 'Christy Augustina', email: 'christy.augustina@citydenapartments.com', phone: '09064888529', position: 'Cook', deptName: 'Kitchen' },
-          { name: 'Halima Salah', email: 'halima.salah@citydenapartments.com', phone: '08133089344', position: 'Steward', deptName: 'Kitchen' },
-          { name: 'Flora Musa Waba', email: 'flora.waba@citydenapartments.com', phone: '07025275360', position: 'Potter', deptName: 'Kitchen' },
-          { name: 'Ladi Bata', email: 'ladi.bata@citydenapartments.com', phone: '07019885313', position: 'Waiter', deptName: 'Kitchen' },
-          { name: 'Mala Musa Dzakwa', email: 'mala.dzakwa@citydenapartments.com', phone: '08031234599', position: 'Waiter', deptName: 'Kitchen' },
+          { name: 'Mohammed Tahiru', email: 'mtjibirn44@gmail.com', phone: '08039686749', position: 'General Manager', deptName: 'Management' },
+          { name: 'Markus John', email: 'markusjoh691@gmail.com', phone: '07068257253', position: 'Front Office Supervisor', deptName: 'Front Desk' },
+          { name: 'Hauwaa Ratgak', email: 'harunarotgak825@gmail.com', phone: '08039780483', position: 'Chef', deptName: 'Kitchen' },
+          { name: 'Makoi Cynthia', email: 'mikecynthia272@gmail.com', phone: '09166818195', position: 'Receptionist', deptName: 'Front Desk' },
+          { name: 'Aziz Hayatu Dzarma', email: 'azizhayatu7@gmail.com', phone: '09131270580', position: 'Receptionist', deptName: 'Front Desk' },
+          { name: 'Emmanuel Friday', email: 'emmanuelfridaylove@gmail.com', phone: '08139626388', position: 'Receptionist', deptName: 'Front Desk' },
+          { name: 'Dorcas Musa Wala', email: 'musawabadorcas@gmail.com', phone: '08063269302', position: 'Receptionist', deptName: 'Front Desk' },
+          { name: 'Usman Adamu', email: 'usmanadamu24@gmail.com', phone: '08100662213', position: 'H/k Supervisor', deptName: 'Housekeeping' },
+          { name: 'David Monday', email: 'davidmonday2022@gmail.com', phone: '07034165082', position: 'Housekeeper', deptName: 'Housekeeping' },
+          { name: 'Ames Charles', email: 'amoscharls21@gmail.com', phone: '07131571180', position: 'Housekeeper', deptName: 'Housekeeping' },
+          { name: 'Ibrahim Dauda', email: 'ibrahimdauda4322@gmail.com', phone: '07073767344', position: 'Housekeeper', deptName: 'Housekeeping' },
+          { name: 'Halima Saleh', email: 'halimasaleh641@gmail.com', phone: '08133089344', position: 'Kitchen Asst.', deptName: 'Kitchen' },
+          { name: 'Bilah Musa', email: 'bilamusa6@gmail.com', phone: '09068911160', position: 'Kitchen Asst.', deptName: 'Kitchen' },
+          { name: 'James Asura', email: 'kassidee55@gmail.com', phone: '07064909810', position: 'Laundry', deptName: 'Laundry' },
+          { name: 'Ladi Baita', email: 'ladibata033@gmail.com', phone: '07019885313', position: 'Waitress / Porter', deptName: 'Kitchen' },
+          { name: 'Flora Musa Wala', email: 'musaflora6@gmail.com', phone: '09068911160', position: 'Waitress / Porter', deptName: 'Kitchen' },
+          { name: 'Barka Boniface', email: 'bonifaeebarka55555@gmail.com', phone: '09021625954', position: 'Waiter / Porter', deptName: 'Kitchen' },
+          { name: 'Nala Musa Dzakwo', email: 'malamusadzakwa@gmail.com', phone: '09016267092', position: 'Laundry', deptName: 'Laundry' },
+          { name: 'Alhaji Modu Goni', email: 'alhajimodu265@gmail.com', phone: '08036740067', position: 'Environmental Gardener', deptName: 'Housekeeping' },
+          { name: 'Kolomi Alhaji Fam', email: 'alhajikolomitar@gmail.com', phone: '08127703424', position: 'Environmental Gardener', deptName: 'Housekeeping' },
         ],
       },
     ];
@@ -535,24 +587,35 @@ export class SeedService  {
     await this.employeeModel.create(employeeData);
     this.logger.log(`Seed — employees created: ${employeeData.length} across ${branches.length} branches`);
 
-    // ── live user accounts for real staff ────────────────────────────
+    // live user accounts for real staff──────────────────────────
     const positionRoleMap: Record<string, string> = {
       'Principal Consultant/Group GM': 'GroupGM',
       'General Manager': 'GroupGM',
       'Facility Manager': 'FacilityManager',
       'Front Office Manager/HR': 'FrontOfficeManager',
+      'Front Office Supervisor': 'Reception',
       'Accountant/Internal Auditor': 'Accountant',
       'Executive Housekeeper': 'HouseKeeper',
+      'H/k Supervisor': 'HouseKeeper',
       'Receptionist': 'Reception',
       'Housekeeper': 'HouseKeeper',
       'Chef': 'KitchenStaff',
       'Cook': 'KitchenStaff',
       'Steward': 'KitchenStaff',
       'Senior Chef': 'KitchenStaff',
+      'Kitchen Asst.': 'KitchenStaff',
       'Potter': 'KitchenStaff',
       'Waiter': 'KitchenStaff',
+      'Waitress / Porter': 'KitchenStaff',
+      'Waiter / Porter': 'KitchenStaff',
+      'Porter': 'HouseKeeper',
+      'Head Waiter': 'KitchenStaff',
       'Store Keeper': 'StoreKeeper',
       'IT': 'IT',
+      'Laundry': 'HouseKeeper',
+      'Laundry Operative': 'HouseKeeper',
+      'Environmental Gardener': 'HouseKeeper',
+      'Gardener': 'HouseKeeper',
     };
 
     const liveUsers: Array<Record<string, unknown>> = [];
@@ -577,7 +640,7 @@ export class SeedService  {
     await this.userModel.create(liveUsers);
     this.logger.log(`Seed — live user accounts created: ${liveUsers.length}`);
 
-    // ── customers ────────────────────────────────────────────────────
+    // customers──────────────────────────────────────────────────
     const customerData: Array<Record<string, unknown>> = [];
     const customerPhones: string[] = [];
     for (let i = 0; i < 20; i++) {
@@ -604,7 +667,7 @@ export class SeedService  {
     await this.customerModel.create(customerData);
     this.logger.log(`Seed — customers created: ${customerData.length}`);
 
-    // ── 30 bookings ─────────────────────────────────────────────────
+    // 30 bookings───────────────────────────────────────────────
     const bookingData: Array<Record<string, unknown>> = [];
     const roomsToUpdate: Record<string, string> = {}; // roomId -> status
 

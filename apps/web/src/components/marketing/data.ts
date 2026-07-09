@@ -25,7 +25,7 @@ export const locations: ILocationCard[] = [
     city: 'Kaduna',
     tagline: 'HERITAGE CITY',
     imageUrl:
-      'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&w=1200&q=80',
+      'https://bucket.citydenapartments.com/kaduna/room-types/luxury-standard/WhatsApp%20Image%202026-05-13%20at%2011.09.41%20AM.jpeg',
   },
   {
     id: 'maiduguri',
