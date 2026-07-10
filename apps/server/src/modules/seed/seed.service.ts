@@ -266,7 +266,7 @@ export class SeedService  {
         },
       },
       {
-        name: 'Maiduguri', code: 'MAI', address: '15 Damaturu Road, Maiduguri', isActive: true,
+        name: 'Maiduguri', code: 'MAI', address: 'No 3 Abu Zar Algiffari Road, Off Muhammed Goni Street (Agoja), Old GRA, Maiduguri', isActive: true,
         policies: {
           checkInTime: '14:00', checkOutTime: '12:00',
           earlyCheckIn: 'Early check-in is subject to availability and may incur additional charges.',
@@ -283,7 +283,7 @@ export class SeedService  {
           ],
           paymentInfo: 'Cash and card payments are accepted. A security deposit is required at check-in.',
           breakfastInfo: 'Complimentary breakfast served from 7:00 AM to 10:30 AM',
-          contactPhone: '+234 809 000 9012',
+          contactPhone: '0806 110 5548',
           contactEmail: 'maiduguri@citydenapartments.com',
           additionalNotes: 'Free WiFi is available throughout the property.',
         },

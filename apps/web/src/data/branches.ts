@@ -20,8 +20,8 @@ export const BRANCH_CONTACTS = {
     code: 'KAD',
   },
   maiduguri: {
-    address: '15 Damaturu Road, Maiduguri',
-    phone: '+234 809 000 9012',
+    address: 'No 3 Abu Zar Algiffari Road, Off Muhammed Goni Street (Agoja), Old GRA, Maiduguri',
+    phone: '0806 110 5548, 0802 550 1048',
     email: 'maiduguri@citydenapartments.com',
     name: 'Maiduguri',
     code: 'MAI',
