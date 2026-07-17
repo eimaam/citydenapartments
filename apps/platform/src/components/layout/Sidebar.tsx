@@ -63,8 +63,6 @@ const menuConfig: Record<UserRoleType, SidebarItem[]> = {
   ],
   Accountant: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
-    { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
     { label: 'Inventory', icon: Package, path: '/inventory' },
     { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
     { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },

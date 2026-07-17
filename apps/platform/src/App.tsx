@@ -34,7 +34,7 @@ export default function App() {
             <Route element={<MainLayout />}>
               <Route index element={<DashboardPage />} />
 
-              <Route element={<RoleGuard roles={[UserRole.Reception, UserRole.FrontOfficeManager, UserRole.FacilityManager, UserRole.Accountant]} />}>
+              <Route element={<RoleGuard roles={[UserRole.Reception, UserRole.FrontOfficeManager, UserRole.FacilityManager]} />}>
                 <Route path="bookings" element={<BookingsPage />} />
                 <Route path="bookings/calendar" element={<CalendarPage />} />
               </Route>
