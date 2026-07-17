@@ -24,6 +24,7 @@ import { EmployeesModule } from './modules/employees/employees.module';
 import { DiscountCodesModule } from './modules/discount-codes/discount-codes.module';
 import { DepartmentsModule } from './modules/departments/departments.module';
 import { PublicModule } from './modules/public/public.module';
+import { AuditLogModule } from './modules/audit-log/audit-log.module';
 import mongoose from 'mongoose';
 
 if (AppConfig.NODE_ENV === 'development') {
@@ -70,6 +71,7 @@ if (AppConfig.NODE_ENV === 'development') {
     DepartmentsModule,
     RedisModule,
     PublicModule,
+    AuditLogModule,
   ],
   
   providers: [
