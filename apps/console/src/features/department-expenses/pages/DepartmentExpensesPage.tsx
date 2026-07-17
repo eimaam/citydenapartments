@@ -80,7 +80,7 @@ export default function DepartmentExpensesPage() {
   const [editForm, setEditForm] = useState({ departmentId: '', amount: '', description: '', fromDate: '', toDate: '' });
   const [showEdit, setShowEdit] = useState(false);
 
-  const canWrite = user ? [UserRole.Accountant, UserRole.SuperAdmin, UserRole.GroupGM].includes(user.role) : false;
+  const canWrite = user ? [UserRole.Accountant, UserRole.SuperAdmin, UserRole.GroupGM].includes(user.role as any) : false;
 
   useEffect(() => {
     if (!user?.activeBranchId) return;
@@ -256,7 +256,7 @@ export default function DepartmentExpensesPage() {
           <h1 className="font-serif text-2xl sm:text-3xl text-on-surface">Department Expenses</h1>
         </div>
         {canWrite && (
-          <Button variant="primary" size="sm" onClick={() => setShowCreate(true)} icon={<Plus size={14} />}>
+          <Button size="sm" onClick={() => setShowCreate(true)} icon={<Plus size={14} />}>
             Log Expense
           </Button>
         )}
