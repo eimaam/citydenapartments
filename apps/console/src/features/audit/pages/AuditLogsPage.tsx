@@ -73,7 +73,7 @@ function DetailsDrawer({ entry, open, onClose }: { entry: AuditLogEntry | null; 
           </div>
           <div>
             <p className="text-[10px] font-bold tracking-[0.1em] uppercase text-outline mb-1">Action</p>
-            <Badge status={actionBadgeVariant[entry.action] || 'default'}>{entry.action.replace(/_/g, ' ')}</Badge>
+                <Badge status={actionBadgeVariant[entry.action] || 'default'} label={entry.action.replace(/_/g, ' ')} />
           </div>
           <div>
             <p className="text-[10px] font-bold tracking-[0.1em] uppercase text-outline mb-1">Entity ID</p>
@@ -182,7 +182,7 @@ export default function AuditLogsPage() {
       key: 'entityType',
       width: 100,
       render: (_: unknown, r: AuditLogEntry) => (
-        <Badge status="default">{r.entityType}</Badge>
+        <Badge status="default" label={r.entityType} />
       ),
     },
     {
@@ -191,9 +191,7 @@ export default function AuditLogsPage() {
       key: 'action',
       width: 120,
       render: (_: unknown, r: AuditLogEntry) => (
-        <Badge status={actionBadgeVariant[r.action] || 'default'}>
-          {r.action.replace(/_/g, ' ')}
-        </Badge>
+        <Badge status={actionBadgeVariant[r.action] || 'default'} label={r.action.replace(/_/g, ' ')} />
       ),
     },
     {
