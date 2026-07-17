@@ -41,13 +41,13 @@ export class EmployeesController {
     if (!isAdminOrGroupGm(user.role)) {
       dto.branchId = user.activeBranchId;
     }
-    return this.employeesService.create(dto);
+    return this.employeesService.create(dto, user.id);
   }
 
   @Patch(':id')
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT)
-  update(@Param('id') id: string, @Body() dto: UpdateEmployeeDto) {
-    return this.employeesService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateEmployeeDto, @ActiveUser() user: any) {
+    return this.employeesService.update(id, dto, user.id);
   }
 
   @Get(':id')

@@ -110,7 +110,7 @@ export default function CalendarPage() {
     paymentMethod: PaymentMethodType; bookingSource: BookingSourceType;
   }>({
     roomId: '', guestName: '', guestPhone: '', guestEmail: '',
-    guestAddress: '', guestNationality: '', guestDob: '', guestPhone2: '',
+    guestAddress: '', guestNationality: 'Nigerian', guestDob: '', guestPhone2: '',
     guestComingFrom: '', guestStateOfOrigin: '', guestOccupation: '',
     guestNextDestination: '', guestGender: '', guestReligion: '',
     numberOfGuests: 1,
@@ -333,7 +333,7 @@ export default function CalendarPage() {
       
       setForm({
         roomId: room._id, guestName: '', guestPhone: '', guestEmail: '',
-        guestAddress: '', guestNationality: '', guestDob: '', guestPhone2: '',
+    guestAddress: '', guestNationality: 'Nigerian', guestDob: '', guestPhone2: '',
         guestComingFrom: '', guestStateOfOrigin: '', guestOccupation: '',
         guestNextDestination: '', guestGender: '', guestReligion: '',
         numberOfGuests: 1,
@@ -366,7 +366,7 @@ export default function CalendarPage() {
     const co = tomorrowStr();
     setForm({
       roomId: '', guestName: '', guestPhone: '', guestEmail: '',
-      guestAddress: '', guestNationality: '', guestDob: '', guestPhone2: '',
+      guestAddress: '', guestNationality: 'Nigerian', guestDob: '', guestPhone2: '',
       guestComingFrom: '', guestStateOfOrigin: '', guestOccupation: '',
       guestNextDestination: '', guestGender: '', guestReligion: '',
       numberOfGuests: 1,
@@ -841,7 +841,7 @@ export default function CalendarPage() {
             <div><label className="text-[10px] text-outline uppercase tracking-wide">Phone Number<span className="text-error ml-0.5">*</span></label><Input size="lg" placeholder="e.g. 0803xxxxxxx" value={form.guestPhone} onChange={(e) => onPhoneChange(e.target.value)} status={phoneError ? 'error' : undefined} required /></div>
             {phoneError && <p className="col-span-2 -mt-2 text-xs text-error">{phoneError}</p>}
             <div><label className="text-[10px] text-outline uppercase tracking-wide">Email</label><Input size="lg" type="email" placeholder="guestname@email.com" value={form.guestEmail} onChange={(e) => updateField('guestEmail', e.target.value)} /></div>
-            <div><label className="text-[10px] text-outline uppercase tracking-wide">Number of Guests</label><Input size="lg" type="number" min={1} placeholder="e.g. 2" value={form.numberOfGuests} onChange={(e) => updateField('numberOfGuests', Number(e.target.value))} /></div>
+            <div><label className="text-[10px] text-outline uppercase tracking-wide">Number of Guests</label><Input size="lg" type="number" min={1} max={availableRooms.find(r => r._id === form.roomId)?.maxGuests ?? 99} placeholder="e.g. 2" value={form.numberOfGuests} onChange={(e) => updateField('numberOfGuests', Number(e.target.value))} /></div>
           </div>}</div>
           <div className="mb-5"><SectionHeader label="Additional Guest Info" sectionKey="additional" icon={undefined} />
             {!collapsedSections['additional'] && <div className="mt-2 space-y-3">

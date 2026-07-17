@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards, UnauthorizedException } from '@nestjs/common';
 import { DepartmentsService } from './departments.service';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRoleEnum } from '../users/user.schema';
@@ -50,9 +50,9 @@ export class DepartmentsController {
     return this.departmentsService.update(id, dto, user.id);
   }
 
-  @Delete(':id')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT)
-  remove(@Param('id') id: string, @ActiveUser() user: any) {
-    return this.departmentsService.softDelete(id, user.id);
-  }
+  // @Delete(':id')
+  // @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT)
+  // remove(@Param('id') id: string, @ActiveUser() user: any) {
+  //   return this.departmentsService.softDelete(id, user.id);
+  // }
 }

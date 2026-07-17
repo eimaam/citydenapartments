@@ -18,6 +18,7 @@ import { BookingStatus, BookingSource, Gender } from '@citydenapartments/shared'
 import { BreakfastLog } from '../breakfast/breakfast-log.schema';
 import { isPastBreakfastCutoff } from '../breakfast/breakfast.constants';
 import { DiscountCodesService } from '../discount-codes/discount-codes.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
 
 @Injectable()
 export class BookingsService {
@@ -30,6 +31,7 @@ export class BookingsService {
     @InjectConnection() private readonly connection: Connection,
     private readonly redis: RedisService,
     private readonly discountCodesService: DiscountCodesService,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   private readonly logger = new Logger(BookingsService.name);
@@ -225,6 +227,12 @@ export class BookingsService {
           totalForRoom: roomDto.actualPricePerNight * nights,
           maxGuests: roomDto.maxGuests,
         });
+
+        if (roomDto.maxGuests > room.maxGuests) {
+          throw new BadRequestException(
+            `Room ${room.roomNumber} max capacity is ${room.maxGuests} guests, but ${roomDto.maxGuests} specified.`,
+          );
+        }
       }
 
       const subtotal = roomEntries.reduce((sum, r) => sum + r.totalForRoom, 0);
@@ -390,6 +398,16 @@ export class BookingsService {
       }
 
       this.logger.log(`Booking created — #${newBooking.bookingReference} | ${roomEntries.length} room(s) | Guest ${guestDetails.name} | by ${actorId}`);
+      await this.auditLog.log({
+        entityType: 'booking',
+        entityId: newBooking._id.toString(),
+        action: 'create',
+        description: `Booking created: #${newBooking.bookingReference} — ${guestDetails.name}`,
+        performedBy: actorId,
+        branchId,
+        details: { bookingReference: newBooking.bookingReference, guestName: guestDetails.name, rooms: roomEntries.length },
+        persistForever: true,
+      });
       return newBooking;
     } catch (error) {
       await session.abortTransaction();
@@ -462,6 +480,16 @@ export class BookingsService {
       await this.expireBreakfastIfNeeded(booking, actorId);
 
       this.logger.log(`Check-in — #${booking.bookingReference} | ${rooms.length} room(s) | Guest ${booking.guestDetails.name} | by ${actorId}`);
+      await this.auditLog.log({
+        entityType: 'booking',
+        entityId: id,
+        action: 'check_in',
+        description: `Check-in: #${booking.bookingReference} — ${booking.guestDetails.name}`,
+        performedBy: actorId,
+        branchId,
+        details: { bookingReference: booking.bookingReference, rooms: rooms.length },
+        persistForever: true,
+      });
       return booking;
     } catch (error) {
       await session.abortTransaction();
@@ -519,6 +547,16 @@ export class BookingsService {
       await session.commitTransaction();
       await this.redis.invalidateDashboardCache(branchId);
       this.logger.log(`Check-out — #${booking.bookingReference} | ${rooms.length} room(s) | Guest ${booking.guestDetails.name} | by ${actorId}`);
+      await this.auditLog.log({
+        entityType: 'booking',
+        entityId: id,
+        action: 'check_out',
+        description: `Check-out: #${booking.bookingReference} — ${booking.guestDetails.name}`,
+        performedBy: actorId,
+        branchId,
+        details: { bookingReference: booking.bookingReference, rooms: rooms.length },
+        persistForever: true,
+      });
       return booking;
     } catch (error) {
       await session.abortTransaction();
@@ -583,6 +621,16 @@ export class BookingsService {
       await this.redis.invalidateDashboardCache(branchId);
       const roomNums = rooms.map(r => r.roomNumber).join(', ') || 'N/A';
       this.logger.log(`Booking cancelled — #${booking.bookingReference} | Room(s) ${roomNums} | Guest ${booking.guestDetails.name} | by ${actorId}`);
+      await this.auditLog.log({
+        entityType: 'booking',
+        entityId: id,
+        action: 'cancel',
+        description: `Booking cancelled: #${booking.bookingReference} — ${booking.guestDetails.name}`,
+        performedBy: actorId,
+        branchId,
+        details: { bookingReference: booking.bookingReference, rooms: roomNums },
+        persistForever: true,
+      });
       return booking;
     } catch (error) {
       await session.abortTransaction();
