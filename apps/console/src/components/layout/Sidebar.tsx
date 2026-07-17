@@ -15,6 +15,7 @@ import {
   CalendarFold,
   AlertTriangle,
   History,
+  Receipt,
 } from 'lucide-react';
 import type { UserRoleType } from '../../lib/types';
 import { cn } from '../../lib/utils';
@@ -45,6 +46,7 @@ const menuConfig: Record<UserRoleType, SidebarItem[]> = {
     { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
     { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
     { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
+    { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
     { label: 'Roles', icon: Shield, path: '/roles' },
   ],
   GroupGM: [
@@ -61,6 +63,7 @@ const menuConfig: Record<UserRoleType, SidebarItem[]> = {
     { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
     { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
     { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
+    { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
     { label: 'Roles', icon: Shield, path: '/roles' },
   ],
   IT: [
@@ -71,6 +74,7 @@ const menuConfig: Record<UserRoleType, SidebarItem[]> = {
     { label: 'Employees', icon: Users, path: '/employees' },
     { label: 'Departments', icon: Building2, path: '/departments' },
     { label: 'Audit Logs', icon: History, path: '/audit-logs' },
+    { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
     { label: 'Roles', icon: Shield, path: '/roles' },
   ],
   FacilityManager: [
@@ -81,6 +85,7 @@ const menuConfig: Record<UserRoleType, SidebarItem[]> = {
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
     { label: 'Inventory', icon: Package, path: '/inventory' },
     { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
+    { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
   ],
   StoreManager: [
   ],

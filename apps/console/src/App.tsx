@@ -26,6 +26,7 @@ import SpoilagePage from './features/inventory/pages/SpoilagePage';
 import RolesPage from './features/roles/pages/RolesPage';
 import DiscountCodesPage from './features/discount-codes/pages/DiscountCodesPage';
 import AuditLogsPage from './features/audit/pages/AuditLogsPage';
+import DepartmentExpensesPage from './features/department-expenses/pages/DepartmentExpensesPage';
 import type { UserRoleType } from './lib/types';
 
 function ProtectedRoute({ roles, children }: { roles: UserRoleType[]; children: React.ReactNode }) {
@@ -36,7 +37,7 @@ function ProtectedRoute({ roles, children }: { roles: UserRoleType[]; children: 
 }
 
 const routeRoles: Record<string, UserRoleType[]> = {
-  '/': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.Reception],
+  '/': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.Accountant, UserRole.Reception],
   '/branches': [UserRole.SuperAdmin],
   '/room-types': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/rooms': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
@@ -53,6 +54,7 @@ const routeRoles: Record<string, UserRoleType[]> = {
   '/discount-codes': [UserRole.SuperAdmin, UserRole.GroupGM],
   '/audit-logs': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/roles': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
+  '/department-expenses': [UserRole.Accountant, UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
 };
 
 export default function App() {
@@ -92,6 +94,7 @@ export default function App() {
                           case '/inventory/spoilage': return <SpoilagePage />;
                           case '/discount-codes': return <DiscountCodesPage />;
                           case '/audit-logs': return <AuditLogsPage />;
+                          case '/department-expenses': return <DepartmentExpensesPage />;
                           case '/roles': return <RolesPage />;
                           default: return null;
                         }

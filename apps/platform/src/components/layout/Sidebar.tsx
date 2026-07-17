@@ -15,6 +15,7 @@ import {
   BookUser,
   AlertTriangle,
   BookOpen,
+  Receipt,
 } from 'lucide-react';
 import type { UserRoleType } from '../../lib/types';
 import { cn } from '../../lib/utils';
@@ -29,12 +30,14 @@ interface SidebarItem {
 const menuConfig: Record<UserRoleType, SidebarItem[]> = {
   SuperAdmin: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
     { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
     { label: 'Inventory Book', icon: BookOpen, path: '/inventory/book' },
     { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
     { label: 'Customers', icon: BookUser, path: '/customers' },
   ],
   GroupGM: [
+    { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
     { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
     { label: 'Inventory Book', icon: BookOpen, path: '/inventory/book' },
     { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
@@ -63,6 +66,7 @@ const menuConfig: Record<UserRoleType, SidebarItem[]> = {
   ],
   Accountant: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
     { label: 'Inventory', icon: Package, path: '/inventory' },
     { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
     { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },

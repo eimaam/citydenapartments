@@ -2,7 +2,16 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../../contexts/auth';
 import { Spinner } from '../../../components/ui/Spinner';
 import { api } from '../../../lib/api';
-import { Building2, TrendingUp, Users, BedDouble, CalendarCheck, MapPin, ChevronDown, Coffee } from 'lucide-react';
+import { Input } from '@citydenapartments/shared';
+import { Building2, TrendingUp, Users, BedDouble, CalendarCheck, MapPin, ChevronDown, Coffee, Receipt, DollarSign } from 'lucide-react';
+import { revenueApi } from '../../department-expenses/api/department-expenses.api';
+
+const PERIODS = [
+  { label: 'Week', value: 'week' },
+  { label: 'Month', value: 'month' },
+  { label: '3 Months', value: '3months' },
+  { label: '6 Months', value: '6months' },
+];
 
 interface Branch {
   _id: string;
@@ -73,6 +82,53 @@ export default function AdminDashboard() {
   }, []);
 
   const activeBranch = branches.find((b) => b._id === selectedBranchId);
+
+  const [revenuePeriod, setRevenuePeriod] = useState('month');
+  const [revFromDate, setRevFromDate] = useState('');
+  const [revToDate, setRevToDate] = useState('');
+  const [revenueData, setRevenueData] = useState<{
+    bookingRevenue: number;
+    bookingCount: number;
+    departmentExpenses: number;
+    expenseCount: number;
+    totalRevenue: number;
+    period: { from: string; to: string; label: string | null };
+  } | null>(null);
+  const [revenueLoading, setRevenueLoading] = useState(false);
+
+  const fetchRevenue = async (period: string, from?: string, to?: string) => {
+    setRevenueLoading(true);
+    try {
+      const params: any = {};
+      if (from && to) {
+        params.fromDate = from;
+        params.toDate = to;
+      } else {
+        params.period = period;
+      }
+      const data = await revenueApi.get(params);
+      setRevenueData(data);
+    } catch { /* ignore */ }
+    finally { setRevenueLoading(false); }
+  };
+
+  useEffect(() => {
+    fetchRevenue('month');
+  }, []);
+
+  const onPeriodClick = (period: string) => {
+    setRevenuePeriod(period);
+    setRevFromDate('');
+    setRevToDate('');
+    fetchRevenue(period);
+  };
+
+  const onDateRangeApply = () => {
+    if (revFromDate && revToDate) {
+      setRevenuePeriod('');
+      fetchRevenue('', revFromDate, revToDate);
+    }
+  };
 
   if (loading) return <div className="flex items-center justify-center py-20"><Spinner size={20} className="text-primary" /></div>;
   if (error) return <div className="p-8 text-center text-error">{error}</div>;
@@ -183,6 +239,113 @@ export default function AdminDashboard() {
           </div>
         </>
       )}
+
+      {/* ── Revenue Overview ── */}
+      <div className="mt-12">
+        <div className="flex items-center gap-3 mb-6">
+          <span className="w-8 h-px bg-primary" />
+          <span className="text-xs font-bold tracking-[0.15em] uppercase text-outline">Finance</span>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <DollarSign size={22} className="text-outline" />
+            <h2 className="font-serif text-xl sm:text-2xl text-on-surface">Revenue Overview</h2>
+          </div>
+        </div>
+
+        {/* Period selector */}
+        <div className="flex flex-wrap items-center gap-3 mb-6 p-4 bg-surface-container-lowest border border-outline-variant rounded-lg">
+          <div className="flex gap-1 p-1 rounded bg-surface-container">
+            {PERIODS.map((p) => (
+              <button
+                key={p.value}
+                onClick={() => onPeriodClick(p.value)}
+                className="px-3 py-1.5 text-xs font-medium rounded-sm transition-all cursor-pointer"
+                style={{
+                  background: revenuePeriod === p.value ? 'var(--color-surface-container-lowest)' : 'transparent',
+                  color: revenuePeriod === p.value ? 'var(--color-on-surface)' : 'var(--color-outline)',
+                  boxShadow: revenuePeriod === p.value ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
+                }}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+          <div className="w-px h-6 bg-outline-variant" />
+          <div className="flex items-center gap-2">
+            <Input type="date" size="sm" value={revFromDate} onChange={(e) => setRevFromDate(e.target.value)} className="!w-36" />
+            <span className="text-xs text-outline">—</span>
+            <Input type="date" size="sm" value={revToDate} onChange={(e) => setRevToDate(e.target.value)} className="!w-36" />
+            <button
+              onClick={onDateRangeApply}
+              disabled={!revFromDate || !revToDate}
+              className="px-3 py-1.5 text-xs font-medium rounded bg-primary text-on-primary hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed border-none"
+            >
+              Apply
+            </button>
+          </div>
+        </div>
+
+        {/* Revenue cards */}
+        {revenueLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : revenueData ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-9 h-9 rounded flex items-center justify-center" style={{ backgroundColor: '#10b98115' }}>
+                  <DollarSign size={16} style={{ color: '#10b981' }} />
+                </div>
+                <span className="text-xs text-outline">Total Revenue</span>
+              </div>
+              <p className="text-3xl font-bold text-on-surface">₦{revenueData.totalRevenue.toLocaleString()}</p>
+              <p className="text-[10px] text-outline mt-1">
+                Booking Revenue: ₦{revenueData.bookingRevenue.toLocaleString()} · Expenses: ₦{revenueData.departmentExpenses.toLocaleString()}
+              </p>
+            </div>
+
+            <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-9 h-9 rounded flex items-center justify-center" style={{ backgroundColor: '#3b82f615' }}>
+                  <CalendarCheck size={16} style={{ color: '#3b82f6' }} />
+                </div>
+                <span className="text-xs text-outline">Booking Revenue</span>
+              </div>
+              <p className="text-3xl font-bold text-on-surface">₦{revenueData.bookingRevenue.toLocaleString()}</p>
+              <p className="text-[10px] text-outline mt-1">{revenueData.bookingCount} booking{revenueData.bookingCount !== 1 ? 's' : ''}</p>
+            </div>
+
+            <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-9 h-9 rounded flex items-center justify-center" style={{ backgroundColor: '#f59e0b15' }}>
+                  <Receipt size={16} style={{ color: '#f59e0b' }} />
+                </div>
+                <span className="text-xs text-outline">Department Expenses</span>
+              </div>
+              <p className="text-3xl font-bold text-on-surface">₦{revenueData.departmentExpenses.toLocaleString()}</p>
+              <p className="text-[10px] text-outline mt-1">{revenueData.expenseCount} expense{revenueData.expenseCount !== 1 ? 's' : ''}</p>
+            </div>
+
+            <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-9 h-9 rounded flex items-center justify-center" style={{ backgroundColor: '#8b5cf615' }}>
+                  <TrendingUp size={16} style={{ color: '#8b5cf6' }} />
+                </div>
+                <span className="text-xs text-outline">Net Revenue</span>
+              </div>
+              <p className="text-3xl font-bold text-on-surface">
+                ₦{(revenueData.bookingRevenue - revenueData.departmentExpenses).toLocaleString()}
+              </p>
+              <p className="text-[10px] text-outline mt-1">
+                {revenueData.period?.label || `${new Date(revenueData.period?.from).toLocaleDateString()} — ${new Date(revenueData.period?.to).toLocaleDateString()}`}
+              </p>
+            </div>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

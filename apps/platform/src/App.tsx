@@ -19,6 +19,7 @@ import SpoilagePage from './features/inventory/pages/SpoilagePage';
 import InventoryBookPage from './features/inventory/pages/InventoryBookPage';
 import CustomersPage from './features/customers/pages/CustomersPage';
 import DiscountCodesPage from './features/discount-codes/pages/DiscountCodesPage';
+import DepartmentExpensesPage from './features/department-expenses/pages/DepartmentExpensesPage';
 
 export default function App() {
   return (
@@ -67,6 +68,10 @@ export default function App() {
 
               <Route element={<RoleGuard roles={[UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FrontOfficeManager, UserRole.FacilityManager]} />}>
                 <Route path="discount-codes" element={<DiscountCodesPage />} />
+              </Route>
+
+              <Route element={<RoleGuard roles={[UserRole.Accountant, UserRole.SuperAdmin, UserRole.GroupGM]} />}>
+                <Route path="department-expenses" element={<DepartmentExpensesPage />} />
               </Route>
             </Route>
           </Route>

@@ -8,9 +8,10 @@ import { Branch } from '../branches/branch.schema';
 import { BreakfastLog } from '../breakfast/breakfast-log.schema';
 import { User } from '../users/user.schema';
 import { InventoryItem } from '../inventory/inventory-item.schema';
+import { DepartmentExpense } from '../department-expenses/department-expense.schema';
 import { RedisService } from '../redis/redis.service';
 import { CACHE_KEYS, CACHE_TTL } from '../../config/cache.constants';
-import { startOfDay, endOfDay, format, subDays } from 'date-fns';
+import { startOfDay, endOfDay, format, subDays, startOfMonth, subMonths } from 'date-fns';
 
 @Injectable()
 export class DashboardService {
@@ -23,6 +24,7 @@ export class DashboardService {
     @InjectModel(BreakfastLog.name) private breakfastModel: Model<BreakfastLog>,
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(InventoryItem.name) private inventoryModel: Model<InventoryItem>,
+    @InjectModel(DepartmentExpense.name) private expenseModel: Model<DepartmentExpense>,
     private readonly redis: RedisService,
   ) {}
 
@@ -447,5 +449,111 @@ export class DashboardService {
     await this.redis.set(cacheKey, JSON.stringify(accounting), CACHE_TTL.ONE_MINUTE);
     this.logger.log(`Accounting summary computed and cached ${branchId ? `(branch: ${branchId})` : ''}`);
     return accounting;
+  }
+
+  async getRevenue(params: {
+    branchId?: string;
+    fromDate?: string;
+    toDate?: string;
+    period?: string;
+  }) {
+    const { branchId } = params;
+    let fromDate: Date;
+    let toDate = new Date();
+
+    if (params.fromDate && params.toDate) {
+      fromDate = new Date(params.fromDate);
+      toDate = new Date(params.toDate);
+    } else if (params.period) {
+      switch (params.period) {
+        case 'week':
+          fromDate = subDays(toDate, 7);
+          break;
+        case 'month':
+          fromDate = startOfMonth(toDate);
+          break;
+        case '3months':
+          fromDate = subMonths(toDate, 3);
+          break;
+        case '6months':
+          fromDate = subMonths(toDate, 6);
+          break;
+        default:
+          fromDate = startOfMonth(toDate);
+      }
+    } else {
+      fromDate = startOfMonth(toDate);
+    }
+
+    const maxRange = 183;
+    const daysDiff = Math.round((toDate.getTime() - fromDate.getTime()) / 86400000);
+    if (daysDiff > maxRange) {
+      fromDate = subDays(toDate, maxRange);
+    }
+
+    const branchMatch = branchId
+      ? { branchId: new Types.ObjectId(branchId) }
+      : {};
+
+    const dateRangeMatch = (field: string) => ({
+      [field]: { $gte: fromDate, $lte: toDate },
+    });
+
+    const [bookingRevenue, bookingCount, expenseResult] = await Promise.all([
+      this.bookingModel.aggregate([
+        {
+          $match: {
+            ...branchMatch,
+            ...dateRangeMatch('createdAt'),
+            bookingStatus: { $in: [BookingStatus.Checked_In, BookingStatus.Checked_Out] },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: '$totalAmountPaid' },
+          },
+        },
+      ]),
+
+      this.bookingModel.countDocuments({
+        ...branchMatch,
+        createdAt: { $gte: fromDate, $lte: toDate },
+        bookingStatus: { $in: [BookingStatus.Checked_In, BookingStatus.Checked_Out] },
+      }),
+
+      this.expenseModel.aggregate([
+        {
+          $match: {
+            ...(branchId ? { branchId: new Types.ObjectId(branchId) } : {}),
+            fromDate: { $gte: fromDate, $lte: toDate },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: '$amount' },
+            count: { $sum: 1 },
+          },
+        },
+      ]),
+    ]);
+
+    const bookingRev = bookingRevenue[0]?.total || 0;
+    const expenseTotal = expenseResult[0]?.total || 0;
+    const expenseCount = expenseResult[0]?.count || 0;
+
+    return {
+      period: {
+        from: fromDate,
+        to: toDate,
+        label: params.period || null,
+      },
+      bookingRevenue: bookingRev,
+      bookingCount,
+      departmentExpenses: expenseTotal,
+      expenseCount,
+      totalRevenue: bookingRev + expenseTotal,
+    };
   }
 }

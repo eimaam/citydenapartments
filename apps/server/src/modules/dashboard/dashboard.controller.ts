@@ -32,4 +32,20 @@ export class DashboardController {
       : user.activeBranchId;
     return this.dashboardService.getAccountingSummary(resolvedId);
   }
+
+  @Get('revenue')
+  @UseGuards(RolesGuard)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.ACCOUNTANT)
+  getRevenue(
+    @Query('fromDate') fromDate: string,
+    @Query('toDate') toDate: string,
+    @Query('period') period: string,
+    @Query('branchId') branchId: string,
+    @ActiveUser() user: any,
+  ) {
+    const resolvedId = isSuperAdmin(user.role)
+      ? branchId || undefined
+      : user.activeBranchId;
+    return this.dashboardService.getRevenue({ branchId: resolvedId, fromDate, toDate, period });
+  }
 }
