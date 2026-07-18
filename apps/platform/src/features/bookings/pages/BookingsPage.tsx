@@ -1,12 +1,9 @@
-import { useState, useEffect, useCallback, useMemo, useRef, type FormEvent } from 'react';
-import { Plus, Search, Banknote, CreditCard, Building2, Users, Calendar, Copy, Check, Printer, ChevronDown, ChevronRight, X } from 'lucide-react';
-import { format, addDays, differenceInDays } from 'date-fns';
-import { getAllStates } from 'ng-geo-data';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Plus, Search, Copy, Check, Printer } from 'lucide-react';
+import { format } from 'date-fns';
 import {
-  Button, Input, Select, Table, Option, Drawer, Modal, Badge,
-  BookingStatus, PaymentMethod, BookingSource, RoomStatus,
-  BookingReceipt,
-  type BookingStatusType, type PaymentMethodType, type BookingSourceType,
+  Button, Input, Table, Drawer, Modal, Badge,
+  BookingStatus, BookingReceipt, BookingFormDrawer,
   type BranchInfo, type ReceiptBooking,
 } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
@@ -14,10 +11,10 @@ import { Spinner } from '../../../components/ui/Spinner';
 import { useToast } from '../../../components/ui/Toast';
 import { useAuth } from '../../../contexts/auth';
 import { api } from '../../../lib/api';
-import { bookingsApi, type BookingResponse, type CreateBookingPayload } from '../api/bookings.api';
-import { roomsApi, type RoomResponse } from '../../rooms/api/rooms.api';
-import { customersApi, type CustomerResponse } from '../api/customers.api';
-import { roomTypesApi, type RoomTypeResponse } from '../../room-types/api/room-types.api';
+import { bookingsApi, type BookingResponse } from '../api/bookings.api';
+import { roomsApi } from '../../rooms/api/rooms.api';
+import { roomTypesApi } from '../../room-types/api/room-types.api';
+import { customersApi } from '../api/customers.api';
 import { discountCodesApi } from '../../discount-codes/api/discount-codes.api';
 
 const LIMIT = 20;
@@ -69,10 +66,7 @@ interface PaginatedData {
 export default function BookingsPage() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const nigeriaStates = useMemo(() => getAllStates(), []);
   const [data, setData] = useState<PaginatedData>({ items: [], total: 0, page: 1, limit: LIMIT });
-  const [rooms, setRooms] = useState<RoomResponse[]>([]);
-  const [roomTypes, setRoomTypes] = useState<RoomTypeResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
@@ -81,75 +75,12 @@ export default function BookingsPage() {
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [showDetail, setShowDetail] = useState<BookingResponse | null>(null);
-  const [submitting, setSubmitting] = useState(false);
   const [actionLoading, setActionLoading] = useState('');
   const [copiedRef, setCopiedRef] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [receiptBooking, setReceiptBooking] = useState<ReceiptBooking | null>(null);
   const [receiptBranch, setReceiptBranch] = useState<BranchInfo | null>(null);
   const [loadingReceipt, setLoadingReceipt] = useState(false);
-
-  const [form, setForm] = useState<{
-    rooms: RoomSelection[]; guestName: string; guestPhone: string; guestEmail: string;
-    guestAddress: string; guestNationality: string; guestDob: string; guestPhone2: string;
-    guestComingFrom: string; guestStateOfOrigin: string; guestOccupation: string;
-    guestNextDestination: string; guestGender: string; guestReligion: string;
-    numberOfGuests: number; checkInDate: string; nights: number; checkOutDate: string;
-    useNights: boolean; discountPercentage: number; includeVat: boolean; includeServiceCharge: boolean;
-    paymentMethod: PaymentMethodType; bookingSource: BookingSourceType;
-  }>({
-    rooms: [], guestName: '', guestPhone: '', guestEmail: '',
-    guestAddress: '', guestNationality: 'Nigerian', guestDob: '', guestPhone2: '',
-    guestComingFrom: '', guestStateOfOrigin: '', guestOccupation: '',
-    guestNextDestination: '', guestGender: '', guestReligion: '',
-    numberOfGuests: 1,
-    checkInDate: todayStr(), nights: 1, checkOutDate: tomorrowStr(), useNights: true,
-    discountPercentage: 0, includeVat: false, includeServiceCharge: false,
-    paymentMethod: PaymentMethod.Cash, bookingSource: BookingSource.WalkIn,
-  });
-  const [phoneError, setPhoneError] = useState<string | null>(null);
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-
-  const [customerSearchPhone, setCustomerSearchPhone] = useState('');
-  const [customerResults, setCustomerResults] = useState<CustomerResponse[]>([]);
-  const [selectedCustomer, setSelectedCustomer] = useState<CustomerResponse | null>(null);
-  const [searchingCustomer, setSearchingCustomer] = useState(false);
-  const [discountCodeInput, setDiscountCodeInput] = useState('');
-  const [appliedDiscountCode, setAppliedDiscountCode] = useState<{ _id: string; code: string; percentage: number } | null>(null);
-  const [discountCodeLoading, setDiscountCodeLoading] = useState(false);
-
-  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
-
-  const toggleSection = (key: string) => setCollapsedSections((prev) => ({ ...prev, [key]: !prev[key] }));
-
-  const SectionHeader = ({ label, sectionKey, icon: Icon }: { label: string; sectionKey: string; icon: any }) => (
-    <button type="button" onClick={() => toggleSection(sectionKey)}
-      className="text-xs font-bold tracking-[0.1em] uppercase text-outline flex items-center gap-2 mb-1 w-full text-left cursor-pointer bg-transparent border-none">
-      {Icon && <Icon size={12} />}
-      {label}
-      {collapsedSections[sectionKey] ? <ChevronRight size={12} className="ml-auto" /> : <ChevronDown size={12} className="ml-auto" />}
-    </button>
-  );
-
-  const computedNights = useMemo(() => {
-    if (!form.checkInDate || !form.checkOutDate) return 1;
-    return Math.max(1, differenceInDays(new Date(form.checkOutDate), new Date(form.checkInDate)));
-  }, [form.checkInDate, form.checkOutDate]);
-
-  const pricing = useMemo(() => {
-    const n = form.useNights ? form.nights : computedNights;
-    const sub = form.rooms.reduce((sum, r) => {
-      const room = rooms.find((x) => x._id === r.roomId);
-      const roomType = roomTypes.find((rt) => rt._id === room?.roomTypeId?._id);
-      const price = r.actualPricePerNight || roomType?.basePrice || 0;
-      return sum + price * n;
-    }, 0);
-    const pct = form.discountPercentage || 0;
-    const disc = Math.round((sub * pct) / 100);
-    const vat = form.includeVat ? Math.round(sub * 7.5 / 100) : 0;
-    const sc = form.includeServiceCharge ? Math.round(sub * 10 / 100) : 0;
-    return { nights: n, subtotal: sub, discountAmt: disc, vatAmt: vat, scAmt: sc, total: Math.max(0, sub - disc + vat + sc) };
-  }, [form.rooms, form.discountPercentage, form.includeVat, form.includeServiceCharge, form.nights, form.useNights, computedNights, rooms, roomTypes]);
 
   // ── fetch ──────────────────────────────────────────────────────
   const fetchBookings = useCallback(async () => {
@@ -171,198 +102,7 @@ export default function BookingsPage() {
     searchTimer.current = setTimeout(() => setSearch(val), 400);
   };
 
-  useEffect(() => {
-    if (!customerSearchPhone || customerSearchPhone.length < 4) {
-      setCustomerResults([]);
-      return;
-    }
-    const timer = setTimeout(async () => {
-      setSearchingCustomer(true);
-      try {
-        setCustomerResults(await customersApi.search(customerSearchPhone));
-      } catch {
-        // silently fail
-      } finally {
-        setSearchingCustomer(false);
-      }
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [customerSearchPhone]);
-
-  const openCreate = async () => {
-    const ci = todayStr();
-    const co = tomorrowStr();
-    setForm((prev) => ({ ...prev, checkInDate: ci, checkOutDate: co, nights: 1, rooms: [] }));
-    setCustomerSearchPhone('');
-    setCustomerResults([]);
-    setSelectedCustomer(null);
-    try { setRooms(await roomsApi.available(ci, co)); } catch { toast('error', 'Failed to load rooms.'); }
-    try { const res = await roomTypesApi.list(); setRoomTypes(res.items); } catch { /* ok */ }
-    setShowCreate(true);
-  };
-
-  const updateField = (field: string, value: unknown) => setForm((prev) => ({ ...prev, [field]: value }));
-
-  const fetchAvailableRooms = useCallback(async (ci: string, co: string) => {
-    try {
-      const fetched = await roomsApi.available(ci, co);
-      setRooms(fetched);
-    } catch { toast('error', 'Failed to load rooms.'); }
-  }, [toast]);
-
-  const addRoom = () => {
-    setForm((prev) => ({
-      ...prev,
-      rooms: [...prev.rooms, { roomId: '', actualPricePerNight: 0, maxGuests: 1 }],
-    }));
-  };
-
-  const removeRoom = (idx: number) => {
-    setForm((prev) => {
-      const updated = prev.rooms.filter((_, i) => i !== idx);
-      return { ...prev, rooms: updated };
-    });
-  };
-
-  const updateRoom = (idx: number, field: string, value: unknown) => {
-    setForm((prev) => {
-      const updated = prev.rooms.map((r, i) => i === idx ? { ...r, [field]: value } : r);
-      return { ...prev, rooms: updated };
-    });
-  };
-
-  const onRoomSelect = (idx: number, roomId: string) => {
-    const room = rooms.find((r) => r._id === roomId);
-    const roomType = roomTypes.find((rt) => rt._id === room?.roomTypeId?._id);
-    const price = roomType?.basePrice ?? 0;
-    const maxGuests = room?.maxGuests ?? 1;
-    setForm((prev) => {
-      const updated = prev.rooms.map((r, i) => i === idx ? { ...r, roomId, actualPricePerNight: price, maxGuests } : r);
-      return { ...prev, rooms: updated };
-    });
-  };
-
-  const onNightsChange = (n: number) => {
-    const nights = Math.max(1, n);
-    const co = addDays(new Date(form.checkInDate), nights);
-    updateField('nights', nights);
-    updateField('checkOutDate', toDateStr(co));
-    fetchAvailableRooms(form.checkInDate, toDateStr(co));
-  };
-
-  const onCheckInChange = (date: string) => {
-    updateField('checkInDate', date);
-    const nights = form.useNights ? form.nights : computedNights;
-    const co = addDays(new Date(date), nights);
-    updateField('checkOutDate', toDateStr(co));
-    fetchAvailableRooms(date, toDateStr(co));
-  };
-
-  const onCheckOutChange = (date: string) => {
-    updateField('checkOutDate', date);
-    updateField('useNights', false);
-    const nights = Math.max(1, differenceInDays(new Date(date), new Date(form.checkInDate)));
-    updateField('nights', nights);
-    fetchAvailableRooms(form.checkInDate, date);
-  };
-
-  const onDiscountPctChange = (pct: number) => {
-    updateField('discountPercentage', pct);
-  };
-
-  const onPhoneChange = (phone: string) => { updateField('guestPhone', phone); setPhoneError(validatePhone(phone)); };
-
-  const applyDiscountCode = async () => {
-    if (!discountCodeInput.trim()) { toast('error', 'Enter a discount code.'); return; }
-    setDiscountCodeLoading(true);
-    try {
-      const result = await discountCodesApi.validate(discountCodeInput.trim());
-      setAppliedDiscountCode(result);
-      updateField('discountPercentage', result.percentage);
-      toast('success', `Discount code applied: ${result.percentage}% off`);
-    } catch (e: any) { toast('error', e.message); setAppliedDiscountCode(null); }
-    finally { setDiscountCodeLoading(false); }
-  };
-
-  const removeDiscountCode = () => {
-    setAppliedDiscountCode(null);
-    setDiscountCodeInput('');
-    updateField('discountPercentage', 0);
-  };
-
-  const onCustomerSearchPhoneChange = (phone: string) => {
-    setCustomerSearchPhone(phone);
-    setSelectedCustomer(null);
-  };
-
-  const selectCustomer = (c: CustomerResponse) => {
-    setSelectedCustomer(c);
-    setCustomerResults([]);
-    setCustomerSearchPhone(c.phone);
-    updateField('guestName', c.name);
-    updateField('guestPhone', c.phone);
-    updateField('guestEmail', c.email || '');
-    updateField('guestAddress', c.address);
-    updateField('guestNationality', c.nationality);
-    updateField('guestDob', c.dob || '');
-    updateField('guestPhone2', c.phone2 || '');
-    updateField('guestStateOfOrigin', c.stateOfOrigin);
-    updateField('guestOccupation', c.occupation);
-    updateField('guestGender', c.gender);
-    updateField('guestReligion', c.religion || '');
-    updateField('guestComingFrom', '');
-    updateField('guestNextDestination', '');
-    setPhoneError(null);
-  };
-
-  const handleCreate = async (e: FormEvent) => {
-    e.preventDefault();
-    const errors: Record<string, string> = {};
-    if (!form.guestAddress.trim()) errors.guestAddress = 'Address is required.';
-    if (!form.guestNationality.trim()) errors.guestNationality = 'Nationality is required.';
-    setFormErrors(errors);
-    if (Object.keys(errors).length) return;
-
-    const phoneErr = validatePhone(form.guestPhone);
-    if (phoneErr) { setPhoneError(phoneErr); return; }
-    if (form.rooms.length === 0) { toast('error', 'At least one room is required.'); return; }
-    if (!form.guestGender) { toast('error', 'Gender is required.'); return; }
-    if (!form.guestComingFrom.trim()) { toast('error', 'Coming from is required.'); return; }
-    if (!form.guestStateOfOrigin.trim()) { toast('error', 'State of origin is required.'); return; }
-    if (!form.guestOccupation.trim()) { toast('error', 'Occupation is required.'); return; }
-    if (!form.guestNextDestination.trim()) { toast('error', 'Next destination is required.'); return; }
-    if (pricing.total <= 0) { toast('error', 'Total amount paid must be greater than zero.'); return; }
-    setSubmitting(true);
-    try {
-      const bookingStatus = form.bookingSource === BookingSource.WalkIn ? BookingStatus.Checked_In : BookingStatus.Reserved;
-      const created = await bookingsApi.create({
-        rooms: form.rooms.map((r) => ({ roomId: r.roomId, actualPricePerNight: r.actualPricePerNight, maxGuests: r.maxGuests })),
-        customerId: selectedCustomer?._id || undefined, customerPhone: form.guestPhone,
-        guestName: form.guestName, guestPhone: form.guestPhone, guestEmail: form.guestEmail || undefined,
-        guestAddress: form.guestAddress, guestNationality: form.guestNationality,
-        guestDob: form.guestDob || undefined, guestPhone2: form.guestPhone2 || undefined,
-        guestComingFrom: form.guestComingFrom, guestStateOfOrigin: form.guestStateOfOrigin,
-        guestOccupation: form.guestOccupation, guestNextDestination: form.guestNextDestination,
-        guestGender: form.guestGender, guestReligion: form.guestReligion || undefined,
-        numberOfGuests: Number(form.numberOfGuests) || 1, checkInDate: form.checkInDate, checkOutDate: form.checkOutDate,
-        discountPercentage: Number(form.discountPercentage) || 0,
-        discountCode: appliedDiscountCode?.code,
-        includeVat: form.includeVat,
-        includeServiceCharge: form.includeServiceCharge,
-        vatAmount: pricing.vatAmt,
-        serviceChargeAmount: pricing.scAmt,
-        totalAmountPaid: pricing.total, paymentMethod: form.paymentMethod, bookingSource: form.bookingSource,
-        bookingStatus,
-      });
-      setShowCreate(false);
-      toast('success', 'Booking created.');
-      setAppliedDiscountCode(null);
-      setDiscountCodeInput('');
-      fetchBookings();
-      openReceipt(created as unknown as ReceiptBooking);
-    } catch (e) { toast('error', e instanceof Error ? e.message : 'Failed to create booking.'); }
-    finally { setSubmitting(false); }
-  };
+  const openReceipt = useCallback(async (booking: ReceiptBooking) => {
 
   const handleAction = async (action: 'checkIn' | 'checkOut' | 'cancel', id: string) => {
     const labels = { checkIn: 'Checked in', checkOut: 'Checked out', cancel: 'Cancelled' };

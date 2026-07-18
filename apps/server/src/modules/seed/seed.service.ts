@@ -317,8 +317,12 @@ export class SeedService  {
       { branchId: branches[1]._id, name: 'Executive Suite', description: 'The pinnacle of Kaduna residence, offering unrivaled space and executive-level amenities.', basePrice: 193500, minPriceAllowed: 154800, amenities: ['King Bed', 'Living Room', 'Work Desk', 'AC', 'WiFi', 'TV'], images: kadRTImages['Executive Suite'], createdBy: admin._id, updatedBy: admin._id },
     ]);
     const maiRT = await this.roomTypeModel.create([
-      { branchId: branches[2]._id, name: 'Deluxe Suite', description: 'Comfortable queen-size accommodation with modern amenities for a relaxing stay.', basePrice: 50000, minPriceAllowed: 40000, amenities: ['Queen Bed', 'AC', 'WiFi'], images: [], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[2]._id, name: 'Standard Room', description: 'Clean, comfortable, and affordable accommodation with essential amenities.', basePrice: 30000, minPriceAllowed: 25000, amenities: ['Queen Bed', 'AC'], images: [], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[2]._id, name: 'Executive Suite', description: 'Premium executive accommodation with king-size bed and luxury amenities.', basePrice: 80000, minPriceAllowed: 70000, amenities: ['King Bed', 'AC', 'WiFi', 'Smart TV', 'Mini Bar'], images: [], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[2]._id, name: 'VIP Suite', description: 'Exclusive VIP accommodation with premium furnishings and personalized service.', basePrice: 150000, minPriceAllowed: 130000, amenities: ['King Bed', 'AC', 'WiFi', 'Smart TV', 'Mini Bar', 'Jacuzzi'], images: [], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[2]._id, name: 'Luxury Double', description: 'Spacious double room with modern amenities for a comfortable stay.', basePrice: 60000, minPriceAllowed: 50000, amenities: ['Queen Bed', 'AC', 'WiFi', 'Smart TV'], images: [], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[2]._id, name: 'Classic Suite', description: 'Classic suite with elegant furnishings and essential amenities.', basePrice: 70000, minPriceAllowed: 60000, amenities: ['Queen Bed', 'AC', 'WiFi'], images: [], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[2]._id, name: 'Diplomatic Suite', description: 'Diplomatic-grade suite with premium amenities and spacious living area.', basePrice: 120000, minPriceAllowed: 100000, amenities: ['King Bed', 'AC', 'WiFi', 'Smart TV', 'Mini Bar', 'Sitting Area'], images: [], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[2]._id, name: 'Charlet Suite', description: 'Charming suite with unique character and cozy atmosphere.', basePrice: 100000, minPriceAllowed: 85000, amenities: ['King Bed', 'AC', 'WiFi', 'Smart TV', 'Mini Bar'], images: [], createdBy: admin._id, updatedBy: admin._id },
     ]);
 
     this.logger.log(`Seed — room types created: ${abujaRT.length} Abuja + ${kadunaRT.length} Kaduna + ${maiRT.length} Maiduguri`);
@@ -358,9 +362,18 @@ export class SeedService  {
       // Kaduna — Executive Suite (rt 4)
       { branch: 1, rt: 4, num: 'B2', max: 3 }, { branch: 1, rt: 4, num: 'B3', max: 3 },
       { branch: 1, rt: 4, num: 'C2', max: 3 }, { branch: 1, rt: 4, num: 'C3', max: 3 },
-      // Maiduguri
-      { branch: 2, rt: 0, num: 'DS-101', max: 3 }, { branch: 2, rt: 0, num: 'DS-102', max: 3 },
-      { branch: 2, rt: 1, num: 'SR-201', max: 2 },
+      // Maiduguri — Executive Suite (rt 0)
+      { branch: 2, rt: 0, num: 'Room 1', max: 2 }, { branch: 2, rt: 0, num: 'Room 2', max: 2 }, { branch: 2, rt: 0, num: 'Room 3', max: 2 },
+      // Maiduguri — VIP Suite (rt 1)
+      { branch: 2, rt: 1, num: 'Room 1', max: 2 },
+      // Maiduguri — Luxury Double (rt 2)
+      { branch: 2, rt: 2, num: 'Room 1', max: 2 }, { branch: 2, rt: 2, num: 'Room 2', max: 2 }, { branch: 2, rt: 2, num: 'Room 3', max: 2 }, { branch: 2, rt: 2, num: 'Room 4', max: 2 }, { branch: 2, rt: 2, num: 'Room 5', max: 2 },
+      // Maiduguri — Classic Suite (rt 3)
+      { branch: 2, rt: 3, num: 'Room 1', max: 2 }, { branch: 2, rt: 3, num: 'Room 2', max: 2 },
+      // Maiduguri — Diplomatic Suite (rt 4)
+      { branch: 2, rt: 4, num: 'Room 1', max: 2 }, { branch: 2, rt: 4, num: 'Room 2', max: 2 }, { branch: 2, rt: 4, num: 'Room 3', max: 2 },
+      // Maiduguri — Charlet Suite (rt 5)
+      { branch: 2, rt: 5, num: 'Room 1', max: 2 },
     ];
 
     const allRT = [abujaRT, kadunaRT, maiRT];
@@ -378,412 +391,376 @@ export class SeedService  {
     );
 
     this.logger.log(`Seed — rooms created: ${rooms.length}`);
+    this.logger.log(`Seed completed — branches: ${branches.length}, roomTypes: ${abujaRT.length + kadunaRT.length + maiRT.length}, rooms: ${rooms.length}`);
 
-    // staff
-    const now = new Date();
-    await this.userModel.create([
-      { email: 'reception@cityden.com', password: hashedPassword, name: 'Amara Reception', role: 'Reception', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true, passwordChangedAt: now },
-      { email: 'kitchen@cityden.com', password: hashedPassword, name: 'Chef Ibrahim', role: 'KitchenStaff', allowedBranches: [branches[0]._id], activeBranchId: branches[0]._id, isActive: true, passwordChangedAt: now },
-      { email: 'housekeeper@cityden.com', password: hashedPassword, name: 'Mama Bisi', role: 'HouseKeeper', allowedBranches: [branches[0]._id], activeBranchId: branches[0]._id, isActive: true, passwordChangedAt: now },
-      { email: 'frontoffice@cityden.com', password: hashedPassword, name: 'Tunde FrontOffice', role: 'FrontOfficeManager', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true, passwordChangedAt: now },
-      { email: 'accountant@cityden.com', password: hashedPassword, name: 'Ngozi Accountant', role: 'Accountant', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true, passwordChangedAt: now },
-      { email: 'it@cityden.com', password: hashedPassword, name: 'Chidi IT', role: 'IT', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true, passwordChangedAt: now },
-      { email: 'fm-abuja@cityden.com', password: hashedPassword, name: 'Chidi Facility Manager', role: 'FacilityManager', allowedBranches: [branches[0]._id], activeBranchId: branches[0]._id, isActive: true, passwordChangedAt: now },
-      { email: 'fm-kaduna@cityden.com', password: hashedPassword, name: 'Fatima Facility Manager', role: 'FacilityManager', allowedBranches: [branches[1]._id], activeBranchId: branches[1]._id, isActive: true, passwordChangedAt: now },
-      { email: 'fm-maiduguri@cityden.com', password: hashedPassword, name: 'Ibrahim Facility Manager', role: 'FacilityManager', allowedBranches: [branches[2]._id], activeBranchId: branches[2]._id, isActive: true, passwordChangedAt: now },
-    ]);
+    // // inventory items───────────────────────────────────────
+    // const itemDefs = [
+    //   { name: 'Bar Soap', category: 'Toiletries', unit: 'pcs' },
+    //   { name: 'Shampoo', category: 'Toiletries', unit: 'bottles' },
+    //   { name: 'Toilet Paper', category: 'Cleaning', unit: 'rolls' },
+    //   { name: 'Hand Towels', category: 'Linen', unit: 'pcs' },
+    //   { name: 'Bleach', category: 'Cleaning', unit: 'litres' },
+    //   { name: 'Floor Detergent', category: 'Cleaning', unit: 'litres' },
+    //   { name: 'Light Bulbs', category: 'Maintenance', unit: 'pcs' },
+    //   { name: 'Trash Bags', category: 'Cleaning', unit: 'packs' },
+    //   { name: 'Dishwashing Liquid', category: 'Kitchen', unit: 'bottles' },
+    //   { name: 'Bottled Water', category: 'Kitchen', unit: 'cartons' },
+    // ];
 
-    // Group GM
-    await this.userModel.create({
-      email: 'groupgm@cityden.com', password: hashedPassword, name: 'Dr. Okafor Group GM',
-      role: 'GroupGM', allowedBranches: branches.map((b) => b._id), activeBranchId: null, isActive: true, passwordChangedAt: now,
-    });
+    // const costPrices: Record<string, number> = {
+    //   'Bar Soap': 350, 'Shampoo': 1200, 'Toilet Paper': 2500, 'Hand Towels': 1800,
+    //   'Bleach': 900, 'Floor Detergent': 1500, 'Light Bulbs': 800, 'Trash Bags': 600,
+    //   'Dishwashing Liquid': 1100, 'Bottled Water': 2400,
+    // };
 
-    // store staff
-    const storeKeeper = await this.userModel.create({
-      email: 'storekeeper@cityden.com', password: hashedPassword, name: 'Emeka Store',
-      role: 'StoreKeeper', allowedBranches: [branches[0]._id], activeBranchId: branches[0]._id, isActive: true, passwordChangedAt: now,
-    });
-    await this.userModel.create({
-      email: 'storemanager@cityden.com', password: hashedPassword, name: 'Ngozi Store',
-      role: 'StoreManager', allowedBranches: branches.map((b) => b._id), activeBranchId: branches[0]._id, isActive: true, passwordChangedAt: now,
-    });
-
-    this.logger.log(`Seed — users created: 1 admin + 1 group gm + 3 facility managers + 1 front office + 1 accountant + 1 it + 2 store staff + kitchen + reception + housekeeper`);
-
-    // inventory items───────────────────────────────────────
-    const itemDefs = [
-      { name: 'Bar Soap', category: 'Toiletries', unit: 'pcs' },
-      { name: 'Shampoo', category: 'Toiletries', unit: 'bottles' },
-      { name: 'Toilet Paper', category: 'Cleaning', unit: 'rolls' },
-      { name: 'Hand Towels', category: 'Linen', unit: 'pcs' },
-      { name: 'Bleach', category: 'Cleaning', unit: 'litres' },
-      { name: 'Floor Detergent', category: 'Cleaning', unit: 'litres' },
-      { name: 'Light Bulbs', category: 'Maintenance', unit: 'pcs' },
-      { name: 'Trash Bags', category: 'Cleaning', unit: 'packs' },
-      { name: 'Dishwashing Liquid', category: 'Kitchen', unit: 'bottles' },
-      { name: 'Bottled Water', category: 'Kitchen', unit: 'cartons' },
-    ];
-
-    const costPrices: Record<string, number> = {
-      'Bar Soap': 350, 'Shampoo': 1200, 'Toilet Paper': 2500, 'Hand Towels': 1800,
-      'Bleach': 900, 'Floor Detergent': 1500, 'Light Bulbs': 800, 'Trash Bags': 600,
-      'Dishwashing Liquid': 1100, 'Bottled Water': 2400,
-    };
-
-    const inventoryItems: Array<Record<string, unknown>> = [];
-    for (const branch of branches) {
-      for (const def of itemDefs) {
-        const stock = 20 + Math.floor(Math.random() * 80);
-        const reorder = 5 + Math.floor(Math.random() * 15);
-        const hasExpiry = Math.random() > 0.4;
-        const expDays = hasExpiry ? Math.random() > 0.2 ? randInt(30, 365) : randInt(-30, 29) : undefined;
-        inventoryItems.push({
-          name: def.name,
-          category: def.category,
-          unit: def.unit,
-          currentStock: stock,
-          reorderLevel: reorder,
-          costPrice: costPrices[def.name] || 500,
-          expiryDate: expDays != null ? daysFromNow(expDays) : undefined,
-          branchId: branch._id,
-          isActive: true,
-          createdBy: storeKeeper._id,
-          updatedBy: storeKeeper._id,
-        });
-      }
-    }
-    const createdItems = await this.inventoryItemModel.create(inventoryItems);
+    // const inventoryItems: Array<Record<string, unknown>> = [];
+    // for (const branch of branches) {
+    //   for (const def of itemDefs) {
+    //     const stock = 20 + Math.floor(Math.random() * 80);
+    //     const reorder = 5 + Math.floor(Math.random() * 15);
+    //     const hasExpiry = Math.random() > 0.4;
+    //     const expDays = hasExpiry ? Math.random() > 0.2 ? randInt(30, 365) : randInt(-30, 29) : undefined;
+    //     inventoryItems.push({
+    //       name: def.name,
+    //       category: def.category,
+    //       unit: def.unit,
+    //       currentStock: stock,
+    //       reorderLevel: reorder,
+    //       costPrice: costPrices[def.name] || 500,
+    //       expiryDate: expDays != null ? daysFromNow(expDays) : undefined,
+    //       branchId: branch._id,
+    //       isActive: true,
+    //       createdBy: storeKeeper._id,
+    //       updatedBy: storeKeeper._id,
+    //     });
+    //   }
+    // }
+    // const createdItems = await this.inventoryItemModel.create(inventoryItems);
 
     // initial stock transactions
-    const txns = createdItems.map((item) => ({
-      itemId: item._id,
-      type: 'restock',
-      quantity: item.currentStock,
-      previousStock: 0,
-      newStock: item.currentStock,
-      notes: 'Initial stock on setup',
-      performedBy: storeKeeper._id,
-      branchId: item.branchId,
-    }));
-    await this.inventoryTxModel.create(txns);
+    // const txns = createdItems.map((item) => ({
+    //   itemId: item._id,
+    //   type: 'restock',
+    //   quantity: item.currentStock,
+    //   previousStock: 0,
+    //   newStock: item.currentStock,
+    //   notes: 'Initial stock on setup',
+    //   performedBy: storeKeeper._id,
+    //   branchId: item.branchId,
+    // }));
+    // await this.inventoryTxModel.create(txns);
 
-    this.logger.log(`Seed — inventory items created: ${createdItems.length} across ${branches.length} branches`);
+    // this.logger.log(`Seed — inventory items created: ${createdItems.length} across ${branches.length} branches`);
 
     // departments────────────────────────────────────────────────
-    const deptDefs = [
-      { branchIdx: 0, name: 'Management', description: 'Branch management and administration' },
-      { branchIdx: 0, name: 'Front Desk', description: 'Reception and guest services' },
-      { branchIdx: 0, name: 'Housekeeping', description: 'Room cleaning and maintenance' },
-      { branchIdx: 0, name: 'Laundry', description: 'Laundry and linen services' },
-      { branchIdx: 0, name: 'Kitchen', description: 'Food preparation and cooking' },
-      { branchIdx: 0, name: 'F & B', description: 'Food and beverage service' },
-      { branchIdx: 0, name: 'Store', description: 'Inventory and supplies management' },
-      { branchIdx: 0, name: 'IT', description: 'Information technology support' },
-      { branchIdx: 1, name: 'Management', description: 'Branch management and administration' },
-      { branchIdx: 1, name: 'Front Desk', description: 'Reception and guest services' },
-      { branchIdx: 1, name: 'Housekeeping', description: 'Room cleaning and maintenance' },
-      { branchIdx: 1, name: 'Kitchen', description: 'Food preparation and cooking' },
-      { branchIdx: 1, name: 'Store', description: 'Inventory and supplies management' },
-      { branchIdx: 2, name: 'Management', description: 'Branch management and administration' },
-      { branchIdx: 2, name: 'Front Desk', description: 'Reception and guest services' },
-      { branchIdx: 2, name: 'Housekeeping', description: 'Room cleaning, gardening and maintenance' },
-      { branchIdx: 2, name: 'Laundry', description: 'Laundry and linen services' },
-      { branchIdx: 2, name: 'Kitchen', description: 'Food preparation, cooking and service' },
-      { branchIdx: 2, name: 'Store', description: 'Inventory and supplies management' },
-    ];
+    // const deptDefs = [
+    //   { branchIdx: 0, name: 'Management', description: 'Branch management and administration' },
+    //   { branchIdx: 0, name: 'Front Desk', description: 'Reception and guest services' },
+    //   { branchIdx: 0, name: 'Housekeeping', description: 'Room cleaning and maintenance' },
+    //   { branchIdx: 0, name: 'Laundry', description: 'Laundry and linen services' },
+    //   { branchIdx: 0, name: 'Kitchen', description: 'Food preparation and cooking' },
+    //   { branchIdx: 0, name: 'F & B', description: 'Food and beverage service' },
+    //   { branchIdx: 0, name: 'Store', description: 'Inventory and supplies management' },
+    //   { branchIdx: 0, name: 'IT', description: 'Information technology support' },
+    //   { branchIdx: 1, name: 'Management', description: 'Branch management and administration' },
+    //   { branchIdx: 1, name: 'Front Desk', description: 'Reception and guest services' },
+    //   { branchIdx: 1, name: 'Housekeeping', description: 'Room cleaning and maintenance' },
+    //   { branchIdx: 1, name: 'Kitchen', description: 'Food preparation and cooking' },
+    //   { branchIdx: 1, name: 'Store', description: 'Inventory and supplies management' },
+    //   { branchIdx: 2, name: 'Management', description: 'Branch management and administration' },
+    //   { branchIdx: 2, name: 'Front Desk', description: 'Reception and guest services' },
+    //   { branchIdx: 2, name: 'Housekeeping', description: 'Room cleaning, gardening and maintenance' },
+    //   { branchIdx: 2, name: 'Laundry', description: 'Laundry and linen services' },
+    //   { branchIdx: 2, name: 'Kitchen', description: 'Food preparation, cooking and service' },
+    //   { branchIdx: 2, name: 'Store', description: 'Inventory and supplies management' },
+    // ];
 
-    const departments = await this.departmentModel.create(
-      deptDefs.map((d) => ({
-        name: d.name,
-        description: d.description,
-        branchId: branches[d.branchIdx]._id,
-        createdBy: admin._id,
-        updatedBy: admin._id,
-      })),
-    );
-    this.logger.log(`Seed — departments created: ${departments.length} across ${branches.length} branches`);
-    const deptsByBranch: Record<number, Record<string, string>> = {};
-    for (const d of departments) {
-      const branchIdx = branches.findIndex((b) => b._id.toString() === d.branchId.toString());
-      if (!deptsByBranch[branchIdx]) deptsByBranch[branchIdx] = {};
-      deptsByBranch[branchIdx][d.name] = d._id.toString();
-    }
+    // const departments = await this.departmentModel.create(
+    //   deptDefs.map((d) => ({
+    //     name: d.name,
+    //     description: d.description,
+    //     branchId: branches[d.branchIdx]._id,
+    //     createdBy: admin._id,
+    //     updatedBy: admin._id,
+    //   })),
+    // );
+    // this.logger.log(`Seed — departments created: ${departments.length} across ${branches.length} branches`);
+    // const deptsByBranch: Record<number, Record<string, string>> = {};
+    // for (const d of departments) {
+    //   const branchIdx = branches.findIndex((b) => b._id.toString() === d.branchId.toString());
+    //   if (!deptsByBranch[branchIdx]) deptsByBranch[branchIdx] = {};
+    //   deptsByBranch[branchIdx][d.name] = d._id.toString();
+    // }
 
     // employees──────────────────────────────────────────────────
-    const staffByBranch: Array<{ branchIdx: number; staff: Array<{ name: string; email: string; phone: string; position: string; deptName: string }> }> = [
-      {
-        branchIdx: 0, // Abuja
-        staff: [
-          { name: 'DR. SINI KWABE', email: 'sini.kwabe@citydenapartments.com', phone: '08039686719', position: 'Principal Consultant/Group GM', deptName: 'Management' },
-          { name: 'IBU VINCENT ANTHONY', email: 'ibu.anthony@citydenapartments.com', phone: '08039686719', position: 'Facility Manager', deptName: 'Management' },
-          { name: 'DIVINELOVE OLUCHI CHIKEZIE', email: 'divinelove.chikezie@citydenapartments.com', phone: '08039686719', position: 'Front Office Manager/HR', deptName: 'Management' },
-          { name: 'KENNETH USHIE', email: 'kenneth.ushie@citydenapartments.com', phone: '08039686719', position: 'Accountant/Internal Auditor', deptName: 'Management' },
-          { name: 'GABRIEL OMANG OGAR', email: 'gabriel.ogar@citydenapartments.com', phone: '08039686719', position: 'Executive Housekeeper', deptName: 'Management' },
-          { name: 'OJIH ELIZABETH ADAH', email: 'ojih.adah@citydenapartments.com', phone: '08063269302', position: 'Receptionist', deptName: 'Front Desk' },
-          { name: 'FATIMA ELIZABETH DAVID', email: 'fatima.david@citydenapartments.com', phone: '09166818195', position: 'Receptionist', deptName: 'Front Desk' },
-          { name: 'JOEL AJINU', email: 'joel.ajinu@citydenapartments.com', phone: '07063542501', position: 'Porter', deptName: 'Front Desk' },
-          { name: 'ABUBAKAR MUSA GBEDAKO', email: 'abubakar.gbedako@citydenapartments.com', phone: '07073767344', position: 'Housekeeper', deptName: 'Housekeeping' },
-          { name: 'ABDALLAH SAEED ADAM', email: 'abdallah.adam@citydenapartments.com', phone: '09131571180', position: 'Housekeeper', deptName: 'Housekeeping' },
-          { name: 'SAMSON INALEGWU GABRIEL', email: 'samson.gabriel@citydenapartments.com', phone: '07034165082', position: 'Housekeeper', deptName: 'Housekeeping' },
-          { name: 'HASSAN SEDIK', email: 'hassan.sedik@citydenapartments.com', phone: '08100662213', position: 'Housekeeper', deptName: 'Housekeeping' },
-          { name: 'JEREMIAH HOPE', email: 'jeremiah.hope@citydenapartments.com', phone: '08036740067', position: 'Laundry Operative', deptName: 'Laundry' },
-          { name: 'TAWO LEONARD', email: 'tawo.leonard@citydenapartments.com', phone: '07067171793', position: 'Chef', deptName: 'Kitchen' },
-          { name: 'MARYAM GANIU', email: 'maryam.ganiu@citydenapartments.com', phone: '07064909810', position: 'Cook', deptName: 'Kitchen' },
-          { name: 'VERONICA UBAH', email: 'veronica.ubah@citydenapartments.com', phone: '09021625954', position: 'Steward', deptName: 'Kitchen' },
-          { name: 'EMMANUEL YOMLA', email: 'emmanuel.yomla@citydenapartments.com', phone: '08034760483', position: 'Head Waiter', deptName: 'F & B' },
-          { name: 'SOLOMON ZACHARIAH', email: 'solomon.zachariah@citydenapartments.com', phone: '09064888529', position: 'Store Keeper', deptName: 'Store' },
-          { name: 'JONAH WANNAH KOLOMI', email: 'jonah.kolomi@citydenapartments.com', phone: '08133089344', position: 'IT', deptName: 'IT' },
-          { name: 'ZURUQ MOHAMMED', email: 'zuruq.mohammed@citydenapartments.com', phone: '07025275360', position: 'IT', deptName: 'IT' },
-        ],
-      },
-      {
-        branchIdx: 1, // Kaduna
-        staff: [],
-      },
-      {
-        branchIdx: 2, // Maiduguri
-        staff: [
-          { name: 'Mohammed Tahiru', email: 'mtjibirn44@gmail.com', phone: '08039686749', position: 'General Manager', deptName: 'Management' },
-          { name: 'Markus John', email: 'markusjoh691@gmail.com', phone: '07068257253', position: 'Front Office Supervisor', deptName: 'Front Desk' },
-          { name: 'Hauwaa Ratgak', email: 'harunarotgak825@gmail.com', phone: '08039780483', position: 'Chef', deptName: 'Kitchen' },
-          { name: 'Makoi Cynthia', email: 'mikecynthia272@gmail.com', phone: '09166818195', position: 'Receptionist', deptName: 'Front Desk' },
-          { name: 'Aziz Hayatu Dzarma', email: 'azizhayatu7@gmail.com', phone: '09131270580', position: 'Receptionist', deptName: 'Front Desk' },
-          { name: 'Emmanuel Friday', email: 'emmanuelfridaylove@gmail.com', phone: '08139626388', position: 'Receptionist', deptName: 'Front Desk' },
-          { name: 'Dorcas Musa Wala', email: 'musawabadorcas@gmail.com', phone: '08063269302', position: 'Receptionist', deptName: 'Front Desk' },
-          { name: 'Usman Adamu', email: 'usmanadamu24@gmail.com', phone: '08100662213', position: 'H/k Supervisor', deptName: 'Housekeeping' },
-          { name: 'David Monday', email: 'davidmonday2022@gmail.com', phone: '07034165082', position: 'Housekeeper', deptName: 'Housekeeping' },
-          { name: 'Ames Charles', email: 'amoscharls21@gmail.com', phone: '07131571180', position: 'Housekeeper', deptName: 'Housekeeping' },
-          { name: 'Ibrahim Dauda', email: 'ibrahimdauda4322@gmail.com', phone: '07073767344', position: 'Housekeeper', deptName: 'Housekeeping' },
-          { name: 'Halima Saleh', email: 'halimasaleh641@gmail.com', phone: '08133089344', position: 'Kitchen Asst.', deptName: 'Kitchen' },
-          { name: 'Bilah Musa', email: 'bilamusa6@gmail.com', phone: '09068911160', position: 'Kitchen Asst.', deptName: 'Kitchen' },
-          { name: 'James Asura', email: 'kassidee55@gmail.com', phone: '07064909810', position: 'Laundry', deptName: 'Laundry' },
-          { name: 'Ladi Baita', email: 'ladibata033@gmail.com', phone: '07019885313', position: 'Waitress / Porter', deptName: 'Kitchen' },
-          { name: 'Flora Musa Wala', email: 'musaflora6@gmail.com', phone: '09068911160', position: 'Waitress / Porter', deptName: 'Kitchen' },
-          { name: 'Barka Boniface', email: 'bonifaeebarka55555@gmail.com', phone: '09021625954', position: 'Waiter / Porter', deptName: 'Kitchen' },
-          { name: 'Nala Musa Dzakwo', email: 'malamusadzakwa@gmail.com', phone: '09016267092', position: 'Laundry', deptName: 'Laundry' },
-          { name: 'Alhaji Modu Goni', email: 'alhajimodu265@gmail.com', phone: '08036740067', position: 'Environmental Gardener', deptName: 'Housekeeping' },
-          { name: 'Kolomi Alhaji Fam', email: 'alhajikolomitar@gmail.com', phone: '08127703424', position: 'Environmental Gardener', deptName: 'Housekeeping' },
-        ],
-      },
-    ];
+    // const staffByBranch: Array<{ branchIdx: number; staff: Array<{ name: string; email: string; phone: string; position: string; deptName: string }> }> = [
+    //   {
+    //     branchIdx: 0, // Abuja
+    //     staff: [
+    //       { name: 'DR. SINI KWABE', email: 'sini.kwabe@citydenapartments.com', phone: '08039686719', position: 'Principal Consultant/Group GM', deptName: 'Management' },
+    //       { name: 'IBU VINCENT ANTHONY', email: 'ibu.anthony@citydenapartments.com', phone: '08039686719', position: 'Facility Manager', deptName: 'Management' },
+    //       { name: 'DIVINELOVE OLUCHI CHIKEZIE', email: 'divinelove.chikezie@citydenapartments.com', phone: '08039686719', position: 'Front Office Manager/HR', deptName: 'Management' },
+    //       { name: 'KENNETH USHIE', email: 'kenneth.ushie@citydenapartments.com', phone: '08039686719', position: 'Accountant/Internal Auditor', deptName: 'Management' },
+    //       { name: 'GABRIEL OMANG OGAR', email: 'gabriel.ogar@citydenapartments.com', phone: '08039686719', position: 'Executive Housekeeper', deptName: 'Management' },
+    //       { name: 'OJIH ELIZABETH ADAH', email: 'ojih.adah@citydenapartments.com', phone: '08063269302', position: 'Receptionist', deptName: 'Front Desk' },
+    //       { name: 'FATIMA ELIZABETH DAVID', email: 'fatima.david@citydenapartments.com', phone: '09166818195', position: 'Receptionist', deptName: 'Front Desk' },
+    //       { name: 'JOEL AJINU', email: 'joel.ajinu@citydenapartments.com', phone: '07063542501', position: 'Porter', deptName: 'Front Desk' },
+    //       { name: 'ABUBAKAR MUSA GBEDAKO', email: 'abubakar.gbedako@citydenapartments.com', phone: '07073767344', position: 'Housekeeper', deptName: 'Housekeeping' },
+    //       { name: 'ABDALLAH SAEED ADAM', email: 'abdallah.adam@citydenapartments.com', phone: '09131571180', position: 'Housekeeper', deptName: 'Housekeeping' },
+    //       { name: 'SAMSON INALEGWU GABRIEL', email: 'samson.gabriel@citydenapartments.com', phone: '07034165082', position: 'Housekeeper', deptName: 'Housekeeping' },
+    //       { name: 'HASSAN SEDIK', email: 'hassan.sedik@citydenapartments.com', phone: '08100662213', position: 'Housekeeper', deptName: 'Housekeeping' },
+    //       { name: 'JEREMIAH HOPE', email: 'jeremiah.hope@citydenapartments.com', phone: '08036740067', position: 'Laundry Operative', deptName: 'Laundry' },
+    //       { name: 'TAWO LEONARD', email: 'tawo.leonard@citydenapartments.com', phone: '07067171793', position: 'Chef', deptName: 'Kitchen' },
+    //       { name: 'MARYAM GANIU', email: 'maryam.ganiu@citydenapartments.com', phone: '07064909810', position: 'Cook', deptName: 'Kitchen' },
+    //       { name: 'VERONICA UBAH', email: 'veronica.ubah@citydenapartments.com', phone: '09021625954', position: 'Steward', deptName: 'Kitchen' },
+    //       { name: 'EMMANUEL YOMLA', email: 'emmanuel.yomla@citydenapartments.com', phone: '08034760483', position: 'Head Waiter', deptName: 'F & B' },
+    //       { name: 'SOLOMON ZACHARIAH', email: 'solomon.zachariah@citydenapartments.com', phone: '09064888529', position: 'Store Keeper', deptName: 'Store' },
+    //       { name: 'JONAH WANNAH KOLOMI', email: 'jonah.kolomi@citydenapartments.com', phone: '08133089344', position: 'IT', deptName: 'IT' },
+    //       { name: 'ZURUQ MOHAMMED', email: 'zuruq.mohammed@citydenapartments.com', phone: '07025275360', position: 'IT', deptName: 'IT' },
+    //     ],
+    //   },
+    //   {
+    //     branchIdx: 1, // Kaduna
+    //     staff: [],
+    //   },
+    //   {
+    //     branchIdx: 2, // Maiduguri
+    //     staff: [
+    //       { name: 'Mohammed Tahiru', email: 'mtjibirn44@gmail.com', phone: '08039686749', position: 'General Manager', deptName: 'Management' },
+    //       { name: 'Markus John', email: 'markusjoh691@gmail.com', phone: '07068257253', position: 'Front Office Supervisor', deptName: 'Front Desk' },
+    //       { name: 'Hauwaa Ratgak', email: 'harunarotgak825@gmail.com', phone: '08039780483', position: 'Chef', deptName: 'Kitchen' },
+    //       { name: 'Makoi Cynthia', email: 'mikecynthia272@gmail.com', phone: '09166818195', position: 'Receptionist', deptName: 'Front Desk' },
+    //       { name: 'Aziz Hayatu Dzarma', email: 'azizhayatu7@gmail.com', phone: '09131270580', position: 'Receptionist', deptName: 'Front Desk' },
+    //       { name: 'Emmanuel Friday', email: 'emmanuelfridaylove@gmail.com', phone: '08139626388', position: 'Receptionist', deptName: 'Front Desk' },
+    //       { name: 'Dorcas Musa Wala', email: 'musawabadorcas@gmail.com', phone: '08063269302', position: 'Receptionist', deptName: 'Front Desk' },
+    //       { name: 'Usman Adamu', email: 'usmanadamu24@gmail.com', phone: '08100662213', position: 'H/k Supervisor', deptName: 'Housekeeping' },
+    //       { name: 'David Monday', email: 'davidmonday2022@gmail.com', phone: '07034165082', position: 'Housekeeper', deptName: 'Housekeeping' },
+    //       { name: 'Ames Charles', email: 'amoscharls21@gmail.com', phone: '07131571180', position: 'Housekeeper', deptName: 'Housekeeping' },
+    //       { name: 'Ibrahim Dauda', email: 'ibrahimdauda4322@gmail.com', phone: '07073767344', position: 'Housekeeper', deptName: 'Housekeeping' },
+    //       { name: 'Halima Saleh', email: 'halimasaleh641@gmail.com', phone: '08133089344', position: 'Kitchen Asst.', deptName: 'Kitchen' },
+    //       { name: 'Bilah Musa', email: 'bilamusa6@gmail.com', phone: '09068911160', position: 'Kitchen Asst.', deptName: 'Kitchen' },
+    //       { name: 'James Asura', email: 'kassidee55@gmail.com', phone: '07064909810', position: 'Laundry', deptName: 'Laundry' },
+    //       { name: 'Ladi Baita', email: 'ladibata033@gmail.com', phone: '07019885313', position: 'Waitress / Porter', deptName: 'Kitchen' },
+    //       { name: 'Flora Musa Wala', email: 'musaflora6@gmail.com', phone: '09068911160', position: 'Waitress / Porter', deptName: 'Kitchen' },
+    //       { name: 'Barka Boniface', email: 'bonifaeebarka55555@gmail.com', phone: '09021625954', position: 'Waiter / Porter', deptName: 'Kitchen' },
+    //       { name: 'Nala Musa Dzakwo', email: 'malamusadzakwa@gmail.com', phone: '09016267092', position: 'Laundry', deptName: 'Laundry' },
+    //       { name: 'Alhaji Modu Goni', email: 'alhajimodu265@gmail.com', phone: '08036740067', position: 'Environmental Gardener', deptName: 'Housekeeping' },
+    //       { name: 'Kolomi Alhaji Fam', email: 'alhajikolomitar@gmail.com', phone: '08127703424', position: 'Environmental Gardener', deptName: 'Housekeeping' },
+    //     ],
+    //   },
+    // ];
 
-    const employeeData: Array<Record<string, unknown>> = [];
-    for (const { branchIdx, staff } of staffByBranch) {
-      for (const s of staff) {
-        employeeData.push({
-          name: s.name,
-          email: s.email,
-          phone: s.phone,
-          position: s.position,
-          departmentId: deptsByBranch[branchIdx]?.[s.deptName] || undefined,
-          department: s.deptName,
-          branchId: branches[branchIdx]._id,
-          isActive: true,
-        });
-      }
-    }
+    // const employeeData: Array<Record<string, unknown>> = [];
+    // for (const { branchIdx, staff } of staffByBranch) {
+    //   for (const s of staff) {
+    //     employeeData.push({
+    //       name: s.name,
+    //       email: s.email,
+    //       phone: s.phone,
+    //       position: s.position,
+    //       departmentId: deptsByBranch[branchIdx]?.[s.deptName] || undefined,
+    //       department: s.deptName,
+    //       branchId: branches[branchIdx]._id,
+    //       isActive: true,
+    //     });
+    //   }
+    // }
 
-    await this.employeeModel.create(employeeData);
-    this.logger.log(`Seed — employees created: ${employeeData.length} across ${branches.length} branches`);
+    // await this.employeeModel.create(employeeData);
+    // this.logger.log(`Seed — employees created: ${employeeData.length} across ${branches.length} branches`);
 
-    // live user accounts for real staff──────────────────────────
-    const positionRoleMap: Record<string, string> = {
-      'Principal Consultant/Group GM': 'GroupGM',
-      'General Manager': 'GroupGM',
-      'Facility Manager': 'FacilityManager',
-      'Front Office Manager/HR': 'FrontOfficeManager',
-      'Front Office Supervisor': 'Reception',
-      'Accountant/Internal Auditor': 'Accountant',
-      'Executive Housekeeper': 'HouseKeeper',
-      'H/k Supervisor': 'HouseKeeper',
-      'Receptionist': 'Reception',
-      'Housekeeper': 'HouseKeeper',
-      'Chef': 'KitchenStaff',
-      'Cook': 'KitchenStaff',
-      'Steward': 'KitchenStaff',
-      'Senior Chef': 'KitchenStaff',
-      'Kitchen Asst.': 'KitchenStaff',
-      'Potter': 'KitchenStaff',
-      'Waiter': 'KitchenStaff',
-      'Waitress / Porter': 'KitchenStaff',
-      'Waiter / Porter': 'KitchenStaff',
-      'Porter': 'HouseKeeper',
-      'Head Waiter': 'KitchenStaff',
-      'Store Keeper': 'StoreKeeper',
-      'IT': 'IT',
-      'Laundry': 'HouseKeeper',
-      'Laundry Operative': 'HouseKeeper',
-      'Environmental Gardener': 'HouseKeeper',
-      'Gardener': 'HouseKeeper',
-    };
+    // // live user accounts for real staff──────────────────────────
+    // const positionRoleMap: Record<string, string> = {
+    //   'Principal Consultant/Group GM': 'GroupGM',
+    //   'General Manager': 'GroupGM',
+    //   'Facility Manager': 'FacilityManager',
+    //   'Front Office Manager/HR': 'FrontOfficeManager',
+    //   'Front Office Supervisor': 'Reception',
+    //   'Accountant/Internal Auditor': 'Accountant',
+    //   'Executive Housekeeper': 'HouseKeeper',
+    //   'H/k Supervisor': 'HouseKeeper',
+    //   'Receptionist': 'Reception',
+    //   'Housekeeper': 'HouseKeeper',
+    //   'Chef': 'KitchenStaff',
+    //   'Cook': 'KitchenStaff',
+    //   'Steward': 'KitchenStaff',
+    //   'Senior Chef': 'KitchenStaff',
+    //   'Kitchen Asst.': 'KitchenStaff',
+    //   'Potter': 'KitchenStaff',
+    //   'Waiter': 'KitchenStaff',
+    //   'Waitress / Porter': 'KitchenStaff',
+    //   'Waiter / Porter': 'KitchenStaff',
+    //   'Porter': 'HouseKeeper',
+    //   'Head Waiter': 'KitchenStaff',
+    //   'Store Keeper': 'StoreKeeper',
+    //   'IT': 'IT',
+    //   'Laundry': 'HouseKeeper',
+    //   'Laundry Operative': 'HouseKeeper',
+    //   'Environmental Gardener': 'HouseKeeper',
+    //   'Gardener': 'HouseKeeper',
+    // };
 
-    const liveUsers: Array<Record<string, unknown>> = [];
-    const liveCredentials: Array<{ label: string; email: string; password: string; role: string }> = [];
-    for (const { branchIdx, staff } of staffByBranch) {
-      for (const s of staff) {
-        const role = positionRoleMap[s.position];
-        if (!role) continue;
-        liveUsers.push({
-          email: s.email,
-          password: await bcrypt.hash(s.phone, 12),
-          name: s.name,
-          role,
-          allowedBranches: [branches[branchIdx]._id],
-          activeBranchId: branches[branchIdx]._id,
-          isActive: true,
-          passwordChangedAt: null,
-        });
-        liveCredentials.push({ label: `${role} (${branches[branchIdx].name}) — ${s.name}`, email: s.email, password: s.phone, role });
-      }
-    }
-    await this.userModel.create(liveUsers);
-    this.logger.log(`Seed — live user accounts created: ${liveUsers.length}`);
+    // const liveUsers: Array<Record<string, unknown>> = [];
+    // const liveCredentials: Array<{ label: string; email: string; password: string; role: string }> = [];
+    // for (const { branchIdx, staff } of staffByBranch) {
+    //   for (const s of staff) {
+    //     const role = positionRoleMap[s.position];
+    //     if (!role) continue;
+    //     liveUsers.push({
+    //       email: s.email,
+    //       password: await bcrypt.hash(s.phone, 12),
+    //       name: s.name,
+    //       role,
+    //       allowedBranches: [branches[branchIdx]._id],
+    //       activeBranchId: branches[branchIdx]._id,
+    //       isActive: true,
+    //       passwordChangedAt: null,
+    //     });
+    //     liveCredentials.push({ label: `${role} (${branches[branchIdx].name}) — ${s.name}`, email: s.email, password: s.phone, role });
+    //   }
+    // }
+    // await this.userModel.create(liveUsers);
+    // this.logger.log(`Seed — live user accounts created: ${liveUsers.length}`);
 
-    // customers──────────────────────────────────────────────────
-    const customerData: Array<Record<string, unknown>> = [];
-    const customerPhones: string[] = [];
-    for (let i = 0; i < 20; i++) {
-      const phone = `0803${String(randInt(1000000, 9999999)).padStart(7, '0')}`;
-      customerPhones.push(phone);
-      const gender = pick(genders);
-      customerData.push({
-        name: `${pick(firstNames)} ${pick(lastNames)}`,
-        phone,
-        email: Math.random() > 0.3 ? `guest${i}@email.com` : undefined,
-        address: pick(['12 Ahmadu Bello Way', 'Plot 5 Lugard Avenue', '23 Tafawa Balewa Road', '8 Yakubu Gowon Crescent', '45 Obafemi Awolowo Street']),
-        nationality: 'Nigeria',
-        comingFrom: pick(cities),
-        stateOfOrigin: pick(states),
-        occupation: pick(occupations),
-        nextDestination: pick(cities),
-        gender,
-        totalVisits: randInt(0, 5),
-        totalSpent: randNaira(0, 500000),
-        lastVisitDate: Math.random() > 0.3 ? daysAgo(randInt(1, 60)) : undefined,
-        firstBranchId: pick(branches)._id,
-      });
-    }
-    await this.customerModel.create(customerData);
-    this.logger.log(`Seed — customers created: ${customerData.length}`);
+    // // customers──────────────────────────────────────────────────
+    // const customerData: Array<Record<string, unknown>> = [];
+    // const customerPhones: string[] = [];
+    // for (let i = 0; i < 20; i++) {
+    //   const phone = `0803${String(randInt(1000000, 9999999)).padStart(7, '0')}`;
+    //   customerPhones.push(phone);
+    //   const gender = pick(genders);
+    //   customerData.push({
+    //     name: `${pick(firstNames)} ${pick(lastNames)}`,
+    //     phone,
+    //     email: Math.random() > 0.3 ? `guest${i}@email.com` : undefined,
+    //     address: pick(['12 Ahmadu Bello Way', 'Plot 5 Lugard Avenue', '23 Tafawa Balewa Road', '8 Yakubu Gowon Crescent', '45 Obafemi Awolowo Street']),
+    //     nationality: 'Nigeria',
+    //     comingFrom: pick(cities),
+    //     stateOfOrigin: pick(states),
+    //     occupation: pick(occupations),
+    //     nextDestination: pick(cities),
+    //     gender,
+    //     totalVisits: randInt(0, 5),
+    //     totalSpent: randNaira(0, 500000),
+    //     lastVisitDate: Math.random() > 0.3 ? daysAgo(randInt(1, 60)) : undefined,
+    //     firstBranchId: pick(branches)._id,
+    //   });
+    // }
+    // await this.customerModel.create(customerData);
+    // this.logger.log(`Seed — customers created: ${customerData.length}`);
 
-    // 30 bookings───────────────────────────────────────────────
-    const bookingData: Array<Record<string, unknown>> = [];
-    const roomsToUpdate: Record<string, string> = {}; // roomId -> status
+    // // 30 bookings───────────────────────────────────────────────
+    // const bookingData: Array<Record<string, unknown>> = [];
+    // const roomsToUpdate: Record<string, string> = {}; // roomId -> status
 
-    for (let i = 0; i < 30; i++) {
-      const [status, ciOff, coOff] = scenarios[i % scenarios.length];
-      const room = rooms[i % rooms.length];
-      const branch = branches.find((b) => b._id.toString() === room.branchId.toString())!;
-      const rt = allRT.flat().find((t) => t._id.toString() === room.roomTypeId.toString());
+    // for (let i = 0; i < 30; i++) {
+    //   const [status, ciOff, coOff] = scenarios[i % scenarios.length];
+    //   const room = rooms[i % rooms.length];
+    //   const branch = branches.find((b) => b._id.toString() === room.branchId.toString())!;
+    //   const rt = allRT.flat().find((t) => t._id.toString() === room.roomTypeId.toString());
 
-      const ci = ciOff >= 0 ? daysFromNow(ciOff) : daysAgo(Math.abs(ciOff));
-      let co = coOff >= 0 ? daysFromNow(coOff) : daysAgo(Math.abs(coOff));
+    //   const ci = ciOff >= 0 ? daysFromNow(ciOff) : daysAgo(Math.abs(ciOff));
+    //   let co = coOff >= 0 ? daysFromNow(coOff) : daysAgo(Math.abs(coOff));
 
-      if (co <= ci) co = addDays(ci, 1);
+    //   if (co <= ci) co = addDays(ci, 1);
 
-      const nights = Math.max(1, differenceInDays(co, ci));
-      const pricePerNight = rt ? randNaira(rt.minPriceAllowed, rt.basePrice) : randNaira(25000, 80000);
-      const discountPct = Math.random() > 0.7 ? randInt(5, 30) : 0;
-      const discount = Math.round(pricePerNight * nights * discountPct / 100);
-      const total = Math.max(0, pricePerNight * nights - discount);
+    //   const nights = Math.max(1, differenceInDays(co, ci));
+    //   const pricePerNight = rt ? randNaira(rt.minPriceAllowed, rt.basePrice) : randNaira(25000, 80000);
+    //   const discountPct = Math.random() > 0.7 ? randInt(5, 30) : 0;
+    //   const discount = Math.round(pricePerNight * nights * discountPct / 100);
+    //   const total = Math.max(0, pricePerNight * nights - discount);
 
-      const guestName = `${pick(firstNames)} ${pick(lastNames)}`;
-      const guestPhone = Math.random() > 0.6 ? pick(customerPhones) : `0803${String(randInt(1000000, 9999999)).padStart(7, '0')}`;
-      const hasEmail = Math.random() > 0.5;
+    //   const guestName = `${pick(firstNames)} ${pick(lastNames)}`;
+    //   const guestPhone = Math.random() > 0.6 ? pick(customerPhones) : `0803${String(randInt(1000000, 9999999)).padStart(7, '0')}`;
+    //   const hasEmail = Math.random() > 0.5;
 
-      const totalForRoom = Math.max(0, pricePerNight * nights);
+    //   const totalForRoom = Math.max(0, pricePerNight * nights);
 
-      bookingData.push({
-        branchId: room.branchId,
-        rooms: [{
-          roomId: room._id,
-          roomTypeId: room.roomTypeId,
-          actualPricePerNight: pricePerNight,
-          totalForRoom,
-          maxGuests: room.maxGuests,
-        }],
-        guestDetails: {
-          name: guestName,
-          phone: guestPhone,
-          address: pick(['12 Ahmadu Bello Way', 'Plot 5 Lugard Avenue', '23 Tafawa Balewa Road', '8 Yakubu Gowon Crescent', '45 Obafemi Awolowo Street']),
-          nationality: 'Nigeria',
-          comingFrom: pick(cities),
-          stateOfOrigin: pick(states),
-          occupation: pick(occupations),
-          nextDestination: pick(cities),
-          gender: pick(genders),
-          ...(hasEmail ? { email: `${guestName.toLowerCase().replace(/\s/g, '.')}@email.com` } : {}),
-        },
-        numberOfGuests: randInt(1, room.maxGuests),
-        checkInDate: ci,
-        checkOutDate: co,
-        discount: discount,
-        discountPercentage: discountPct,
-        totalAmountPaid: total,
-        paymentMethod: pick(paymentMethods),
-        paymentReference: Math.random() > 0.5 ? `TXN-${Date.now().toString(36)}-${i}` : undefined,
-        bookingStatus: status,
-        bookingSource: pick(bookingSources),
-        bookedBy: admin._id,
-        bookingReference: `CDA-${branch.code}-${String(i + 1).padStart(3, '0')}`,
-      });
+    //   bookingData.push({
+    //     branchId: room.branchId,
+    //     rooms: [{
+    //       roomId: room._id,
+    //       roomTypeId: room.roomTypeId,
+    //       actualPricePerNight: pricePerNight,
+    //       totalForRoom,
+    //       maxGuests: room.maxGuests,
+    //     }],
+    //     guestDetails: {
+    //       name: guestName,
+    //       phone: guestPhone,
+    //       address: pick(['12 Ahmadu Bello Way', 'Plot 5 Lugard Avenue', '23 Tafawa Balewa Road', '8 Yakubu Gowon Crescent', '45 Obafemi Awolowo Street']),
+    //       nationality: 'Nigeria',
+    //       comingFrom: pick(cities),
+    //       stateOfOrigin: pick(states),
+    //       occupation: pick(occupations),
+    //       nextDestination: pick(cities),
+    //       gender: pick(genders),
+    //       ...(hasEmail ? { email: `${guestName.toLowerCase().replace(/\s/g, '.')}@email.com` } : {}),
+    //     },
+    //     numberOfGuests: randInt(1, room.maxGuests),
+    //     checkInDate: ci,
+    //     checkOutDate: co,
+    //     discount: discount,
+    //     discountPercentage: discountPct,
+    //     totalAmountPaid: total,
+    //     paymentMethod: pick(paymentMethods),
+    //     paymentReference: Math.random() > 0.5 ? `TXN-${Date.now().toString(36)}-${i}` : undefined,
+    //     bookingStatus: status,
+    //     bookingSource: pick(bookingSources),
+    //     bookedBy: admin._id,
+    //     bookingReference: `CDA-${branch.code}-${String(i + 1).padStart(3, '0')}`,
+    //   });
 
-      // track room status — last booking per room wins
-      if (status === 'checked_out') {
-        roomsToUpdate[room._id.toString()] = RoomStatusEnum.DIRTY;
-      } else if (status === 'checked_in' && roomsToUpdate[room._id.toString()] !== RoomStatusEnum.DIRTY) {
-        roomsToUpdate[room._id.toString()] = RoomStatusEnum.OCCUPIED;
-      } else if (status === 'reserved' && !roomsToUpdate[room._id.toString()]) {
-        roomsToUpdate[room._id.toString()] = RoomStatusEnum.AVAILABLE;
-      } else if (status === 'cancelled' && !roomsToUpdate[room._id.toString()]) {
-        roomsToUpdate[room._id.toString()] = RoomStatusEnum.AVAILABLE;
-      }
-    }
+    //   // track room status — last booking per room wins
+    //   if (status === 'checked_out') {
+    //     roomsToUpdate[room._id.toString()] = RoomStatusEnum.DIRTY;
+    //   } else if (status === 'checked_in' && roomsToUpdate[room._id.toString()] !== RoomStatusEnum.DIRTY) {
+    //     roomsToUpdate[room._id.toString()] = RoomStatusEnum.OCCUPIED;
+    //   } else if (status === 'reserved' && !roomsToUpdate[room._id.toString()]) {
+    //     roomsToUpdate[room._id.toString()] = RoomStatusEnum.AVAILABLE;
+    //   } else if (status === 'cancelled' && !roomsToUpdate[room._id.toString()]) {
+    //     roomsToUpdate[room._id.toString()] = RoomStatusEnum.AVAILABLE;
+    //   }
+    // }
 
-    await this.bookingModel.create(bookingData);
+    // await this.bookingModel.create(bookingData);
 
-    this.logger.log(`Seed — bookings created: ${bookingData.length}`);
+    // this.logger.log(`Seed — bookings created: ${bookingData.length}`);
 
-    // Update room statuses
-    for (const [roomId, status] of Object.entries(roomsToUpdate)) {
-      await this.roomModel.findByIdAndUpdate(roomId, { status });
-    }
+    // // Update room statuses
+    // for (const [roomId, status] of Object.entries(roomsToUpdate)) {
+    //   await this.roomModel.findByIdAndUpdate(roomId, { status });
+    // }
 
-    const totalUsers = 14 + liveUsers.length; // 14 dummy accounts + live accounts
+    // const totalUsers = 14 + liveUsers.length; // 14 dummy accounts + live accounts
 
-    this.logger.log(`Seed completed — users: ${totalUsers}, customers: ${customerData.length}, employees: ${employeeData.length}, branches: ${branches.length}, roomTypes: ${abujaRT.length + kadunaRT.length + maiRT.length}, rooms: ${rooms.length}, bookings: ${bookingData.length}`);
+    // this.logger.log(`Seed completed — users: ${totalUsers}, customers: ${customerData.length}, employees: ${employeeData.length}, branches: ${branches.length}, roomTypes: ${abujaRT.length + kadunaRT.length + maiRT.length}, rooms: ${rooms.length}, bookings: ${bookingData.length}`);
 
-    const creds: Record<string, string> = {
-      admin: 'admin@cityden.com / admin123',
-      reception: 'reception@cityden.com / admin123',
-      kitchen: 'kitchen@cityden.com / admin123',
-      housekeeper: 'housekeeper@cityden.com / admin123',
-      frontoffice: 'frontoffice@cityden.com / admin123',
-      accountant: 'accountant@cityden.com / admin123',
-      it: 'it@cityden.com / admin123',
-      groupgm: 'groupgm@cityden.com / admin123',
-      'fm-abuja': 'fm-abuja@cityden.com / admin123',
-      'fm-kaduna': 'fm-kaduna@cityden.com / admin123',
-      'fm-maiduguri': 'fm-maiduguri@cityden.com / admin123',
-      storekeeper: 'storekeeper@cityden.com / admin123',
-      storemanager: 'storemanager@cityden.com / admin123',
-    };
-    for (const c of liveCredentials) {
-      creds[c.label] = `${c.email} / ${c.password}`;
-    }
+    // const creds: Record<string, string> = {
+    //   admin: 'admin@cityden.com / admin123',
+    //   reception: 'reception@cityden.com / admin123',
+    //   kitchen: 'kitchen@cityden.com / admin123',
+    //   housekeeper: 'housekeeper@cityden.com / admin123',
+    //   frontoffice: 'frontoffice@cityden.com / admin123',
+    //   accountant: 'accountant@cityden.com / admin123',
+    //   it: 'it@cityden.com / admin123',
+    //   groupgm: 'groupgm@cityden.com / admin123',
+    //   'fm-abuja': 'fm-abuja@cityden.com / admin123',
+    //   'fm-kaduna': 'fm-kaduna@cityden.com / admin123',
+    //   'fm-maiduguri': 'fm-maiduguri@cityden.com / admin123',
+    //   storekeeper: 'storekeeper@cityden.com / admin123',
+    //   storemanager: 'storemanager@cityden.com / admin123',
+    // };
+    // for (const c of liveCredentials) {
+    //   creds[c.label] = `${c.email} / ${c.password}`;
+    // }
 
     return {
       message: 'System seeded successfully',
-      credentials: creds,
       stats: {
-        users: totalUsers,
-        customers: customerData.length,
-        employees: employeeData.length,
         branches: 3,
         roomTypes: abujaRT.length + kadunaRT.length + maiRT.length,
         rooms: rooms.length,
-        bookings: bookingData.length,
       },
     };
   }
