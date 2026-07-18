@@ -27,7 +27,7 @@ export class DepartmentsController {
   }
 
   @Get()
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.FACILITY_MANAGER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.ACCOUNTANT)
   findAll(@Query('branchId') branchId: string, @Query('includeDeleted') includeDeleted: string, @ActiveUser() user: any) {
     const resolvedBranchId = branchId || user.activeBranchId;
     if (!hasElevatedRole(user.role)) {
@@ -39,7 +39,7 @@ export class DepartmentsController {
   }
 
   @Get(':id')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.FACILITY_MANAGER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.ACCOUNTANT)
   findOne(@Param('id') id: string, @ActiveUser() user: any) {
     return this.departmentsService.findOne(id, user);
   }
