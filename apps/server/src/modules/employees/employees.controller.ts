@@ -18,7 +18,7 @@ export class EmployeesController {
   constructor(private employeesService: EmployeesService) {}
 
   @Get()
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER, UserRoleEnum.ACCOUNTANT)
   findAll(@ActiveUser() user: any, @Query() query: PaginatedQueryDto & { includeInactive?: string }) {
     return this.employeesService.findAll({
       branchId: user.activeBranchId,
@@ -30,7 +30,7 @@ export class EmployeesController {
   }
 
   @Get('search')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER, UserRoleEnum.ACCOUNTANT)
   search(@ActiveUser() user: any, @Query() query: SearchEmployeeDto) {
     return this.employeesService.searchByName(user.activeBranchId, query.q);
   }
@@ -51,7 +51,7 @@ export class EmployeesController {
   }
 
   @Get(':id')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER, UserRoleEnum.ACCOUNTANT)
   findOne(@Param('id') id: string, @ActiveUser() user: any) {
     return this.employeesService.findById(id, user);
   }
