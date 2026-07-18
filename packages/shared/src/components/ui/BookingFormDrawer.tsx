@@ -282,8 +282,9 @@ export function BookingFormDrawer({
   }, [form.checkInDate, form.checkOutDate]);
 
   function getRoomTypeId(rt: { _id: string; name?: string } | string | undefined): string | undefined {
-    if (typeof rt === 'object' && rt) return rt._id;
-    return rt;
+    if (rt && typeof rt === 'object') return rt._id;
+    if (typeof rt === 'string') return rt;
+    return undefined;
   }
 
   const selectedRoom = useMemo(
