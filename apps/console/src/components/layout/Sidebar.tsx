@@ -12,6 +12,7 @@ import {
   LogOut,
   X,
   ChevronLeft,
+  ChevronDown,
   CalendarFold,
   AlertTriangle,
   History,
@@ -192,6 +193,21 @@ export function Sidebar({
   }, [user]);
 
   const groups = user ? menuConfig[user.role] ?? [] : [];
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem('sidebarCollapsedGroups');
+      return new Set<string>(saved ? JSON.parse(saved) : []);
+    } catch { return new Set<string>(); }
+  });
+
+  const toggleGroup = (heading: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(heading)) next.delete(heading); else next.add(heading);
+      localStorage.setItem('sidebarCollapsedGroups', JSON.stringify([...next]));
+      return next;
+    });
+  };
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-[var(--color-inverse-surface)] text-[var(--color-inverse-on-surface)]">
@@ -220,16 +236,31 @@ export function Sidebar({
 
       {/* Navigation */}
       <nav className="flex-1 py-4 overflow-y-auto">
-        <div className={cn('px-3 space-y-4', collapsed && 'px-2 space-y-3')}>
-          {groups.map((group) => (
-            <div key={group.heading}>
-              {!collapsed && (
-                <p className="px-3 mb-1 text-[10px] font-bold tracking-[0.15em] uppercase text-white/20">
-                  {group.heading}
-                </p>
-              )}
-              <div className="space-y-0.5">
-                {group.items.map((item) => {
+        <div className={cn('px-3 space-y-2', collapsed && 'px-2 space-y-3')}>
+          {groups.map((group) => {
+            const isCollapsed = collapsedGroups.has(group.heading);
+            return (
+              <div key={group.heading}>
+                {!collapsed ? (
+                  <button
+                    onClick={() => toggleGroup(group.heading)}
+                    className="flex items-center gap-1 w-full px-3 mb-1 text-[10px] font-bold tracking-[0.15em] uppercase text-white/20 hover:text-white/40 transition-colors cursor-pointer bg-transparent border-none"
+                  >
+                    <ChevronDown
+                      size={12}
+                      className={cn(
+                        'transition-transform duration-200',
+                        isCollapsed && '-rotate-90',
+                      )}
+                    />
+                    {group.heading}
+                  </button>
+                ) : null}
+                <div className={cn(
+                  'space-y-0.5 overflow-hidden transition-all duration-200',
+                  !collapsed && isCollapsed && 'hidden',
+                )}>
+                  {group.items.map((item) => {
                   const Icon = item.icon;
                   const isActive = item.path === '/'
                     ? location.pathname === '/'

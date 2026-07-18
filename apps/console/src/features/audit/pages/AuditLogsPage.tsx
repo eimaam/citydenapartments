@@ -170,7 +170,7 @@ export default function AuditLogsPage() {
       key: 'performedAt',
       width: 170,
       render: (_: unknown, r: AuditLogEntry) => (
-        <span className="text-xs font-mono">{format(new Date(r.performedAt), 'd MMM, h:mm a')}</span>
+        <span className="text-xs font-mono text-white!">{format(new Date(r.performedAt), 'd MMM, h:mm a')}</span>
       ),
       sorter: (a: AuditLogEntry, b: AuditLogEntry) =>
         new Date(a.performedAt).getTime() - new Date(b.performedAt).getTime(),
