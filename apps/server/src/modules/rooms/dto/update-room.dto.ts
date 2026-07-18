@@ -24,5 +24,10 @@ export class UpdateRoomDto {
     @IsArray()
     @IsString({ each: true })
     @IsOptional()
+    amenities?: string[]
+
+    @IsArray()
+    @IsString({ each: true })
+    @IsOptional()
     images?: string[]
 }

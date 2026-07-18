@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, DoorOpen, Users, Plus } from 'lucide-react';
+import { Search, DoorOpen, Users, Plus, X } from 'lucide-react';
 import { Input, Badge, RoomStatus, Table, Select, Option, UserRole, Drawer, Button, type RoomStatusType } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
 import { useAuth } from '../../../contexts/auth';
@@ -33,7 +33,8 @@ export default function RoomsPage() {
   const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
   const [createOpen, setCreateOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [createForm, setCreateForm] = useState({ roomNumber: '', roomTypeId: '', maxGuests: 2 });
+  const [createForm, setCreateForm] = useState({ roomNumber: '', roomTypeId: '', maxGuests: 2, amenities: [] as string[] });
+  const [amenityInput, setAmenityInput] = useState('');
   const [roomTypes, setRoomTypes] = useState<{ _id: string; name: string; basePrice: number }[]>([]);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -111,7 +112,8 @@ export default function RoomsPage() {
       await api.post('/rooms', createForm);
       toast('success', 'Room created.');
       setCreateOpen(false);
-      setCreateForm({ roomNumber: '', roomTypeId: '', maxGuests: 2 });
+      setCreateForm({ roomNumber: '', roomTypeId: '', maxGuests: 2, amenities: [] });
+      setAmenityInput('');
       fetchRooms();
       fetchCounts();
     } catch (e: any) {
@@ -222,6 +224,37 @@ export default function RoomsPage() {
           </Select>
           <Input size="lg" type="number" placeholder="Max Guests" value={createForm.maxGuests}
             onChange={(e) => setCreateForm({ ...createForm, maxGuests: Number(e.target.value) })} />
+          <div>
+            <label className="text-[10px] text-outline uppercase tracking-wide mb-1 block">Amenities</label>
+            <div className="flex items-center gap-2">
+              <Input size="sm" placeholder="Type and press Enter" value={amenityInput}
+                onChange={(e) => setAmenityInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if ((e.key === 'Enter' || e.key === ',') && amenityInput.trim()) {
+                    e.preventDefault();
+                    setCreateForm({ ...createForm, amenities: [...createForm.amenities, amenityInput.trim()] });
+                    setAmenityInput('');
+                  }
+                }} />
+              <Button size="sm" variant="secondary"
+                onClick={() => { if (amenityInput.trim()) { setCreateForm({ ...createForm, amenities: [...createForm.amenities, amenityInput.trim()] }); setAmenityInput(''); } }}>
+                Add
+              </Button>
+            </div>
+            {createForm.amenities.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {createForm.amenities.map((a, i) => (
+                  <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded bg-primary-container/20 text-primary">
+                    {a}
+                    <button type="button" onClick={() => setCreateForm({ ...createForm, amenities: createForm.amenities.filter((_, j) => j !== i) })}
+                      className="cursor-pointer bg-transparent border-none p-0 text-primary/60 hover:text-primary">
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </Drawer>
     </div>
