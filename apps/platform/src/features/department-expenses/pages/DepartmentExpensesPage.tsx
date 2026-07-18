@@ -235,7 +235,7 @@ export default function DepartmentExpensesPage() {
           <Receipt size={22} className="text-outline" />
           <h1 className="font-serif text-2xl sm:text-3xl text-on-surface">Department Expenses</h1>
         </div>
-        <Button variant="primary" size="sm" onClick={() => setShowCreate(true)} icon={<Plus size={14} />}>
+        <Button variant="default" size="sm" onClick={() => setShowCreate(true)} icon={<Plus size={14} />}>
           Log Expense
         </Button>
       </div>

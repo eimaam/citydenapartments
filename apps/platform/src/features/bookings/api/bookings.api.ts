@@ -97,6 +97,10 @@ export interface CreateBookingPayload {
   discountPercentage?: number;
   discountReason?: string;
   discountCode?: string;
+  includeVat?: boolean;
+  includeServiceCharge?: boolean;
+  vatAmount?: number;
+  serviceChargeAmount?: number;
   totalAmountPaid: number;
   paymentMethod: PaymentMethodType;
   paymentReference?: string;

@@ -281,6 +281,11 @@ export function BookingFormDrawer({
     return Math.max(1, differenceInDays(new Date(form.checkOutDate), new Date(form.checkInDate)));
   }, [form.checkInDate, form.checkOutDate]);
 
+  function getRoomTypeId(rt: { _id: string; name?: string } | string | undefined): string | undefined {
+    if (typeof rt === 'object' && rt) return rt._id;
+    return rt;
+  }
+
   const selectedRoom = useMemo(
     () => rooms.find((r) => r._id === form.roomId),
     [rooms, form.roomId],
@@ -290,13 +295,13 @@ export function BookingFormDrawer({
     const n = form.useNights ? form.nights : computedNights;
     let sub: number;
     if (roomSelection === 'single') {
-      const rt = roomTypes.find((t) => t._id === selectedRoom?.roomTypeId?._id);
+      const rt = roomTypes.find((t) => t._id === getRoomTypeId(selectedRoom?.roomTypeId));
       const price = form.actualPricePerNight || rt?.basePrice || 0;
       sub = price * n;
     } else {
       sub = form.rooms.reduce((sum, r) => {
         const room = rooms.find((x) => x._id === r.roomId);
-        const rt = roomTypes.find((t) => t._id === (room?.roomTypeId?._id || room?.roomTypeId));
+        const rt = roomTypes.find((t) => t._id === getRoomTypeId(room?.roomTypeId));
         const price = r.actualPricePerNight || rt?.basePrice || 0;
         return sum + price * n;
       }, 0);
@@ -332,7 +337,7 @@ export function BookingFormDrawer({
 
   const onRoomSelect = (idx: number, roomId: string) => {
     const room = rooms.find((r) => r._id === roomId);
-    const rt = roomTypes.find((t) => t._id === (room?.roomTypeId?._id || room?.roomTypeId));
+    const rt = roomTypes.find((t) => t._id === getRoomTypeId(room?.roomTypeId));
     const price = rt?.basePrice ?? 0;
     const maxGuests = room?.maxGuests ?? 1;
     setForm((prev) => {
@@ -346,7 +351,7 @@ export function BookingFormDrawer({
     updateField('roomId', roomId);
     if (!roomId) { updateField('actualPricePerNight', 0); return; }
     const room = rooms.find((r) => r._id === roomId);
-    const rt = roomTypes.find((t) => t._id === (room?.roomTypeId?._id || room?.roomTypeId));
+    const rt = roomTypes.find((t) => t._id === getRoomTypeId(room?.roomTypeId));
     const price = rt?.basePrice ?? 0;
     updateField('actualPricePerNight', price);
   };
@@ -546,12 +551,12 @@ export function BookingFormDrawer({
                 <Select size="lg" className="w-full mt-1" placeholder="Select room"
                   value={form.roomId || undefined} onChange={(v) => onSingleRoomChange(v)}>
                   {rooms.map((r) => {
-                    const rt = roomTypes.find((t) => t._id === (r.roomTypeId?._id || r.roomTypeId));
+                    const rt = roomTypes.find((t) => t._id === getRoomTypeId(r.roomTypeId));
                     return <Option key={r._id} value={r._id}>{r.roomNumber}{rt ? ` — ${rt.name}` : ''}</Option>;
                   })}
                 </Select>
                 {selectedRoom && (() => {
-                  const rt = roomTypes.find((t) => t._id === (selectedRoom.roomTypeId?._id || selectedRoom.roomTypeId));
+                  const rt = roomTypes.find((t) => t._id === getRoomTypeId(selectedRoom.roomTypeId));
                   return rt ? (
                     <div className="mt-1 text-[10px] text-outline">Base: ₦{rt.basePrice.toLocaleString()} | Min: ₦{rt.minPriceAllowed?.toLocaleString() || '—'}</div>
                   ) : null;
@@ -561,7 +566,7 @@ export function BookingFormDrawer({
               <>
                 {form.rooms.map((roomSel, idx) => {
                   const sRoom = rooms.find((r) => r._id === roomSel.roomId);
-                  const sType = roomTypes.find((t) => t._id === (sRoom?.roomTypeId?._id || sRoom?.roomTypeId));
+                  const sType = roomTypes.find((t) => t._id === getRoomTypeId(sRoom?.roomTypeId));
                   return (
                     <div key={idx} className="p-3 rounded-lg border border-outline-variant bg-surface-container-lowest">
                       <div className="flex items-center justify-between mb-2">
@@ -577,7 +582,7 @@ export function BookingFormDrawer({
                         <Select size="lg" className="w-full" placeholder="Select room"
                           value={roomSel.roomId || undefined} onChange={(v) => onRoomSelect(idx, v)}>
                           {rooms.map((r) => {
-                            const rt = roomTypes.find((t) => t._id === (r.roomTypeId?._id || r.roomTypeId));
+                            const rt = roomTypes.find((t) => t._id === getRoomTypeId(r.roomTypeId));
                             return <Option key={r._id} value={r._id}>{r.roomNumber}{rt ? ` — ${rt.name}` : ''}</Option>;
                           })}
                         </Select>
@@ -727,7 +732,7 @@ export function BookingFormDrawer({
               </div>
               {roomSelection === 'multiple' && form.rooms.map((r, idx) => {
                 const room = rooms.find((x) => x._id === r.roomId);
-                const rt = roomTypes.find((t) => t._id === (room?.roomTypeId?._id || room?.roomTypeId));
+                const rt = roomTypes.find((t) => t._id === getRoomTypeId(room?.roomTypeId));
                 const price = r.actualPricePerNight || rt?.basePrice || 0;
                 return (
                   <div key={idx} className="flex justify-between text-xs text-outline mt-1">
