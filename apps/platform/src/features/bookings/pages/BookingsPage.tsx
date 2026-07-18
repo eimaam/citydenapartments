@@ -95,7 +95,7 @@ export default function BookingsPage() {
     guestComingFrom: string; guestStateOfOrigin: string; guestOccupation: string;
     guestNextDestination: string; guestGender: string; guestReligion: string;
     numberOfGuests: number; checkInDate: string; nights: number; checkOutDate: string;
-    useNights: boolean; discountPercentage: number;
+    useNights: boolean; discountPercentage: number; includeVat: boolean; includeServiceCharge: boolean;
     paymentMethod: PaymentMethodType; bookingSource: BookingSourceType;
   }>({
     rooms: [], guestName: '', guestPhone: '', guestEmail: '',
@@ -104,7 +104,7 @@ export default function BookingsPage() {
     guestNextDestination: '', guestGender: '', guestReligion: '',
     numberOfGuests: 1,
     checkInDate: todayStr(), nights: 1, checkOutDate: tomorrowStr(), useNights: true,
-    discountPercentage: 0,
+    discountPercentage: 0, includeVat: false, includeServiceCharge: false,
     paymentMethod: PaymentMethod.Cash, bookingSource: BookingSource.WalkIn,
   });
   const [phoneError, setPhoneError] = useState<string | null>(null);
@@ -146,8 +146,10 @@ export default function BookingsPage() {
     }, 0);
     const pct = form.discountPercentage || 0;
     const disc = Math.round((sub * pct) / 100);
-    return { nights: n, subtotal: sub, discountAmt: disc, total: Math.max(0, sub - disc) };
-  }, [form.rooms, form.discountPercentage, form.nights, form.useNights, computedNights, rooms, roomTypes]);
+    const vat = form.includeVat ? Math.round(sub * 7.5 / 100) : 0;
+    const sc = form.includeServiceCharge ? Math.round(sub * 10 / 100) : 0;
+    return { nights: n, subtotal: sub, discountAmt: disc, vatAmt: vat, scAmt: sc, total: Math.max(0, sub - disc + vat + sc) };
+  }, [form.rooms, form.discountPercentage, form.includeVat, form.includeServiceCharge, form.nights, form.useNights, computedNights, rooms, roomTypes]);
 
   // ── fetch ──────────────────────────────────────────────────────
   const fetchBookings = useCallback(async () => {
@@ -345,6 +347,10 @@ export default function BookingsPage() {
         numberOfGuests: Number(form.numberOfGuests) || 1, checkInDate: form.checkInDate, checkOutDate: form.checkOutDate,
         discountPercentage: Number(form.discountPercentage) || 0,
         discountCode: appliedDiscountCode?.code,
+        includeVat: form.includeVat,
+        includeServiceCharge: form.includeServiceCharge,
+        vatAmount: pricing.vatAmt,
+        serviceChargeAmount: pricing.scAmt,
         totalAmountPaid: pricing.total, paymentMethod: form.paymentMethod, bookingSource: form.bookingSource,
         bookingStatus,
       });
@@ -573,6 +579,23 @@ export default function BookingsPage() {
               <div><span className="text-[10px] text-outline uppercase tracking-wide">Discount (%)</span><Input size="sm" type="number" min={0} max={100} step={1} value={form.discountPercentage || ''} onChange={(e) => onDiscountPctChange(Number(e.target.value))} /></div>
               <div><span className="text-[10px] text-outline uppercase tracking-wide">Total Paid</span><p className="text-sm font-bold mt-1.5">₦{pricing.total.toLocaleString()}</p></div>
             </div>
+            <div className="flex items-center gap-4 mt-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.includeVat} onChange={(e) => updateField('includeVat', e.target.checked)} className="w-4 h-4 accent-primary" />
+                <span className="text-xs text-outline">VAT (7.5%)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.includeServiceCharge} onChange={(e) => updateField('includeServiceCharge', e.target.checked)} className="w-4 h-4 accent-primary" />
+                <span className="text-xs text-outline">Service Charge (10%)</span>
+              </label>
+            </div>
+            <div className="mt-3 p-3 bg-surface-container-lowest rounded border border-outline-variant space-y-1 text-xs">
+              <div className="flex justify-between"><span>Subtotal ({pricing.nights} night{pricing.nights > 1 ? 's' : ''})</span><span>₦{pricing.subtotal.toLocaleString()}</span></div>
+              {pricing.discountAmt > 0 && <div className="flex justify-between text-error"><span>Discount ({form.discountPercentage}%)</span><span>-₦{pricing.discountAmt.toLocaleString()}</span></div>}
+              {pricing.vatAmt > 0 && <div className="flex justify-between text-amber-600"><span>VAT (7.5%)</span><span>+₦{pricing.vatAmt.toLocaleString()}</span></div>}
+              {pricing.scAmt > 0 && <div className="flex justify-between text-blue-600"><span>Service Charge (10%)</span><span>+₦{pricing.scAmt.toLocaleString()}</span></div>}
+              <div className="flex justify-between font-bold text-on-surface pt-1 border-t border-outline-variant"><span>Total</span><span>₦{pricing.total.toLocaleString()}</span></div>
+            </div>
             {form.rooms.map((r, idx) => {
               const room = rooms.find((x) => x._id === r.roomId);
               const roomType = roomTypes.find((rt) => rt._id === room?.roomTypeId?._id);
@@ -602,8 +625,7 @@ export default function BookingsPage() {
       <button onClick={removeDiscountCode}
         className="text-xs text-error hover:underline cursor-pointer whitespace-nowrap">Remove</button>
     )}
-  </div>
-<div className="flex flex-wrap gap-4 mt-2 text-[10px] text-outline"><span>Nights: {pricing.nights}</span><span>Subtotal: ₦{pricing.subtotal.toLocaleString()}</span>{form.discountPercentage > 0 && <span className="text-error">Discount: {form.discountPercentage}%</span>}</div></div>}</div>)}
+  </div></div>}</div>)}
           <div className="mb-5"><SectionHeader label="Payment Method *" sectionKey="payment" icon={undefined} />
             {!collapsedSections['payment'] && <div className="grid grid-cols-3 gap-2 mt-1">{paymentMethods.map((pm) => { const Icon = pm.icon; const active = form.paymentMethod === pm.key; return (<button key={pm.key} type="button" onClick={() => updateField('paymentMethod', pm.key)} className="flex flex-col items-center gap-1 p-3 rounded-lg border text-center transition-all cursor-pointer" style={{ borderColor: active ? 'var(--color-primary)' : 'var(--color-outline-variant)', background: active ? 'var(--color-primary-container)/10' : 'var(--color-surface-container-lowest)' }}><Icon size={20} style={{ color: active ? 'var(--color-primary)' : 'var(--color-outline)' }} /><span className="text-xs font-medium" style={{ color: active ? 'var(--color-on-surface)' : 'var(--color-on-surface-variant)' }}>{pm.label}</span><span className="text-[9px] leading-tight" style={{ color: active ? 'var(--color-on-surface-variant)' : 'var(--color-outline)' }}>{pm.desc}</span></button>); })}</div>}</div>
           <div className="mb-5"><SectionHeader label="Source" sectionKey="source" icon={undefined} />

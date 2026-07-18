@@ -1,11 +1,20 @@
 import { Controller, Get, Param, Query, DefaultValuePipe, ParseIntPipe } from '@nestjs/common';
 import { PublicService } from './public.service';
 import { Public } from '../../common/decorators/public.decorator';
+import { AppConfig } from '../../config/app.config';
 
 @Controller('public')
 @Public()
 export class PublicController {
   constructor(private publicService: PublicService) {}
+
+  @Get('config')
+  getConfig() {
+    return {
+      vatPercentage: AppConfig.VAT_PERCENTAGE,
+      serviceChargePercentage: AppConfig.SERVICE_CHARGE_PERCENTAGE,
+    };
+  }
 
   @Get('room-types')
   getRoomTypes(@Query('branchCode') branchCode?: string) {

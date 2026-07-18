@@ -499,7 +499,7 @@ export class DashboardService {
       [field]: { $gte: fromDate, $lte: toDate },
     });
 
-    const [bookingRevenue, bookingCount, expenseResult] = await Promise.all([
+    const [bookingRevenue, bookingCount, expenseResult, vatScResult] = await Promise.all([
       this.bookingModel.aggregate([
         {
           $match: {
@@ -537,11 +537,31 @@ export class DashboardService {
           },
         },
       ]),
+
+      this.bookingModel.aggregate([
+        {
+          $match: {
+            ...branchMatch,
+            ...dateRangeMatch('createdAt'),
+            bookingStatus: { $in: [BookingStatus.Checked_In, BookingStatus.Checked_Out] },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            vatTotal: { $sum: '$vatAmount' },
+            serviceChargeTotal: { $sum: '$serviceChargeAmount' },
+            vatCount: { $sum: { $cond: ['$includeVat', 1, 0] } },
+            scCount: { $sum: { $cond: ['$includeServiceCharge', 1, 0] } },
+          },
+        },
+      ]),
     ]);
 
     const bookingRev = bookingRevenue[0]?.total || 0;
     const expenseTotal = expenseResult[0]?.total || 0;
     const expenseCount = expenseResult[0]?.count || 0;
+    const vatData = vatScResult[0] || { vatTotal: 0, serviceChargeTotal: 0, vatCount: 0, scCount: 0 };
 
     return {
       period: {
@@ -553,6 +573,10 @@ export class DashboardService {
       bookingCount,
       departmentExpenses: expenseTotal,
       expenseCount,
+      vatCollected: vatData.vatTotal,
+      vatCount: vatData.vatCount,
+      serviceChargeCollected: vatData.serviceChargeTotal,
+      serviceChargeCount: vatData.scCount,
       totalRevenue: bookingRev + expenseTotal,
     };
   }

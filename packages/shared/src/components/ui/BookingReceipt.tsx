@@ -63,6 +63,10 @@ export interface ReceiptBooking {
   discountPercentage?: number;
   discountReason?: string;
   totalAmountPaid: number;
+  includeVat?: boolean;
+  includeServiceCharge?: boolean;
+  vatAmount?: number;
+  serviceChargeAmount?: number;
   paymentMethod: string;
   paymentReference?: string;
   bookingStatus: string;
@@ -201,6 +205,8 @@ function buildPrintHtml({
   <tbody>
     ${roomRowsHtml}
     ${booking.discount > 0 ? `<tr><td>Discount${booking.discountPercentage ? ` (${booking.discountPercentage}%)` : ''}${booking.discountReason ? ` - ${booking.discountReason}` : ''}</td><td></td><td>-\u20A6${booking.discount.toLocaleString()}</td></tr>` : ''}
+    ${booking.includeVat && booking.vatAmount ? `<tr><td>VAT (7.5%)</td><td></td><td>\u20A6${booking.vatAmount.toLocaleString()}</td></tr>` : ''}
+    ${booking.includeServiceCharge && booking.serviceChargeAmount ? `<tr><td>Service Charge (10%)</td><td></td><td>\u20A6${booking.serviceChargeAmount.toLocaleString()}</td></tr>` : ''}
     <tr class="receipt-total-row"><td colspan="2">Total Paid</td><td>\u20A6${booking.totalAmountPaid.toLocaleString()}</td></tr>
   </tbody>
 </table>
@@ -407,6 +413,20 @@ export function BookingReceipt({ booking, branch, receptionistName }: BookingRec
                 <td>-₦{booking.discount.toLocaleString()}</td>
               </tr>
             )}
+            {booking.includeVat && booking.vatAmount ? (
+              <tr>
+                <td>VAT (7.5%)</td>
+                <td></td>
+                <td>₦{booking.vatAmount.toLocaleString()}</td>
+              </tr>
+            ) : null}
+            {booking.includeServiceCharge && booking.serviceChargeAmount ? (
+              <tr>
+                <td>Service Charge (10%)</td>
+                <td></td>
+                <td>₦{booking.serviceChargeAmount.toLocaleString()}</td>
+              </tr>
+            ) : null}
             <tr className="receipt-total-row">
               <td colSpan={2}>Total Paid</td>
               <td>₦{booking.totalAmountPaid.toLocaleString()}</td>

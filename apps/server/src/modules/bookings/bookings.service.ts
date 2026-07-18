@@ -241,11 +241,30 @@ export class BookingsService {
         throw new BadRequestException('Discount percentage must be between 0 and 100.');
       }
       const computedDiscount = Math.round((subtotal * pct) / 100);
-      const computedTotal = subtotal - computedDiscount;
+
+      const includeVat = dto.includeVat || false;
+      const includeServiceCharge = dto.includeServiceCharge || false;
+      const vatRate = 7.5;
+      const scRate = 10;
+      const computedVat = includeVat ? Math.round((subtotal * vatRate) / 100) : 0;
+      const computedSc = includeServiceCharge ? Math.round((subtotal * scRate) / 100) : 0;
+
+      if (includeVat && Math.abs((dto.vatAmount || 0) - computedVat) > 1) {
+        throw new BadRequestException(
+          `VAT mismatch. Expected ₦${computedVat} (${vatRate}% of ₦${subtotal}), got ₦${dto.vatAmount}`,
+        );
+      }
+      if (includeServiceCharge && Math.abs((dto.serviceChargeAmount || 0) - computedSc) > 1) {
+        throw new BadRequestException(
+          `Service charge mismatch. Expected ₦${computedSc} (${scRate}% of ₦${subtotal}), got ₦${dto.serviceChargeAmount}`,
+        );
+      }
+
+      const computedTotal = subtotal - computedDiscount + computedVat + computedSc;
 
       if (Math.abs(dto.totalAmountPaid - computedTotal) > 1) {
         throw new BadRequestException(
-          `Price mismatch. Expected ₦${computedTotal} (₦${roomEntries.map(r => `${r.actualPricePerNight}×${nights}`).join(' + ')}${pct > 0 ? ` − ${pct}% discount` : ''}), got ₦${dto.totalAmountPaid}`,
+          `Price mismatch. Expected ₦${computedTotal} (₦${roomEntries.map(r => `${r.actualPricePerNight}×${nights}`).join(' + ')}${pct > 0 ? ` − ${pct}% discount` : ''}${includeVat ? ` + ${vatRate}% VAT` : ''}${includeServiceCharge ? ` + ${scRate}% service charge` : ''}), got ₦${dto.totalAmountPaid}`,
         );
       }
 
@@ -349,6 +368,11 @@ export class BookingsService {
             discountPercentage: pct,
             discountReason: dto.discountReason,
             totalAmountPaid: dto.totalAmountPaid,
+            baseRoomTotal: subtotal,
+            includeVat,
+            includeServiceCharge,
+            vatAmount: computedVat,
+            serviceChargeAmount: computedSc,
             paymentMethod: dto.paymentMethod,
             paymentReference: dto.paymentReference,
             bookingStatus: targetStatus,

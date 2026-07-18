@@ -47,6 +47,11 @@ export interface BookingResponse {
   discount: number;
   discountReason?: string;
   totalAmountPaid: number;
+  baseRoomTotal?: number;
+  includeVat?: boolean;
+  includeServiceCharge?: boolean;
+  vatAmount?: number;
+  serviceChargeAmount?: number;
   paymentMethod: PaymentMethodType;
   paymentReference?: string;
   bookingStatus: BookingStatusType;
@@ -88,6 +93,10 @@ export interface CreateBookingPayload {
   discountPercentage?: number;
   discountReason?: string;
   discountCode?: string;
+  includeVat?: boolean;
+  includeServiceCharge?: boolean;
+  vatAmount?: number;
+  serviceChargeAmount?: number;
   totalAmountPaid: number;
   paymentMethod: PaymentMethodType;
   paymentReference?: string;

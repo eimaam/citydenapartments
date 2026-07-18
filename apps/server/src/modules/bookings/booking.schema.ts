@@ -79,6 +79,21 @@ export class Booking extends Document {
   @Prop({ required: true })
   checkOutDate: Date;
 
+  @Prop({ default: false })
+  includeVat: boolean;
+
+  @Prop({ default: false })
+  includeServiceCharge: boolean;
+
+  @Prop({ default: 0 })
+  vatAmount: number;
+
+  @Prop({ default: 0 })
+  serviceChargeAmount: number;
+
+  @Prop({ default: 0 })
+  baseRoomTotal: number;
+
   @Prop({ default: 0 })
   discount: number;
 

@@ -20,6 +20,8 @@ interface AppConfig {
   R2_BUCKET_NAME: string;
   R2_PUBLIC_URL: string;
   R2_ENDPOINT: string;
+  VAT_PERCENTAGE: number;
+  SERVICE_CHARGE_PERCENTAGE: number;
 }
 
 export const AppConfigValidationSchema = Joi.object({
@@ -39,6 +41,8 @@ export const AppConfigValidationSchema = Joi.object({
   R2_BUCKET_NAME: Joi.string().required(),
   R2_PUBLIC_URL: Joi.string().uri().required(),
   R2_ENDPOINT: Joi.string().uri().required(),
+  VAT_PERCENTAGE: Joi.number().default(7.5),
+  SERVICE_CHARGE_PERCENTAGE: Joi.number().default(10),
 });
 
 const { error, value } = AppConfigValidationSchema.validate(process.env, {

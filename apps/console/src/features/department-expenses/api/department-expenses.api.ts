@@ -81,6 +81,10 @@ export const revenueApi = {
       departmentExpenses: number;
       expenseCount: number;
       totalRevenue: number;
+      vatCollected: number;
+      serviceChargeCollected: number;
+      vatCount: number;
+      scCount: number;
     }>(`/dashboard/revenue${s ? `?${s}` : ''}`);
   },
 };

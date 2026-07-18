@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsEmail,
   IsNotEmpty,
+  IsBoolean,
   Min,
   Max,
   ArrayMinSize,
@@ -137,4 +138,22 @@ export class CreateBookingDto {
   @IsOptional()
   @IsString()
   discountCode?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  includeVat?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  includeServiceCharge?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  vatAmount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  serviceChargeAmount?: number;
 }

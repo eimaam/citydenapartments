@@ -92,6 +92,10 @@ export default function AdminDashboard() {
     departmentExpenses: number;
     expenseCount: number;
     totalRevenue: number;
+    vatCollected: number;
+    serviceChargeCollected: number;
+    vatCount: number;
+    scCount: number;
     period: { from: string; to: string; label: string | null };
   } | null>(null);
   const [revenueLoading, setRevenueLoading] = useState(false);
@@ -293,7 +297,7 @@ export default function AdminDashboard() {
             <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
         ) : revenueData ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-5">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-9 h-9 rounded flex items-center justify-center" style={{ backgroundColor: '#10b98115' }}>
@@ -342,6 +346,28 @@ export default function AdminDashboard() {
               <p className="text-[10px] text-outline mt-1">
                 {revenueData.period?.label || `${new Date(revenueData.period?.from).toLocaleDateString()} — ${new Date(revenueData.period?.to).toLocaleDateString()}`}
               </p>
+            </div>
+
+            <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-9 h-9 rounded flex items-center justify-center" style={{ backgroundColor: '#d9770615' }}>
+                  <Receipt size={16} style={{ color: '#d97706' }} />
+                </div>
+                <span className="text-xs text-outline">VAT Collected</span>
+              </div>
+              <p className="text-3xl font-bold text-on-surface">₦{revenueData.vatCollected.toLocaleString()}</p>
+              <p className="text-[10px] text-outline mt-1">{revenueData.vatCount} booking{revenueData.vatCount !== 1 ? 's' : ''} with VAT</p>
+            </div>
+
+            <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-9 h-9 rounded flex items-center justify-center" style={{ backgroundColor: '#2563eb15' }}>
+                  <Receipt size={16} style={{ color: '#2563eb' }} />
+                </div>
+                <span className="text-xs text-outline">Service Charge Collected</span>
+              </div>
+              <p className="text-3xl font-bold text-on-surface">₦{revenueData.serviceChargeCollected.toLocaleString()}</p>
+              <p className="text-[10px] text-outline mt-1">{revenueData.scCount} booking{revenueData.scCount !== 1 ? 's' : ''} with Service Charge</p>
             </div>
           </div>
         ) : null}
