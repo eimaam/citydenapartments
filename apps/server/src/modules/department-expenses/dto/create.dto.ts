@@ -18,8 +18,4 @@ export class CreateDepartmentExpenseDto {
 
   @IsDateString()
   toDate: string;
-
-  @IsMongoId()
-  @IsNotEmpty()
-  branchId: string;
 }

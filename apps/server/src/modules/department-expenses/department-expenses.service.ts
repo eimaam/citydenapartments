@@ -15,9 +15,9 @@ export class DepartmentExpensesService {
     private readonly auditLog: AuditLogService,
   ) {}
 
-  async create(dto: CreateDepartmentExpenseDto, userId: string) {
+  async create(dto: CreateDepartmentExpenseDto, branchId: string, userId: string) {
     const expense = await this.expenseModel.create({
-      branchId: dto.branchId,
+      branchId,
       departmentId: dto.departmentId,
       amount: dto.amount,
       description: dto.description,
@@ -33,7 +33,7 @@ export class DepartmentExpensesService {
       action: 'create',
       description: `Expense logged: ${dto.description} (₦${dto.amount}) for department ${dto.departmentId}`,
       performedBy: userId,
-      branchId: dto.branchId,
+      branchId,
       details: { ...dto, _id: expense._id },
       persistForever: true,
     });

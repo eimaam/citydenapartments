@@ -17,7 +17,7 @@ export class DepartmentExpensesController {
   @Post()
   @Roles(UserRoleEnum.ACCOUNTANT, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM)
   create(@Body() dto: CreateDepartmentExpenseDto, @ActiveUser() user: any) {
-    return this.expensesService.create(dto, user.id);
+    return this.expensesService.create(dto, user.activeBranchId, user.id);
   }
 
   @Get()
