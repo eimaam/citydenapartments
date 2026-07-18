@@ -29,70 +29,129 @@ interface SidebarItem {
   path: string;
 }
 
-const menuConfig: Record<UserRoleType, SidebarItem[]> = {
+interface SidebarGroup {
+  heading: string;
+  items: SidebarItem[];
+}
+
+type MenuConfig = Record<UserRoleType, SidebarGroup[]>;
+
+const menuConfig: MenuConfig = {
   SuperAdmin: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { label: 'Branches', icon: Building2, path: '/branches' },
-    { label: 'Room Types', icon: Tags, path: '/room-types' },
-    { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
-    { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
-    { label: 'Calendar', icon: CalendarFold, path: '/bookings/calendar' },
-    { label: 'Audit Logs', icon: History, path: '/audit-logs' },
-    { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
-    { label: 'Staff', icon: Users, path: '/staff' },
-    { label: 'Employees', icon: Users, path: '/employees' },
-    { label: 'Departments', icon: Building2, path: '/departments' },
-    { label: 'Inventory', icon: Package, path: '/inventory' },
-    { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
-    { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
-    { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
-    { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
-    { label: 'Roles', icon: Shield, path: '/roles' },
+    { heading: 'Overview', items: [
+      { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    ]},
+    { heading: 'Properties', items: [
+      { label: 'Branches', icon: Building2, path: '/branches' },
+      { label: 'Room Types', icon: Tags, path: '/room-types' },
+      { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
+    ]},
+    { heading: 'Reservations', items: [
+      { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
+      { label: 'Calendar', icon: CalendarFold, path: '/bookings/calendar' },
+    ]},
+    { heading: 'Logistics', items: [
+      { label: 'Inventory', icon: Package, path: '/inventory' },
+      { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
+      { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
+    ]},
+    { heading: 'Monitoring', items: [
+      { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
+      { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
+    ]},
+    { heading: 'People', items: [
+      { label: 'Staff', icon: Users, path: '/staff' },
+      { label: 'Employees', icon: Users, path: '/employees' },
+    ]},
+    { heading: 'Settings', items: [
+      { label: 'Departments', icon: Building2, path: '/departments' },
+      { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
+      { label: 'Roles', icon: Shield, path: '/roles' },
+    ]},
+    { heading: 'Audit', items: [
+      { label: 'Audit Logs', icon: History, path: '/audit-logs' },
+    ]},
   ],
   GroupGM: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { label: 'Room Types', icon: Tags, path: '/room-types' },
-    { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
-    { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
-    { label: 'Calendar', icon: CalendarFold, path: '/bookings/calendar' },
-    { label: 'Audit Logs', icon: History, path: '/audit-logs' },
-    { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
-    { label: 'Employees', icon: Users, path: '/employees' },
-    { label: 'Departments', icon: Building2, path: '/departments' },
-    { label: 'Inventory', icon: Package, path: '/inventory' },
-    { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
-    { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
-    { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
-    { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
-    { label: 'Roles', icon: Shield, path: '/roles' },
+    { heading: 'Overview', items: [
+      { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    ]},
+    { heading: 'Properties', items: [
+      { label: 'Room Types', icon: Tags, path: '/room-types' },
+      { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
+    ]},
+    { heading: 'Reservations', items: [
+      { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
+      { label: 'Calendar', icon: CalendarFold, path: '/bookings/calendar' },
+    ]},
+    { heading: 'Logistics', items: [
+      { label: 'Inventory', icon: Package, path: '/inventory' },
+      { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
+      { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
+    ]},
+    { heading: 'Monitoring', items: [
+      { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
+      { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
+    ]},
+    { heading: 'People', items: [
+      { label: 'Employees', icon: Users, path: '/employees' },
+    ]},
+    { heading: 'Settings', items: [
+      { label: 'Departments', icon: Building2, path: '/departments' },
+      { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
+      { label: 'Roles', icon: Shield, path: '/roles' },
+    ]},
+    { heading: 'Audit', items: [
+      { label: 'Audit Logs', icon: History, path: '/audit-logs' },
+    ]},
   ],
   IT: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { label: 'Room Types', icon: Tags, path: '/room-types' },
-    { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
-    { label: 'Staff', icon: Users, path: '/staff' },
-    { label: 'Employees', icon: Users, path: '/employees' },
-    { label: 'Departments', icon: Building2, path: '/departments' },
-    { label: 'Audit Logs', icon: History, path: '/audit-logs' },
-    { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
-    { label: 'Roles', icon: Shield, path: '/roles' },
+    { heading: 'Overview', items: [
+      { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    ]},
+    { heading: 'Properties', items: [
+      { label: 'Room Types', icon: Tags, path: '/room-types' },
+      { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
+    ]},
+    { heading: 'People', items: [
+      { label: 'Staff', icon: Users, path: '/staff' },
+      { label: 'Employees', icon: Users, path: '/employees' },
+    ]},
+    { heading: 'Settings', items: [
+      { label: 'Departments', icon: Building2, path: '/departments' },
+      { label: 'Roles', icon: Shield, path: '/roles' },
+    ]},
+    { heading: 'Monitoring', items: [
+      { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
+    ]},
+    { heading: 'Audit', items: [
+      { label: 'Audit Logs', icon: History, path: '/audit-logs' },
+    ]},
   ],
   FacilityManager: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    { heading: 'Overview', items: [
+      { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    ]},
   ],
   FrontOfficeManager: [],
   Accountant: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { label: 'Inventory', icon: Package, path: '/inventory' },
-    { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
-    { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
+    { heading: 'Overview', items: [
+      { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    ]},
+    { heading: 'Logistics', items: [
+      { label: 'Inventory', icon: Package, path: '/inventory' },
+      { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
+    ]},
+    { heading: 'Monitoring', items: [
+      { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
+    ]},
   ],
-  StoreManager: [
-  ],
-  StoreKeeper: [
-  ],
+  StoreManager: [],
+  StoreKeeper: [],
   Reception: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    { heading: 'Overview', items: [
+      { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    ]},
   ],
   KitchenStaff: [],
   HouseKeeper: [],
@@ -132,7 +191,7 @@ export function Sidebar({
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [user]);
 
-  const items = user ? menuConfig[user.role] ?? [] : [];
+  const groups = user ? menuConfig[user.role] ?? [] : [];
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-[var(--color-inverse-surface)] text-[var(--color-inverse-on-surface)]">
@@ -161,41 +220,52 @@ export function Sidebar({
 
       {/* Navigation */}
       <nav className="flex-1 py-4 overflow-y-auto">
-        <div className={cn('px-3 space-y-0.5', collapsed && 'px-2')}>
-          {items.map((item) => {
-            const Icon = item.icon;
-            const isActive = item.path === '/'
-              ? location.pathname === '/'
-              : location.pathname.startsWith(item.path);
+        <div className={cn('px-3 space-y-4', collapsed && 'px-2 space-y-3')}>
+          {groups.map((group) => (
+            <div key={group.heading}>
+              {!collapsed && (
+                <p className="px-3 mb-1 text-[10px] font-bold tracking-[0.15em] uppercase text-white/20">
+                  {group.heading}
+                </p>
+              )}
+              <div className="space-y-0.5">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = item.path === '/'
+                    ? location.pathname === '/'
+                    : location.pathname.startsWith(item.path);
 
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                onClick={onCloseMobile}
-                className={cn(
-                  'flex items-center gap-3 rounded-[var(--radius)] transition-all duration-200 cursor-pointer',
-                  collapsed ? 'justify-center px-0 h-10 w-10 mx-auto' : 'px-3 h-10',
-                  isActive
-                    ? 'bg-[var(--color-primary)]/15 text-[var(--color-primary)]'
-                    : 'text-white/50 hover:text-white/80 hover:bg-white/[0.06]',
-                )}
-                title={collapsed ? item.label : undefined}
-              >
-                <Icon size={18} />
-                {!collapsed && (
-                  <span className="text-sm font-medium whitespace-nowrap">
-                    {item.label}
-                  </span>
-                )}
-                {!collapsed && item.path === '/inventory/spoilage' && pendingSpoilageCount > 0 && (
-                  <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500 text-white">
-                    {pendingSpoilageCount > 99 ? '99+' : pendingSpoilageCount}
-                  </span>
-                )}
-              </NavLink>
-            );
-          })}
+                  return (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      onClick={onCloseMobile}
+                      className={cn(
+                        'flex items-center gap-3 rounded-[var(--radius)] transition-all duration-200 cursor-pointer',
+                        collapsed ? 'justify-center px-0 h-10 w-10 mx-auto' : 'px-3 h-10',
+                        isActive
+                          ? 'bg-[var(--color-primary)]/15 text-[var(--color-primary)]'
+                          : 'text-white/50 hover:text-white/80 hover:bg-white/[0.06]',
+                      )}
+                      title={collapsed ? item.label : undefined}
+                    >
+                      <Icon size={18} />
+                      {!collapsed && (
+                        <span className="text-sm font-medium whitespace-nowrap">
+                          {item.label}
+                        </span>
+                      )}
+                      {!collapsed && item.path === '/inventory/spoilage' && pendingSpoilageCount > 0 && (
+                        <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500 text-white">
+                          {pendingSpoilageCount > 99 ? '99+' : pendingSpoilageCount}
+                        </span>
+                      )}
+                    </NavLink>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </nav>
 

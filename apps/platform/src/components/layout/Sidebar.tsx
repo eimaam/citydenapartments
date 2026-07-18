@@ -27,76 +27,147 @@ interface SidebarItem {
   path: string;
 }
 
-const menuConfig: Record<UserRoleType, SidebarItem[]> = {
+interface SidebarGroup {
+  heading: string;
+  items: SidebarItem[];
+}
+
+type MenuConfig = Record<UserRoleType, SidebarGroup[]>;
+
+const menuConfig: MenuConfig = {
   SuperAdmin: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
-    { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
-    { label: 'Inventory Book', icon: BookOpen, path: '/inventory/book' },
-    { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
-    { label: 'Customers', icon: BookUser, path: '/customers' },
+    { heading: 'Overview', items: [
+      { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    ]},
+    { heading: 'Monitoring', items: [
+      { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
+    ]},
+    { heading: 'Logistics', items: [
+      { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
+      { label: 'Inventory Book', icon: BookOpen, path: '/inventory/book' },
+    ]},
+    { heading: 'Settings', items: [
+      { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
+    ]},
+    { heading: 'People', items: [
+      { label: 'Customers', icon: BookUser, path: '/customers' },
+    ]},
   ],
   GroupGM: [
-    { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
-    { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
-    { label: 'Inventory Book', icon: BookOpen, path: '/inventory/book' },
-    { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
-    { label: 'Customers', icon: BookUser, path: '/customers' },
+    { heading: 'Monitoring', items: [
+      { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
+    ]},
+    { heading: 'Logistics', items: [
+      { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
+      { label: 'Inventory Book', icon: BookOpen, path: '/inventory/book' },
+    ]},
+    { heading: 'Settings', items: [
+      { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
+    ]},
+    { heading: 'People', items: [
+      { label: 'Customers', icon: BookUser, path: '/customers' },
+    ]},
   ],
   IT: [
-    { label: 'Customers', icon: BookUser, path: '/customers' },
+    { heading: 'People', items: [
+      { label: 'Customers', icon: BookUser, path: '/customers' },
+    ]},
   ],
   FacilityManager: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
-    { label: 'Calendar', icon: CalendarFold, path: '/bookings/calendar' },
-    { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
-    { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
-    { label: 'Staff', icon: Users, path: '/staff' },
-    { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
-    { label: 'Customers', icon: BookUser, path: '/customers' },
+    { heading: 'Overview', items: [
+      { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    ]},
+    { heading: 'Reservations', items: [
+      { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
+      { label: 'Calendar', icon: CalendarFold, path: '/bookings/calendar' },
+      { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
+    ]},
+    { heading: 'F&B', items: [
+      { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
+    ]},
+    { heading: 'People', items: [
+      { label: 'Staff', icon: Users, path: '/staff' },
+      { label: 'Customers', icon: BookUser, path: '/customers' },
+    ]},
+    { heading: 'Settings', items: [
+      { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
+    ]},
   ],
   FrontOfficeManager: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
-    { label: 'Calendar', icon: CalendarFold, path: '/bookings/calendar' },
-    { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
-    { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
-    { label: 'Customers', icon: BookUser, path: '/customers' },
+    { heading: 'Overview', items: [
+      { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    ]},
+    { heading: 'Reservations', items: [
+      { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
+      { label: 'Calendar', icon: CalendarFold, path: '/bookings/calendar' },
+      { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
+    ]},
+    { heading: 'Settings', items: [
+      { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
+    ]},
+    { heading: 'People', items: [
+      { label: 'Customers', icon: BookUser, path: '/customers' },
+    ]},
   ],
   Accountant: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
-    { label: 'Inventory', icon: Package, path: '/inventory' },
-    { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
-    { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
-    { label: 'Inventory Book', icon: BookOpen, path: '/inventory/book' },
+    { heading: 'Overview', items: [
+      { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    ]},
+    { heading: 'Monitoring', items: [
+      { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
+    ]},
+    { heading: 'Logistics', items: [
+      { label: 'Inventory', icon: Package, path: '/inventory' },
+      { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
+      { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
+      { label: 'Inventory Book', icon: BookOpen, path: '/inventory/book' },
+    ]},
   ],
   StoreManager: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { label: 'Inventory', icon: Package, path: '/inventory' },
-    { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
-    { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
-    { label: 'Inventory Book', icon: BookOpen, path: '/inventory/book' },
+    { heading: 'Overview', items: [
+      { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    ]},
+    { heading: 'Logistics', items: [
+      { label: 'Inventory', icon: Package, path: '/inventory' },
+      { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
+      { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
+      { label: 'Inventory Book', icon: BookOpen, path: '/inventory/book' },
+    ]},
   ],
   StoreKeeper: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { label: 'Inventory', icon: Package, path: '/inventory' },
-    { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
+    { heading: 'Overview', items: [
+      { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    ]},
+    { heading: 'Logistics', items: [
+      { label: 'Inventory', icon: Package, path: '/inventory' },
+      { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
+    ]},
   ],
   Reception: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
-    { label: 'Calendar', icon: CalendarFold, path: '/bookings/calendar' },
-    { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
+    { heading: 'Overview', items: [
+      { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    ]},
+    { heading: 'Reservations', items: [
+      { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
+      { label: 'Calendar', icon: CalendarFold, path: '/bookings/calendar' },
+      { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
+    ]},
   ],
   KitchenStaff: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
+    { heading: 'Overview', items: [
+      { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    ]},
+    { heading: 'F&B', items: [
+      { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
+    ]},
   ],
   HouseKeeper: [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
+    { heading: 'Overview', items: [
+      { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    ]},
+    { heading: 'Properties', items: [
+      { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
+    ]},
   ],
 };
 
@@ -116,7 +187,7 @@ export function Sidebar({
   const { user, logout } = useAuth();
   const location = useLocation();
 
-  const items = user ? menuConfig[user.role] ?? [] : [];
+  const groups = user ? menuConfig[user.role] ?? [] : [];
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-[var(--color-inverse-surface)] text-[var(--color-inverse-on-surface)]">
@@ -145,36 +216,47 @@ export function Sidebar({
 
       {/* Navigation */}
       <nav className="flex-1 py-4 overflow-y-auto">
-        <div className={cn('px-3 space-y-0.5', collapsed && 'px-2')}>
-          {items.map((item) => {
-            const Icon = item.icon;
-            const isActive = item.path === '/'
-              ? location.pathname === '/'
-              : location.pathname.startsWith(item.path);
+        <div className={cn('px-3 space-y-4', collapsed && 'px-2 space-y-3')}>
+          {groups.map((group) => (
+            <div key={group.heading}>
+              {!collapsed && (
+                <p className="px-3 mb-1 text-[10px] font-bold tracking-[0.15em] uppercase text-white/20">
+                  {group.heading}
+                </p>
+              )}
+              <div className="space-y-0.5">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = item.path === '/'
+                    ? location.pathname === '/'
+                    : location.pathname.startsWith(item.path);
 
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                onClick={onCloseMobile}
-                className={cn(
-                  'flex items-center gap-3 rounded-[var(--radius)] transition-all duration-200 cursor-pointer',
-                  collapsed ? 'justify-center px-0 h-10 w-10 mx-auto' : 'px-3 h-10',
-                  isActive
-                    ? 'bg-[var(--color-primary)]/15 text-[var(--color-primary)]'
-                    : 'text-white/50 hover:text-white/80 hover:bg-white/[0.06]',
-                )}
-                title={collapsed ? item.label : undefined}
-              >
-                <Icon size={18} />
-                {!collapsed && (
-                  <span className="text-sm font-medium whitespace-nowrap">
-                    {item.label}
-                  </span>
-                )}
-              </NavLink>
-            );
-          })}
+                  return (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      onClick={onCloseMobile}
+                      className={cn(
+                        'flex items-center gap-3 rounded-[var(--radius)] transition-all duration-200 cursor-pointer',
+                        collapsed ? 'justify-center px-0 h-10 w-10 mx-auto' : 'px-3 h-10',
+                        isActive
+                          ? 'bg-[var(--color-primary)]/15 text-[var(--color-primary)]'
+                          : 'text-white/50 hover:text-white/80 hover:bg-white/[0.06]',
+                      )}
+                      title={collapsed ? item.label : undefined}
+                    >
+                      <Icon size={18} />
+                      {!collapsed && (
+                        <span className="text-sm font-medium whitespace-nowrap">
+                          {item.label}
+                        </span>
+                      )}
+                    </NavLink>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </nav>
 
