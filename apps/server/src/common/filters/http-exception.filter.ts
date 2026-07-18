@@ -18,25 +18,30 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
-    let message: any = 'An unexpected error occurred';
-    let errorDetail: any = undefined;
+    let message: string = 'We experienced an error processing your request. Please try again.';
+    let logMessage: string = '';
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const res = exception.getResponse();
-      if (typeof res === 'string') {
+
+      if (typeof res === 'object' && Array.isArray((res as any).message)) {
+        logMessage = `Validation error: ${(res as any).message.join('; ')}`;
+        message = 'Please check your input and try again.';
+      } else if (typeof res === 'string') {
+        logMessage = res;
         message = res;
       } else if (typeof res === 'object') {
-        message = (res as any).message || message;
-        errorDetail = (res as any).error;
+        logMessage = (res as any).message || message;
+        message = logMessage;
       }
 
-      this.logger.warn(
-        `${request.method} ${request.url} → ${status} — ${Array.isArray(message) ? message.join('; ') : message}`,
-      );
+      this.logger.warn(`${request.method} ${request.url} → ${status} — ${logMessage}`);
     } else if (exception instanceof Error) {
-      message = exception.message;
-      errorDetail = process.env.NODE_ENV === 'production' ? undefined : exception.stack;
+      logMessage = exception.message;
+      if (status >= 500) {
+        message = 'Something went wrong. Please try again.';
+      }
 
       this.logger.error(
         `${request.method} ${request.url} → ${status} — ${exception.message}`,
@@ -46,15 +51,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
       this.logger.error(`Unknown exception at ${request.method} ${request.url}`, exception);
     }
 
-    const body: Record<string, any> = {
-      success: false,
-      message: Array.isArray(message) ? message.join('; ') : message,
-    };
-
-    if (errorDetail) {
-      body.error = errorDetail;
-    }
-
-    response.status(status).json(body);
+    response.status(status).json({ success: false, message });
   }
 }

@@ -77,7 +77,7 @@ export class RoomsService {
     if (existing) {
       throw new BadRequestException('Room number already exists in this branch.');
     }
-    return this.roomModel.create({ ...dto, createdBy: userId });
+    return this.roomModel.create({ ...dto, createdBy: userId, updatedBy: userId });
   }
 
   async update(roomId: string, dto: UpdateRoomDto, userId: string, user?: any) {

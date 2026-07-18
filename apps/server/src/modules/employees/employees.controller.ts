@@ -38,7 +38,7 @@ export class EmployeesController {
   @Post()
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT)
   create(@Body() dto: CreateEmployeeDto, @ActiveUser() user: any) {
-    if (!isAdminOrGroupGm(user.role)) {
+    if (!dto.branchId || !isAdminOrGroupGm(user.role)) {
       dto.branchId = user.activeBranchId;
     }
     return this.employeesService.create(dto, user.id);

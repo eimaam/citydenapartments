@@ -1,8 +1,9 @@
 import { IsString, IsMongoId, IsNumber, IsArray, IsOptional, Min } from 'class-validator';
 
 export class CreateRoomDto {
+  @IsOptional()
   @IsMongoId()
-  branchId: string;
+  branchId?: string;
   
   @IsMongoId()
   roomTypeId: string;
@@ -19,7 +20,4 @@ export class CreateRoomDto {
   @IsString({ each: true })
   @IsOptional()
   images?: string[];
-
-  @IsMongoId()
-  createdBy: string;
 }
