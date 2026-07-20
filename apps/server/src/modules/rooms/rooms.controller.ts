@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards, BadRequestException } from '@nestjs/common';
 import { RoomsService } from './rooms.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { RoomStatus } from './room.schema';
@@ -48,6 +48,9 @@ export class RoomsController {
   create(@Body() dto: CreateRoomDto, @ActiveUser() user: any) {
     if (!dto.branchId || !isSuperAdmin(user.role)) {
       dto.branchId = user.activeBranchId;
+    }
+    if (!dto.branchId) {
+      throw new BadRequestException('No active branch selected. Set a branch or provide branchId.');
     }
     return this.roomsService.create(dto, user.id);
   }

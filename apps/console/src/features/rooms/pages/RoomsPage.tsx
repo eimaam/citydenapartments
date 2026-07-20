@@ -89,6 +89,9 @@ export default function AdminRoomsPage() {
   const openEdit = (r: Room) => { setEdit(r); setForm({ roomNumber: r.roomNumber, maxGuests: r.maxGuests, status: r.status, roomTypeId: '', amenities: r.amenities ?? [] }); setAmenityInput(''); setDrawer(true); };
 
   const save = async () => {
+    if (!form.roomNumber.trim()) { toast('error', 'Room number is required.'); return; }
+    if (form.maxGuests < 1) { toast('error', 'Max guests must be at least 1.'); return; }
+    if (!edit && !form.roomTypeId) { toast('error', 'Room type is required.'); return; }
     setSaving(true);
     try {
       if (edit) {

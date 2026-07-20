@@ -27,7 +27,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
       if (typeof res === 'object' && Array.isArray((res as any).message)) {
         logMessage = `Validation error: ${(res as any).message.join('; ')}`;
-        message = 'Please check your input and try again.';
+        message = (res as any).message.join('; ');
       } else if (typeof res === 'string') {
         logMessage = res;
         message = res;

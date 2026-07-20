@@ -1,4 +1,4 @@
-import { IsBoolean, IsMongoId, IsOptional, IsString, IsArray } from "class-validator";
+import { IsBoolean, IsMongoId, IsOptional, IsString, IsArray, IsNumber, Min, MinLength } from "class-validator";
 
 export class UpdateRoomDto {
     @IsMongoId()
@@ -10,6 +10,7 @@ export class UpdateRoomDto {
     roomTypeId: string
     
     @IsString()
+    @MinLength(1)
     @IsOptional()
     roomNumber: string
     
@@ -17,7 +18,8 @@ export class UpdateRoomDto {
     @IsOptional()
     isActive?: boolean
     
-    @IsString()
+    @IsNumber()
+    @Min(1)
     @IsOptional()
     maxGuests?: number
 

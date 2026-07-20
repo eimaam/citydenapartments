@@ -107,6 +107,9 @@ export default function RoomsPage() {
   };
 
   const handleCreate = async () => {
+    if (!createForm.roomNumber.trim()) { toast('error', 'Room number is required.'); return; }
+    if (createForm.maxGuests < 1) { toast('error', 'Max guests must be at least 1.'); return; }
+    if (!createForm.roomTypeId) { toast('error', 'Room type is required.'); return; }
     setSaving(true);
     try {
       await api.post('/rooms', createForm);
