@@ -52,7 +52,7 @@ const toSuite = (rt: PublicRoomType): Suite => ({
   city: BRANCH_CITY_MAP[rt.branch.code] || 'abuja',
   cityName: `${rt.branch.name}, Nigeria`,
   priceNaira: rt.basePrice,
-  imageUrl: rt.images[0] || '',
+  imageUrl: rt.images.length > 0 ? rt.images[Math.floor(Math.random() * rt.images.length)] : '',
   tags: [],
   description: rt.description,
   amenities: rt.amenities,

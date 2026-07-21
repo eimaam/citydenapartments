@@ -31,7 +31,7 @@ export const AbujaPage = () => {
     setLoading(true);
     setError(null);
     getRoomTypes('ABJ')
-      .then((data) => { setSuites(data); setLoading(false); })
+      .then((data) => { setSuites(data.map(s => ({ ...s, images: [...s.images].sort(() => Math.random() - 0.5) }))); setLoading(false); })
       .catch((err) => { setError(err.message); setLoading(false); });
   }, []);
 

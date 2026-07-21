@@ -18,7 +18,7 @@ const toSuiteCard = (rt: PublicRoomType): ISuiteCard => ({
   title: rt.name,
   description: rt.description,
   price: rt.basePrice,
-  imageUrl: rt.images[0] || '',
+  imageUrl: rt.images.length > 0 ? rt.images[Math.floor(Math.random() * rt.images.length)] : '',
 });
 
 export const LandingPage = () => {
