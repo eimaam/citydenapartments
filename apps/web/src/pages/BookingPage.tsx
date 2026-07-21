@@ -21,6 +21,7 @@ import { Button } from '@citydenapartments/shared';
 import { SectionReveal } from '../components/marketing/motionSection';
 import { getRoomTypes } from '../lib/api';
 import type { PublicRoomType } from '../lib/api';
+import { FALLBACK_SUITE_IMAGE } from '../data/branches';
 
 // Suite data interface
 interface Suite {
@@ -348,10 +349,10 @@ export const BookingPage = () => {
                     className="overflow-hidden rounded-sm relative aspect-[4/3] w-full bg-surface-container-low cursor-pointer"
                   >
                     <img
-                      src={suite.imageUrl}
+                      src={suite.imageUrl || FALLBACK_SUITE_IMAGE}
                       alt={suite.title}
                       className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                      onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_SUITE_IMAGE }}
                     />
                     <div className="absolute top-4 right-4 bg-black/65 text-white text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-sm backdrop-blur-xs">
                       {suite.cityName.split(',')[0]}
@@ -590,10 +591,10 @@ export const BookingPage = () => {
             <div className="lg:col-span-5 bg-white border border-outline-variant/35 rounded-sm p-6 md:p-8 shadow-sm">
               <div className="overflow-hidden rounded-sm relative aspect-[16/10] w-full bg-surface-container-low mb-6">
                 <img
-                  src={selectedSuite.imageUrl}
+                  src={selectedSuite.imageUrl || FALLBACK_SUITE_IMAGE}
                   alt={selectedSuite.title}
                   className="size-full object-cover"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                  onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_SUITE_IMAGE }}
                 />
               </div>
 
@@ -899,10 +900,10 @@ export const BookingPage = () => {
             <div className="flex flex-col gap-6">
               <div className="overflow-hidden rounded-sm relative aspect-[16/9] w-full bg-surface-container-low">
                 <img
-                  src={detailedSuiteView.imageUrl}
+                  src={detailedSuiteView.imageUrl || FALLBACK_SUITE_IMAGE}
                   alt={detailedSuiteView.title}
                   className="size-full object-cover"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                  onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_SUITE_IMAGE }}
                 />
               </div>
 

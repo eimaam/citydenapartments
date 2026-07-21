@@ -31,13 +31,13 @@ export const BRANCH_CONTACTS = {
 export const MAP_EMBEDS = {
   abuja: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3939.940917111082!2d7.426410000000002!3d9.0691474!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x104e74d813aa5555%3A0x9dde89910b8c07ca!2s5%20Audu%20Ogbe%20St%2C%20Jabi%2C%20Abuja%20900108%2C%20Federal%20Capital%20Territory!5e0!3m2!1sen!2sng!4v1783096157239!5m2!1sen!2sng',
   kaduna: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3922.436011058829!2d7.456493775717975!3d10.545013363418246!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x11b2b50047b0b985%3A0xbb0c01b2e4bb4ec6!2sCITY%20DEN%20APARTMENT!5e0!3m2!1sen!2sng!4v1783096211779!5m2!1sen!2sng',
-  maiduguri: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3905.4395400736767!2d13.150351275728267!3d11.804458439389704!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x11049f00722ef797%3A0x7d09be4ee458df8c!2sCITY%20DEN%20APARTMENTS%20MAIDUGURI!5e0!3m2!1sen!2sng!4v1783096250430!5m2!1sen!2sng',
+  maiduguri: 'https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d3905.4471532504876!2d13.145356999999997!3d11.803924!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMTHCsDQ4JzE0LjEiTiAxM8KwMDgnNDMuMyJF!5e0!3m2!1sen!2sng!4v1784635896997!5m2!1sen!2sng',
 } as const;
 
 export const HERO_IMAGES: Record<string, string> = {
   abuja: 'https://pub-644677a999f742b39f8a60416322206c.r2.dev/abj/hero.jpeg',
   kaduna: 'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&w=1920&q=80',
-  maiduguri: 'https://images.unsplash.com/photo-1545324224-fa8b6a84d48a?auto=format&fit=crop&w=1920&q=80',
+  maiduguri: 'https://pub-644677a999f742b39f8a60416322206c.r2.dev/maiduguri/IMG_2453.HEIC',
 };
 
 export const FALLBACK_HERO = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1920&q=80';

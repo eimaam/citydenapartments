@@ -49,7 +49,7 @@ export const KadunaPage = () => {
         canonical="/cities/kaduna"
       />
       {/* Hero Section */}
-      <section className="relative flex min-h-[70vh] w-full flex-col items-center justify-center overflow-hidden pt-24 md:min-h-[75vh]">
+      <section className="relative flex min-h-[70vh] w-full flex-col items-center justify-center pt-24 md:min-h-[75vh]">
         <div className="absolute inset-0">
           <img
             src={heroImg}
