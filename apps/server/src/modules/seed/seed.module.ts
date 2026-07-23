@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { SeedController } from './seed.controller';
 import { SeedService } from './seed.service';
+import { ProdSeedService } from './prod-seed.service';
 import { User, UserSchema } from '../users/user.schema';
 import { Branch, BranchSchema } from '../branches/branch.schema';
 import { RoomType, RoomTypeSchema } from '../room-types/room-type.schema';
@@ -29,6 +30,6 @@ import { Department, DepartmentSchema } from '../departments/department.schema';
     ]),
   ],
   controllers: [SeedController],
-  providers: [SeedService],
+  providers: [SeedService, ProdSeedService],
 })
 export class SeedModule {}

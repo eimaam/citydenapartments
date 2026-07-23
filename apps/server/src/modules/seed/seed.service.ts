@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel, InjectConnection } from '@nestjs/mongoose';
 import { Model, Connection } from 'mongoose';
+import { S3Client, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import * as bcrypt from 'bcryptjs';
 import { subDays, addDays, differenceInDays } from 'date-fns';
 import { User } from '../users/user.schema';
@@ -13,6 +14,7 @@ import { InventoryTransaction } from '../inventory/inventory-transaction.schema'
 import { Employee } from '../employees/employee.schema';
 import { Department } from '../departments/department.schema';
 import { Customer } from '../customers/customer.schema';
+import { AppConfig } from '../../config/app.config';
 
 // random helpers────────────────────────────────────────────
 const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
@@ -761,6 +763,315 @@ export class SeedService  {
         branches: 3,
         roomTypes: abujaRT.length + kadunaRT.length + maiRT.length,
         rooms: rooms.length,
+      },
+    };
+  }
+
+  // ── Image sync from R2 bucket ──────────────────────────────────
+  async syncRoomTypeImages() {
+    this.logger.log('Syncing room type images from R2 bucket...');
+
+    const s3 = new S3Client({
+      region: 'auto',
+      endpoint: AppConfig.R2_ENDPOINT,
+      credentials: {
+        accessKeyId: AppConfig.R2_ACCESS_KEY_ID,
+        secretAccessKey: AppConfig.R2_SECRET_ACCESS_KEY,
+      },
+    });
+
+    const branches = await this.branchModel.find({ isActive: true }).lean();
+    const updated: string[] = [];
+    const skipped: string[] = [];
+    const errors: string[] = [];
+
+    for (const branch of branches) {
+      const branchCode = (branch as any).code?.toLowerCase();
+      if (!branchCode) continue;
+
+      const roomTypes = await this.roomTypeModel.find({ branchId: branch._id, isActive: true }).lean();
+
+      for (const rt of roomTypes) {
+        const slug = (rt as any).name
+          .toLowerCase()
+          .replace(/\s+/g, '-')
+          .replace(/[^a-z0-9-]/g, '');
+
+        const prefix = `${branchCode}/room-types/${slug}/`;
+
+        try {
+          const command = new ListObjectsV2Command({
+            Bucket: AppConfig.R2_BUCKET_NAME,
+            Prefix: prefix,
+          });
+
+          const response = await s3.send(command);
+          const objects = (response.Contents || [])
+            .filter((obj) => obj.Key && obj.Key !== prefix && !obj.Key.endsWith('/'))
+            .sort((a, b) => ((b.LastModified?.getTime() || 0) - (a.LastModified?.getTime() || 0)));
+
+          if (objects.length === 0) {
+            skipped.push(`${branchCode}/${slug} — no images found`);
+            this.logger.warn(`  ⚠ ${branchCode}/${slug} — no images in bucket`);
+            continue;
+          }
+
+          const imageUrls = objects.map((obj) => `${AppConfig.R2_PUBLIC_URL}/${obj.Key}`);
+
+          await this.roomTypeModel.findByIdAndUpdate(rt._id, { images: imageUrls });
+
+          updated.push(`${branchCode}/${slug} — ${imageUrls.length} images`);
+          this.logger.log(`  ✓ ${branchCode}/${slug} — ${imageUrls.length} images synced`);
+        } catch (err) {
+          const msg = `${branchCode}/${slug} — ${(err as Error).message}`;
+          errors.push(msg);
+          this.logger.error(`  ✗ ${msg}`);
+        }
+      }
+    }
+
+    // Also sync room images for branches that have room-level images
+    const allRooms = await this.roomModel.find({ isActive: true }).lean();
+    let roomImagesSynced = 0;
+    for (const room of allRooms) {
+      const branch = branches.find((b) => b._id.toString() === (room as any).branchId.toString());
+      if (!branch) continue;
+      const branchCode = (branch as any).code?.toLowerCase();
+      const rt = await this.roomTypeModel.findById((room as any).roomTypeId).lean();
+      if (!rt) continue;
+      const slug = (rt as any).name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const prefix = `${branchCode}/room-types/${slug}/`;
+
+      try {
+        const command = new ListObjectsV2Command({
+          Bucket: AppConfig.R2_BUCKET_NAME,
+          Prefix: prefix,
+        });
+        const response = await s3.send(command);
+        const objects = (response.Contents || [])
+          .filter((obj) => obj.Key && obj.Key !== prefix && !obj.Key.endsWith('/'))
+          .sort((a, b) => ((b.LastModified?.getTime() || 0) - (a.LastModified?.getTime() || 0)));
+
+        if (objects.length > 0) {
+          const imageUrls = objects.map((obj) => `${AppConfig.R2_PUBLIC_URL}/${obj.Key}`);
+          const roomNumber = (room as any).roomNumber;
+          // Check if the filename contains the room number (seed convention)
+          // If so, only include matching images; otherwise use all
+          const matching = roomNumber
+            ? imageUrls.filter((url) => decodeURIComponent(url).includes(roomNumber))
+            : imageUrls;
+          if (matching.length > 0) {
+            await this.roomModel.findByIdAndUpdate(room._id, { images: matching });
+            roomImagesSynced++;
+          }
+        }
+      } catch {
+        // skip room-level errors
+      }
+    }
+
+    this.logger.log(`Sync complete — ${updated.length} room types updated, ${roomImagesSynced} rooms updated, ${skipped.length} skipped, ${errors.length} errors`);
+
+    return {
+      message: 'Room type images synced successfully',
+      stats: {
+        roomTypesUpdated: updated.length,
+        roomsUpdated: roomImagesSynced,
+        skipped: skipped.length,
+        errors: errors.length,
+      },
+      details: { updated, skipped, errors },
+    };
+  }
+
+  // ── Staff seed: departments + employees + user accounts ──────────
+  async seedStaff() {
+    this.logger.log('Staff seed started — departments, employees, user accounts');
+
+    const branches = await this.branchModel.find({ isActive: true }).lean();
+    if (branches.length === 0) throw new Error('No branches found — run full seed first');
+
+    const admin = await this.userModel.findOne({ role: 'SuperAdmin' }).lean();
+    if (!admin) throw new Error('Admin user not found — run full seed first');
+
+    // ── departments ──────────────────────────────────────────────
+    const deptDefs = [
+      { branchIdx: 0, name: 'Management', description: 'Branch management and administration' },
+      { branchIdx: 0, name: 'Front Desk', description: 'Reception and guest services' },
+      { branchIdx: 0, name: 'Housekeeping', description: 'Room cleaning and maintenance' },
+      { branchIdx: 0, name: 'Laundry', description: 'Laundry and linen services' },
+      { branchIdx: 0, name: 'Kitchen', description: 'Food preparation and cooking' },
+      { branchIdx: 0, name: 'F & B', description: 'Food and beverage service' },
+      { branchIdx: 0, name: 'Store', description: 'Inventory and supplies management' },
+      { branchIdx: 0, name: 'IT', description: 'Information technology support' },
+      { branchIdx: 1, name: 'Management', description: 'Branch management and administration' },
+      { branchIdx: 1, name: 'Front Desk', description: 'Reception and guest services' },
+      { branchIdx: 1, name: 'Housekeeping', description: 'Room cleaning and maintenance' },
+      { branchIdx: 1, name: 'Kitchen', description: 'Food preparation and cooking' },
+      { branchIdx: 1, name: 'Store', description: 'Inventory and supplies management' },
+      { branchIdx: 2, name: 'Management', description: 'Branch management and administration' },
+      { branchIdx: 2, name: 'Front Desk', description: 'Reception and guest services' },
+      { branchIdx: 2, name: 'Housekeeping', description: 'Room cleaning, gardening and maintenance' },
+      { branchIdx: 2, name: 'Laundry', description: 'Laundry and linen services' },
+      { branchIdx: 2, name: 'Kitchen', description: 'Food preparation, cooking and service' },
+      { branchIdx: 2, name: 'Store', description: 'Inventory and supplies management' },
+    ];
+
+    await this.departmentModel.deleteMany({});
+    const departments = await this.departmentModel.create(
+      deptDefs.map((d) => ({
+        name: d.name,
+        description: d.description,
+        branchId: branches[d.branchIdx]._id,
+        createdBy: admin._id,
+        updatedBy: admin._id,
+      })),
+    );
+    this.logger.log(`Departments created: ${departments.length}`);
+
+    const deptsByBranch: Record<number, Record<string, string>> = {};
+    for (const d of departments) {
+      const branchIdx = branches.findIndex((b) => b._id.toString() === d.branchId.toString());
+      if (!deptsByBranch[branchIdx]) deptsByBranch[branchIdx] = {};
+      deptsByBranch[branchIdx][d.name] = d._id.toString();
+    }
+
+    // ── employees ────────────────────────────────────────────────
+    const staffByBranch: Array<{ branchIdx: number; staff: Array<{ name: string; email: string; phone: string; position: string; deptName: string }> }> = [
+      {
+        branchIdx: 0,
+        staff: [
+          { name: 'DR. SINI KWABE', email: 'sini.kwabe@citydenapartments.com', phone: '08039686719', position: 'Principal Consultant/Group GM', deptName: 'Management' },
+          { name: 'IBU VINCENT ANTHONY', email: 'ibu.anthony@citydenapartments.com', phone: '08039686719', position: 'Facility Manager', deptName: 'Management' },
+          { name: 'DIVINELOVE OLUCHI CHIKEZIE', email: 'divinelove.chikezie@citydenapartments.com', phone: '08039686719', position: 'Front Office Manager/HR', deptName: 'Management' },
+          { name: 'KENNETH USHIE', email: 'kenneth.ushie@citydenapartments.com', phone: '08039686719', position: 'Accountant/Internal Auditor', deptName: 'Management' },
+          { name: 'GABRIEL OMANG OGAR', email: 'gabriel.ogar@citydenapartments.com', phone: '08039686719', position: 'Executive Housekeeper', deptName: 'Management' },
+          { name: 'OJIH ELIZABETH ADAH', email: 'ojih.adah@citydenapartments.com', phone: '08063269302', position: 'Receptionist', deptName: 'Front Desk' },
+          { name: 'FATIMA ELIZABETH DAVID', email: 'fatima.david@citydenapartments.com', phone: '09166818195', position: 'Receptionist', deptName: 'Front Desk' },
+          { name: 'JOEL AJINU', email: 'joel.ajinu@citydenapartments.com', phone: '07063542501', position: 'Porter', deptName: 'Front Desk' },
+          { name: 'ABUBAKAR MUSA GBEDAKO', email: 'abubakar.gbedako@citydenapartments.com', phone: '07073767344', position: 'Housekeeper', deptName: 'Housekeeping' },
+          { name: 'ABDALLAH SAEED ADAM', email: 'abdallah.adam@citydenapartments.com', phone: '09131571180', position: 'Housekeeper', deptName: 'Housekeeping' },
+          { name: 'SAMSON INALEGWU GABRIEL', email: 'samson.gabriel@citydenapartments.com', phone: '07034165082', position: 'Housekeeper', deptName: 'Housekeeping' },
+          { name: 'HASSAN SEDIK', email: 'hassan.sedik@citydenapartments.com', phone: '08100662213', position: 'Housekeeper', deptName: 'Housekeeping' },
+          { name: 'JEREMIAH HOPE', email: 'jeremiah.hope@citydenapartments.com', phone: '08036740067', position: 'Laundry Operative', deptName: 'Laundry' },
+          { name: 'TAWO LEONARD', email: 'tawo.leonard@citydenapartments.com', phone: '07067171793', position: 'Chef', deptName: 'Kitchen' },
+          { name: 'MARYAM GANIU', email: 'maryam.ganiu@citydenapartments.com', phone: '07064909810', position: 'Cook', deptName: 'Kitchen' },
+          { name: 'VERONICA UBAH', email: 'veronica.ubah@citydenapartments.com', phone: '09021625954', position: 'Steward', deptName: 'Kitchen' },
+          { name: 'EMMANUEL YOMLA', email: 'emmanuel.yomla@citydenapartments.com', phone: '08034760483', position: 'Head Waiter', deptName: 'F & B' },
+          { name: 'SOLOMON ZACHARIAH', email: 'solomon.zachariah@citydenapartments.com', phone: '09064888529', position: 'Store Keeper', deptName: 'Store' },
+          { name: 'JONAH WANNAH KOLOMI', email: 'jonah.kolomi@citydenapartments.com', phone: '08133089344', position: 'IT', deptName: 'IT' },
+          { name: 'ZURUQ MOHAMMED', email: 'zuruq.mohammed@citydenapartments.com', phone: '07025275360', position: 'IT', deptName: 'IT' },
+        ],
+      },
+      {
+        branchIdx: 1,
+        staff: [],
+      },
+      {
+        branchIdx: 2,
+        staff: [
+          { name: 'Mohammed Tahiru', email: 'mtjibirn44@gmail.com', phone: '08039686749', position: 'General Manager', deptName: 'Management' },
+          { name: 'Markus John', email: 'markusjoh691@gmail.com', phone: '07068257253', position: 'Front Office Supervisor', deptName: 'Front Desk' },
+          { name: 'Hauwaa Ratgak', email: 'harunarotgak825@gmail.com', phone: '08039780483', position: 'Chef', deptName: 'Kitchen' },
+          { name: 'Makoi Cynthia', email: 'mikecynthia272@gmail.com', phone: '09166818195', position: 'Receptionist', deptName: 'Front Desk' },
+          { name: 'Aziz Hayatu Dzarma', email: 'azizhayatu7@gmail.com', phone: '09131270580', position: 'Receptionist', deptName: 'Front Desk' },
+          { name: 'Emmanuel Friday', email: 'emmanuelfridaylove@gmail.com', phone: '08139626388', position: 'Receptionist', deptName: 'Front Desk' },
+          { name: 'Dorcas Musa Wala', email: 'musawabadorcas@gmail.com', phone: '08063269302', position: 'Receptionist', deptName: 'Front Desk' },
+          { name: 'Usman Adamu', email: 'usmanadamu24@gmail.com', phone: '08100662213', position: 'H/k Supervisor', deptName: 'Housekeeping' },
+          { name: 'David Monday', email: 'davidmonday2022@gmail.com', phone: '07034165082', position: 'Housekeeper', deptName: 'Housekeeping' },
+          { name: 'Ames Charles', email: 'amoscharls21@gmail.com', phone: '07131571180', position: 'Housekeeper', deptName: 'Housekeeping' },
+          { name: 'Ibrahim Dauda', email: 'ibrahimdauda4322@gmail.com', phone: '07073767344', position: 'Housekeeper', deptName: 'Housekeeping' },
+          { name: 'Halima Saleh', email: 'halimasaleh641@gmail.com', phone: '08133089344', position: 'Kitchen Asst.', deptName: 'Kitchen' },
+          { name: 'Bilah Musa', email: 'bilamusa6@gmail.com', phone: '09068911160', position: 'Kitchen Asst.', deptName: 'Kitchen' },
+          { name: 'James Asura', email: 'kassidee55@gmail.com', phone: '07064909810', position: 'Laundry', deptName: 'Laundry' },
+          { name: 'Ladi Baita', email: 'ladibata033@gmail.com', phone: '07019885313', position: 'Waitress / Porter', deptName: 'Kitchen' },
+          { name: 'Flora Musa Wala', email: 'musaflora6@gmail.com', phone: '09068911160', position: 'Waitress / Porter', deptName: 'Kitchen' },
+          { name: 'Barka Boniface', email: 'bonifaeebarka55555@gmail.com', phone: '09021625954', position: 'Waiter / Porter', deptName: 'Kitchen' },
+          { name: 'Nala Musa Dzakwo', email: 'malamusadzakwa@gmail.com', phone: '09016267092', position: 'Laundry', deptName: 'Laundry' },
+          { name: 'Alhaji Modu Goni', email: 'alhajimodu265@gmail.com', phone: '08036740067', position: 'Environmental Gardener', deptName: 'Housekeeping' },
+          { name: 'Kolomi Alhaji Fam', email: 'alhajikolomitar@gmail.com', phone: '08127703424', position: 'Environmental Gardener', deptName: 'Housekeeping' },
+        ],
+      },
+    ];
+
+    await this.employeeModel.deleteMany({});
+    const employeeData: Array<Record<string, unknown>> = [];
+    for (const { branchIdx, staff } of staffByBranch) {
+      for (const s of staff) {
+        employeeData.push({
+          name: s.name,
+          email: s.email,
+          phone: s.phone,
+          position: s.position,
+          departmentId: deptsByBranch[branchIdx]?.[s.deptName] || undefined,
+          department: s.deptName,
+          branchId: branches[branchIdx]._id,
+          isActive: true,
+        });
+      }
+    }
+    await this.employeeModel.create(employeeData);
+    this.logger.log(`Employees created: ${employeeData.length}`);
+
+    // ── user accounts ────────────────────────────────────────────
+    const positionRoleMap: Record<string, string> = {
+      'Principal Consultant/Group GM': 'GroupGM',
+      'General Manager': 'GroupGM',
+      'Facility Manager': 'FacilityManager',
+      'Front Office Manager/HR': 'FrontOfficeManager',
+      'Front Office Supervisor': 'Reception',
+      'Accountant/Internal Auditor': 'Accountant',
+      'Executive Housekeeper': 'HouseKeeper',
+      'H/k Supervisor': 'HouseKeeper',
+      'Receptionist': 'Reception',
+      'Housekeeper': 'HouseKeeper',
+      'Chef': 'KitchenStaff',
+      'Cook': 'KitchenStaff',
+      'Steward': 'KitchenStaff',
+      'Senior Chef': 'KitchenStaff',
+      'Kitchen Asst.': 'KitchenStaff',
+      'Potter': 'KitchenStaff',
+      'Waiter': 'KitchenStaff',
+      'Waitress / Porter': 'KitchenStaff',
+      'Waiter / Porter': 'KitchenStaff',
+      'Porter': 'HouseKeeper',
+      'Head Waiter': 'KitchenStaff',
+      'Store Keeper': 'StoreKeeper',
+      'IT': 'IT',
+      'Laundry': 'HouseKeeper',
+      'Laundry Operative': 'HouseKeeper',
+      'Environmental Gardener': 'HouseKeeper',
+      'Gardener': 'HouseKeeper',
+    };
+
+    const liveUsers: Array<Record<string, unknown>> = [];
+    for (const { branchIdx, staff } of staffByBranch) {
+      for (const s of staff) {
+        const role = positionRoleMap[s.position];
+        if (!role) continue;
+        liveUsers.push({
+          email: s.email,
+          password: await bcrypt.hash(s.phone, 12),
+          name: s.name,
+          role,
+          allowedBranches: [branches[branchIdx]._id],
+          activeBranchId: branches[branchIdx]._id,
+          isActive: true,
+          passwordChangedAt: null,
+        });
+      }
+    }
+    await this.userModel.deleteMany({ role: { $nin: ['SuperAdmin'] } });
+    await this.userModel.create(liveUsers);
+    this.logger.log(`User accounts created: ${liveUsers.length}`);
+
+    this.logger.log('Staff seed completed');
+    return {
+      message: 'Departments, employees, and user accounts seeded successfully',
+      stats: {
+        departments: departments.length,
+        employees: employeeData.length,
+        userAccounts: liveUsers.length,
       },
     };
   }
