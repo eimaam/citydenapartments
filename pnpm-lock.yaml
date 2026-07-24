@@ -418,6 +418,9 @@ importers:
       react-dom:
         specifier: ^19.2.0
         version: 19.2.5(react@19.2.5)
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
 
 packages:
 
