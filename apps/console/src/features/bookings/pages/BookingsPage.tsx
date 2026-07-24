@@ -169,6 +169,7 @@ export default function BookingsPage() {
         onBookingCreated={(booking) => { fetchBookings(); openReceipt(booking as unknown as ReceiptBooking); }}
         roomSelection="multiple"
         userRole={user?.role}
+        activeBranchId={user?.activeBranchId || undefined}
       />
 
       {/* Detail Drawer */}

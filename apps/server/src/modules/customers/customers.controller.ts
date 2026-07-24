@@ -1,13 +1,15 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { SearchCustomerDto } from './dto/search-customer.dto';
+import { UpdateBranchDiscountDto } from './dto/update-branch-discount.dto';
 import { PaginatedQueryDto } from '../../common/dto/paginated-query.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { WorkspaceAuthGuard } from '../../common/guards/workspace-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRoleEnum } from '../users/user.schema';
+import { ActiveUser } from '../../common/decorators/active-user.decorator';
 
 @Controller('customers')
 @UseGuards(JwtAuthGuard, RolesGuard, WorkspaceAuthGuard)
@@ -36,5 +38,21 @@ export class CustomersController {
   @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.SUPER_ADMIN)
   create(@Body() dto: CreateCustomerDto) {
     return this.customersService.create(dto);
+  }
+
+  @Patch(':id/branch-discounts')
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM)
+  updateBranchDiscount(
+    @Param('id') id: string,
+    @Body() dto: UpdateBranchDiscountDto,
+    @ActiveUser() user: any,
+  ) {
+    return this.customersService.updateBranchDiscount({
+      customerId: id,
+      branchId: dto.branchId,
+      percentage: dto.percentage,
+      reason: dto.reason,
+      performedBy: user.id,
+    });
   }
 }

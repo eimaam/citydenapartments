@@ -34,6 +34,11 @@ export interface CustomerResult {
   lastVisitDate?: string;
   comingFrom?: string;
   nextDestination?: string;
+  branchLifetimeDiscounts?: Array<{
+    branchId: string;
+    percentage: number;
+    reason?: string;
+  }>;
 }
 
 export interface DiscountCodeResult {
@@ -105,6 +110,7 @@ export interface BookingFormDrawerProps {
   states?: Array<{ code: string; name: string }>;
   width?: number;
   userRole?: string;
+  activeBranchId?: string;
 }
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -180,6 +186,7 @@ export function BookingFormDrawer({
   states = defaultStates,
   width = 620,
   userRole,
+  activeBranchId,
 }: BookingFormDrawerProps) {
   const maxManualDiscount = getMaxManualDiscount(userRole);
   // ── Data state ──────────────────────────────────────────────
@@ -397,6 +404,14 @@ export function BookingFormDrawer({
     setSelectedCustomer(null);
   };
 
+  const selectedCustomerVipDiscount = useMemo(() => {
+    if (!selectedCustomer || !selectedCustomer.branchLifetimeDiscounts) return 0;
+    const match = selectedCustomer.branchLifetimeDiscounts.find(
+      (b) => !activeBranchId || b.branchId === activeBranchId,
+    );
+    return match ? match.percentage : 0;
+  }, [selectedCustomer, activeBranchId]);
+
   const selectCustomer = (c: CustomerResult) => {
     setSelectedCustomer(c);
     setCustomerResults([]);
@@ -415,6 +430,15 @@ export function BookingFormDrawer({
     updateField('guestComingFrom', '');
     updateField('guestNextDestination', '');
     setPhoneError(null);
+
+    if (c.branchLifetimeDiscounts && c.branchLifetimeDiscounts.length > 0 && !appliedDiscountCode) {
+      const match = c.branchLifetimeDiscounts.find(
+        (b) => !activeBranchId || b.branchId === activeBranchId,
+      );
+      if (match && match.percentage > 0) {
+        updateField('discountPercentage', match.percentage);
+      }
+    }
   };
 
   // ── Pricing changes ─────────────────────────────────────────
@@ -439,7 +463,7 @@ export function BookingFormDrawer({
   const removeDiscountCode = () => {
     setAppliedDiscountCode(null);
     setDiscountCodeInput('');
-    updateField('discountPercentage', 0);
+    updateField('discountPercentage', selectedCustomerVipDiscount);
   };
 
   // ── Submit ──────────────────────────────────────────────────
@@ -722,16 +746,29 @@ export function BookingFormDrawer({
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] text-outline uppercase tracking-wide">Discount (%)</span>
                     <span className="text-[9px] text-outline">
-                      {appliedDiscountCode ? 'Code Applied' : `Max ${maxManualDiscount}%`}
+                      {appliedDiscountCode ? 'Code Applied' : selectedCustomerVipDiscount > 0 ? `VIP ${selectedCustomerVipDiscount}%` : `Max ${maxManualDiscount}%`}
                     </span>
                   </div>
-                  <Input size="sm" type="number" min={0} max={appliedDiscountCode ? 100 : maxManualDiscount} step={1} value={form.discountPercentage || ''} onChange={(e) => onDiscountPctChange(Number(e.target.value))} />
-                  {!appliedDiscountCode && form.discountPercentage > maxManualDiscount && (
-                    <p className="text-[10px] text-error mt-0.5">Max {maxManualDiscount}% without promo code.</p>
+                  <Input size="sm" type="number" min={0} max={appliedDiscountCode ? 100 : Math.max(maxManualDiscount, selectedCustomerVipDiscount)} step={1} value={form.discountPercentage || ''} onChange={(e) => onDiscountPctChange(Number(e.target.value))} />
+                  {!appliedDiscountCode && form.discountPercentage > Math.max(maxManualDiscount, selectedCustomerVipDiscount) && (
+                    <p className="text-[10px] text-error mt-0.5">Max {Math.max(maxManualDiscount, selectedCustomerVipDiscount)}% for your role / guest VIP tier.</p>
                   )}
                 </div>
                 <div><span className="text-[10px] text-outline uppercase tracking-wide">Total Paid</span><p className="text-sm font-bold mt-1.5">₦{pricing.total.toLocaleString()}</p></div>
               </div>
+
+              {!appliedDiscountCode && selectedCustomerVipDiscount > 0 && (
+                <div className="mt-2.5 p-2 bg-amber-500/10 border border-amber-500/30 rounded text-[11px] text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+                  <span>⭐</span>
+                  <span><strong>VIP Lifetime Discount ({selectedCustomerVipDiscount}%)</strong> auto-applied for this customer.</span>
+                </div>
+              )}
+              {appliedDiscountCode && selectedCustomerVipDiscount > 0 && (
+                <div className="mt-2.5 p-2 bg-blue-500/10 border border-blue-500/30 rounded text-[11px] text-blue-700 dark:text-blue-300 flex items-center gap-1.5">
+                  <span>🏷️</span>
+                  <span>Promo code <strong>{appliedDiscountCode.code} ({appliedDiscountCode.percentage}%)</strong> overrides customer VIP Lifetime Discount ({selectedCustomerVipDiscount}%).</span>
+                </div>
+              )}
               <div className="flex items-center gap-4 mt-3">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={form.includeVat} onChange={(e) => updateField('includeVat', e.target.checked)} className="w-4 h-4 accent-primary" />
