@@ -5,8 +5,9 @@ import { Drawer } from './Drawer';
 import { Input } from './Input';
 import { Select, Option } from './Select';
 import { Button } from './Button';
-import { BookingStatus, BookingSource, PaymentMethod } from '../../types';
+import { BookingStatus, BookingSource, PaymentMethod, UserRole } from '../../types';
 import type { PaymentMethodType, BookingSourceType } from '../../types';
+import { getMaxManualDiscount } from '../../utils/discounts';
 
 // ── Types ───────────────────────────────────────────────────
 
@@ -103,6 +104,7 @@ export interface BookingFormDrawerProps {
   initialRoomId?: string;
   states?: Array<{ code: string; name: string }>;
   width?: number;
+  userRole?: string;
 }
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -177,7 +179,9 @@ export function BookingFormDrawer({
   initialRoomId = '',
   states = defaultStates,
   width = 620,
+  userRole,
 }: BookingFormDrawerProps) {
+  const maxManualDiscount = getMaxManualDiscount(userRole);
   // ── Data state ──────────────────────────────────────────────
   const [rooms, setRooms] = useState<RoomOption[]>([]);
   const [roomTypes, setRoomTypes] = useState<RoomTypeOption[]>([]);
@@ -451,6 +455,9 @@ export function BookingFormDrawer({
     const errs: Record<string, string> = {};
     if (!form.guestAddress.trim()) errs.guestAddress = 'Address is required.';
     if (!form.guestNationality.trim()) errs.guestNationality = 'Nationality is required.';
+    if (!appliedDiscountCode && form.discountPercentage > maxManualDiscount) {
+      errs.discountPercentage = `Direct discount exceeds limit of ${maxManualDiscount}%.`;
+    }
     setFormErrors(errs);
     if (Object.keys(errs).length) return;
 
@@ -711,7 +718,18 @@ export function BookingFormDrawer({
                 {allowPriceOverride && (
                   <div><span className="text-[10px] text-outline uppercase tracking-wide">Price / Night<span className="text-error ml-0.5">*</span></span><Input size="sm" type="number" min={0} value={form.actualPricePerNight || ''} onChange={(e) => onPriceChange(Number(e.target.value))} /></div>
                 )}
-                <div className={allowPriceOverride ? '' : 'col-span-3'}><span className="text-[10px] text-outline uppercase tracking-wide">Discount (%)</span><Input size="sm" type="number" min={0} max={100} step={1} value={form.discountPercentage || ''} onChange={(e) => onDiscountPctChange(Number(e.target.value))} /></div>
+                <div className={allowPriceOverride ? '' : 'col-span-3'}>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] text-outline uppercase tracking-wide">Discount (%)</span>
+                    <span className="text-[9px] text-outline">
+                      {appliedDiscountCode ? 'Code Applied' : `Max ${maxManualDiscount}%`}
+                    </span>
+                  </div>
+                  <Input size="sm" type="number" min={0} max={appliedDiscountCode ? 100 : maxManualDiscount} step={1} value={form.discountPercentage || ''} onChange={(e) => onDiscountPctChange(Number(e.target.value))} />
+                  {!appliedDiscountCode && form.discountPercentage > maxManualDiscount && (
+                    <p className="text-[10px] text-error mt-0.5">Max {maxManualDiscount}% without promo code.</p>
+                  )}
+                </div>
                 <div><span className="text-[10px] text-outline uppercase tracking-wide">Total Paid</span><p className="text-sm font-bold mt-1.5">₦{pricing.total.toLocaleString()}</p></div>
               </div>
               <div className="flex items-center gap-4 mt-3">

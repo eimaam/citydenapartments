@@ -61,7 +61,7 @@ const menuConfig: MenuConfig = {
       { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
     ]},
     { heading: 'People', items: [
-      { label: 'Staff', icon: Users, path: '/staff' },
+      { label: 'Users', icon: Users, path: '/users' },
       { label: 'Employees', icon: Users, path: '/employees' },
     ]},
     { heading: 'Settings', items: [
@@ -115,7 +115,7 @@ const menuConfig: MenuConfig = {
       { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
     ]},
     { heading: 'People', items: [
-      { label: 'Staff', icon: Users, path: '/staff' },
+      { label: 'Users', icon: Users, path: '/users' },
       { label: 'Employees', icon: Users, path: '/employees' },
     ]},
     { heading: 'Settings', items: [

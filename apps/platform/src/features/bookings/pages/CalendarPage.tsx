@@ -6,7 +6,7 @@ import {
   BookingCalendar,
   Button, Input, Select, Option, Drawer, Modal, Badge,
   BookingStatus, PaymentMethod, BookingSource, RoomStatus,
-  BookingReceipt,
+  BookingReceipt, getMaxManualDiscount,
   type BookingStatusType, type PaymentMethodType, type BookingSourceType,
   type BranchInfo, type ReceiptBooking
 } from '@citydenapartments/shared';
@@ -533,6 +533,12 @@ export default function CalendarPage() {
     const price = Number(form.actualPricePerNight) || 0;
     if (pricing.total <= 0) { toast('error', 'Total amount paid must be greater than zero.'); return; }
 
+    const maxManualDiscount = getMaxManualDiscount(user?.role);
+    if (!appliedDiscountCode && Number(form.discountPercentage) > maxManualDiscount) {
+      toast('error', `Max direct discount for your role is ${maxManualDiscount}%. Use a discount code for higher rates.`);
+      return;
+    }
+
     setSubmitting(true);
     try {
       const bookingStatus = form.bookingSource === BookingSource.WalkIn ? BookingStatus.Checked_In : BookingStatus.Reserved;
@@ -874,7 +880,7 @@ export default function CalendarPage() {
           </div>
           {selectedRoom && (<div className="p-4 mb-5 rounded-lg border border-outline-variant bg-surface-container">
             <SectionHeader label="Pricing" sectionKey="pricing" icon={undefined} />
-            {!collapsedSections['pricing'] && <div className="contents"><div className="grid grid-cols-4 gap-3 mt-2"><div><span className="text-[10px] text-outline uppercase tracking-wide">Price / Night<span className="text-error ml-0.5">*</span></span><Input size="sm" type="number" min={0} value={form.actualPricePerNight || ''} onChange={(e) => onPriceChange(Number(e.target.value))} /></div><div><span className="text-[10px] text-outline uppercase tracking-wide">Discount (%)</span><Input size="sm" type="number" min={0} max={100} step={1} value={form.discountPercentage || ''} onChange={(e) => onDiscountPctChange(Number(e.target.value))} /></div><div><span className="text-[10px] text-outline uppercase tracking-wide">Total Paid</span><p className="text-sm font-bold mt-1.5">₦{pricing.total.toLocaleString()}</p></div></div>
+            {!collapsedSections['pricing'] && <div className="contents"><div className="grid grid-cols-4 gap-3 mt-2"><div><span className="text-[10px] text-outline uppercase tracking-wide">Price / Night<span className="text-error ml-0.5">*</span></span><Input size="sm" type="number" min={0} value={form.actualPricePerNight || ''} onChange={(e) => onPriceChange(Number(e.target.value))} /></div><div><div className="flex justify-between items-center"><span className="text-[10px] text-outline uppercase tracking-wide">Discount (%)</span><span className="text-[9px] text-outline">{appliedDiscountCode ? 'Code Applied' : `Max ${getMaxManualDiscount(user?.role)}%`}</span></div><Input size="sm" type="number" min={0} max={appliedDiscountCode ? 100 : getMaxManualDiscount(user?.role)} step={1} value={form.discountPercentage || ''} onChange={(e) => onDiscountPctChange(Number(e.target.value))} />{!appliedDiscountCode && form.discountPercentage > getMaxManualDiscount(user?.role) && (<p className="text-[10px] text-error mt-0.5">Max {getMaxManualDiscount(user?.role)}% without promo code.</p>)}</div><div><span className="text-[10px] text-outline uppercase tracking-wide">Total Paid</span><p className="text-sm font-bold mt-1.5">₦{pricing.total.toLocaleString()}</p></div></div>
             <div className="flex items-center gap-4 mt-3">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={form.includeVat} onChange={(e) => updateField('includeVat', e.target.checked)} className="w-4 h-4 accent-primary" />

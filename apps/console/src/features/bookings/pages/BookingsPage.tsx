@@ -168,6 +168,7 @@ export default function BookingsPage() {
         validateDiscountCode={(code) => discountCodesApi.validate(code)}
         onBookingCreated={(booking) => { fetchBookings(); openReceipt(booking as unknown as ReceiptBooking); }}
         roomSelection="multiple"
+        userRole={user?.role}
       />
 
       {/* Detail Drawer */}

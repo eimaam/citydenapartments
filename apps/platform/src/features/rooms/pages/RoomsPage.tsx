@@ -42,6 +42,8 @@ export default function RoomsPage() {
 
   const canCreateRoom = can(user, [UserRole.SuperAdmin, UserRole.IT]);
 
+  const isElevated = user ? [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT].includes(user.role as any) : false;
+
   const validTransitions: Record<string, { value: RoomStatusType; label: string }[]> = {
     [RoomStatus.Available]: [
       { value: RoomStatus.Dirty, label: 'Dirty' },
@@ -50,7 +52,10 @@ export default function RoomsPage() {
     [RoomStatus.Dirty]: [
       { value: RoomStatus.Available, label: 'Available' },
     ],
-    [RoomStatus.Occupied]: [
+    [RoomStatus.Occupied]: isElevated ? [
+      { value: RoomStatus.Dirty, label: 'Dirty' },
+      { value: RoomStatus.Available, label: 'Available' },
+    ] : [
       { value: RoomStatus.Dirty, label: 'Dirty' },
     ],
     [RoomStatus.Maintenance]: [

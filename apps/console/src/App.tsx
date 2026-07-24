@@ -44,7 +44,7 @@ const routeRoles: Record<string, UserRoleType[]> = {
   '/bookings': [UserRole.SuperAdmin, UserRole.GroupGM],
   '/bookings/calendar': [UserRole.SuperAdmin, UserRole.GroupGM],
   '/bookings/status-history': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
-  '/staff': [UserRole.SuperAdmin, UserRole.IT],
+  '/users': [UserRole.SuperAdmin, UserRole.IT],
   '/employees': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/departments': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/breakfast': [UserRole.SuperAdmin, UserRole.GroupGM],
@@ -85,7 +85,7 @@ export default function App() {
                           case '/bookings': return <BookingsPage />;
                           case '/bookings/calendar': return <CalendarPage />;
                           case '/bookings/status-history': return <StatusHistoryPage />;
-                          case '/staff': return <StaffPage />;
+                          case '/users': return <StaffPage />;
                           case '/employees': return <EmployeePage />;
                           case '/departments': return <DepartmentPage />;
                           case '/breakfast': return <BreakfastPage />;
