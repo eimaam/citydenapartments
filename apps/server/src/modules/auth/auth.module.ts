@@ -6,11 +6,12 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { User, UserSchema } from '../users/user.schema';
+import { Branch, BranchSchema } from '../branches/branch.schema';
 import { AppConfig } from '../../config/app.config';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }, { name: Branch.name, schema: BranchSchema }]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
       secret: AppConfig.JWT_SECRET,

@@ -106,10 +106,12 @@ export class RoomsService {
     const from = room.status;
     const to = status;
 
+    const isElevated = user && hasElevatedRole(user.role);
+
     const allowed: Record<string, string[]> = {
       [RoomStatusEnum.AVAILABLE]:   [RoomStatusEnum.OCCUPIED, RoomStatusEnum.DIRTY, RoomStatusEnum.MAINTENANCE],
       [RoomStatusEnum.DIRTY]:       [RoomStatusEnum.AVAILABLE],
-      [RoomStatusEnum.OCCUPIED]:    [RoomStatusEnum.DIRTY],
+      [RoomStatusEnum.OCCUPIED]:    isElevated ? [RoomStatusEnum.DIRTY, RoomStatusEnum.AVAILABLE] : [RoomStatusEnum.DIRTY],
       [RoomStatusEnum.MAINTENANCE]: [RoomStatusEnum.AVAILABLE],
     };
 

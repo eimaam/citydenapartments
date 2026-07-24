@@ -10,6 +10,7 @@ import { Model } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '../users/user.schema';
+import { Branch } from '../branches/branch.schema';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { SwitchBranchDto } from './dto/switch-branch.dto';
@@ -24,6 +25,7 @@ export class AuthService {
 
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(Branch.name) private branchModel: Model<Branch>,
     private jwtService: JwtService,
     private redisService: RedisService,
     private auditLog: AuditLogService,
@@ -125,7 +127,10 @@ export class AuthService {
     user.activeBranchId = dto.branchId as any;
     await user.save();
 
-    this.logger.log(`Branch switched — ${user.email} → ${branchStr}`);
+    const branch = await this.branchModel.findById(branchStr).lean();
+    const branchName = branch?.name || branchStr;
+
+    this.logger.log(`Branch switched — ${user.email} → ${branchName}`);
 
     await this.redisService.del(CACHE_KEYS.USER(userId));
     await this.redisService.del(CACHE_KEYS.USER_SESSION(userId));
@@ -136,7 +141,7 @@ export class AuthService {
       entityType: 'user',
       entityId: userId,
       action: 'switch_branch',
-      description: `Branch switched to: ${branchStr}`,
+      description: `Branch switched to: ${branchName}`,
       performedBy: userId,
       branchId: branchStr,
       details: { previousBranchId: user.activeBranchId?.toString() },

@@ -9,12 +9,13 @@ import { InjectModel, InjectConnection } from '@nestjs/mongoose';
 import { Model, Connection, Types } from 'mongoose';
 import { Booking } from './booking.schema';
 import { Room, RoomStatusEnum } from '../rooms/room.schema';
+import { UserRoleEnum } from '../users/user.schema';
 import { RoomType } from '../room-types/room-type.schema';
 import { Customer } from '../customers/customer.schema';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { RedisService } from '../redis/redis.service';
 import { escapeRegex } from '../../common/utils/escape-regex';
-import { BookingStatus, BookingSource, Gender } from '@citydenapartments/shared';
+import { BookingStatus, BookingSource, Gender, getMaxManualDiscount } from '@citydenapartments/shared';
 import { BreakfastLog } from '../breakfast/breakfast-log.schema';
 import { isPastBreakfastCutoff } from '../breakfast/breakfast.constants';
 import { DiscountCodesService } from '../discount-codes/discount-codes.service';
@@ -132,7 +133,7 @@ export class BookingsService {
       .lean();
   }
 
-  async createWalkInBooking(dto: CreateBookingDto, actorId: string, branchId: string) {
+  async createWalkInBooking(dto: CreateBookingDto, actorId: string, branchId: string, actorRole?: string) {
     const checkIn = new Date(dto.checkInDate);
     const checkOut = new Date(dto.checkOutDate);
     const today = new Date();
@@ -149,9 +150,31 @@ export class BookingsService {
     session.startTransaction();
 
     try {
-      let discountCodeDoc: { _id: any; code: string } | null = null;
+      let discountCodeDoc: { _id: any; code: string; percentage: number } | null = null;
       if (dto.discountCode) {
         discountCodeDoc = await this.discountCodesService.validate(dto.discountCode, branchId);
+      }
+
+      let pct = dto.discountPercentage || 0;
+      if (discountCodeDoc) {
+        if (!pct) {
+          pct = discountCodeDoc.percentage;
+        } else if (pct !== discountCodeDoc.percentage) {
+          throw new BadRequestException(
+            `Discount percentage mismatch. Discount code ${discountCodeDoc.code} provides ${discountCodeDoc.percentage}% discount.`,
+          );
+        }
+      } else if (pct > 0) {
+        const maxAllowed = getMaxManualDiscount(actorRole);
+        if (pct > maxAllowed) {
+          throw new BadRequestException(
+            `Role "${actorRole || 'User'}" cannot apply a manual discount of ${pct}%. Maximum allowed direct manual discount for your role is ${maxAllowed}%. Use a valid discount code for higher discounts.`,
+          );
+        }
+      }
+
+      if (pct < 0 || pct > 100) {
+        throw new BadRequestException('Discount percentage must be between 0 and 100.');
       }
 
       const targetStatus = dto.bookingStatus || BookingStatus.Checked_In;
@@ -236,10 +259,6 @@ export class BookingsService {
       }
 
       const subtotal = roomEntries.reduce((sum, r) => sum + r.totalForRoom, 0);
-      const pct = dto.discountPercentage || 0;
-      if (pct < 0 || pct > 100) {
-        throw new BadRequestException('Discount percentage must be between 0 and 100.');
-      }
       const computedDiscount = Math.round((subtotal * pct) / 100);
 
       const includeVat = dto.includeVat || false;
