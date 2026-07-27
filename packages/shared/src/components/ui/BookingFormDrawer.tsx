@@ -402,6 +402,7 @@ export function BookingFormDrawer({
   const onCustomerSearchPhoneChange = (phone: string) => {
     setCustomerSearchPhone(phone);
     setSelectedCustomer(null);
+    if (!appliedDiscountCode) updateField('discountPercentage', 0);
   };
 
   const selectedCustomerVipDiscount = useMemo(() => {
@@ -431,13 +432,11 @@ export function BookingFormDrawer({
     updateField('guestNextDestination', '');
     setPhoneError(null);
 
-    if (c.branchLifetimeDiscounts && c.branchLifetimeDiscounts.length > 0 && !appliedDiscountCode) {
-      const match = c.branchLifetimeDiscounts.find(
+    if (!appliedDiscountCode) {
+      const match = c.branchLifetimeDiscounts?.find(
         (b) => !activeBranchId || b.branchId === activeBranchId,
       );
-      if (match && match.percentage > 0) {
-        updateField('discountPercentage', match.percentage);
-      }
+      updateField('discountPercentage', match?.percentage ?? 0);
     }
   };
 
