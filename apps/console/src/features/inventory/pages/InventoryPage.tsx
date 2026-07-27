@@ -13,6 +13,7 @@ export default function InventoryPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const canWrite = user ? [UserRole.SuperAdmin, UserRole.StoreManager, UserRole.Accountant].includes(user.role as any) : false;
+  const canAddItems = user ? [UserRole.SuperAdmin, UserRole.StoreManager].includes(user.role as any) : false;
 
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -179,7 +180,7 @@ export default function InventoryPage() {
         <div className="flex items-center gap-3">
           <Input size="sm" placeholder="Search items..." prefix={<Search size={14} className="text-outline" />}
             value={searchInput} onChange={(e) => onSearchChange(e.target.value)} className="!w-64" />
-          {canWrite && <Button size="sm" icon={<Plus size={14} />} onClick={() => setShowCreate(true)}>Add Item</Button>}
+          {canAddItems && <Button size="sm" icon={<Plus size={14} />} onClick={() => setShowCreate(true)}>Add Item</Button>}
         </div>
       </div>
 
