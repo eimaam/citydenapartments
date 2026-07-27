@@ -24,8 +24,7 @@ export const LocationsSection = () => {
                 <img
                   src={location.imageUrl}
                   alt={location?.city}
-                  className={`absolute inset-0 size-full object-cover transition-all duration-800  ease-out group-hover:scale-105 ${location.comingSoon ? 'grayscale-[0.9] opacity-95' : ''
-                    }`}
+                  className="absolute inset-0 size-full object-cover transition-all duration-800  ease-out group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-inverse-surface/88 via-inverse-surface/15 to-inverse-surface/10" />
 

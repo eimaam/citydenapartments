@@ -39,10 +39,11 @@ export class BreakfastService {
           bookingStatus: BookingStatus.Checked_In,
         },
       },
+      { $unwind: '$rooms' },
       {
         $lookup: {
           from: 'rooms',
-          localField: 'roomId',
+          localField: 'rooms.roomId',
           foreignField: '_id',
           as: 'roomInfo',
         },
@@ -123,8 +124,9 @@ export class BreakfastService {
       throw new BadRequestException('Bookings with 15% or more discount are not eligible for complimentary breakfast.');
     }
 
-    if (dto.roomId !== booking.roomId.toString()) {
-      this.logger.warn(`Room mismatch — Guest ${booking.guestDetails.name} | expected ${booking.roomId}, received ${dto.roomId}`);
+    const roomInBooking = booking.rooms?.some((r) => r.roomId.toString() === dto.roomId);
+    if (!roomInBooking) {
+      this.logger.warn(`Room mismatch — Guest ${booking.guestDetails.name} | booking has ${booking.rooms?.length} room(s), received roomId ${dto.roomId}`);
     }
 
     const existingLog = await this.breakfastLogModel.findOne({
@@ -144,7 +146,7 @@ export class BreakfastService {
     const log = await this.breakfastLogModel.create({
       branchId,
       bookingId: dto.bookingId,
-      roomId: booking.roomId,
+      roomId: roomInBooking ? booking.rooms.find((r) => r.roomId.toString() === dto.roomId)!.roomId : booking.rooms[0].roomId,
       guestName: booking.guestDetails.name,
       dateServed: now,
       servingsClaimed: dto.servingsClaimed || 1,
@@ -153,7 +155,7 @@ export class BreakfastService {
     });
 
     await this.redis.invalidateDashboardCache(branchId);
-    this.logger.log(`Breakfast served — Guest ${booking.guestDetails.name} | Room ${booking.roomId} | by ${userId}`);
+    this.logger.log(`Breakfast served — Guest ${booking.guestDetails.name} | by ${userId}`);
     return log;
   }
 

@@ -45,7 +45,7 @@ export class BookingsController {
   @Post()
   @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.FRONT_OFFICE_MANAGER)
   create(@Body() dto: CreateBookingDto, @ActiveUser() user: any) {
-    return this.bookingsService.createWalkInBooking(dto, user.id, user.activeBranchId);
+    return this.bookingsService.createWalkInBooking(dto, user.id, user.activeBranchId, user.role);
   }
 
   @Post(':id/check-in')

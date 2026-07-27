@@ -178,7 +178,7 @@ export default function StatusHistoryPage() {
                   <span className="text-xs text-outline">{selectedBooking.guestDetails.name}</span>
                 </div>
                 <p className="text-xs text-outline mt-1">
-                  Room {selectedBooking.roomId?.roomNumber} · {format(new Date(selectedBooking.checkInDate), 'd MMM')} — {format(new Date(selectedBooking.checkOutDate), 'd MMM')}
+                  {(selectedBooking.rooms || []).map(r => r.roomId?.roomNumber).filter(Boolean).join(', ') || '—'} · {format(new Date(selectedBooking.checkInDate), 'd MMM')} — {format(new Date(selectedBooking.checkOutDate), 'd MMM')}
                 </p>
               </div>
 

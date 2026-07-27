@@ -5,7 +5,7 @@ import { Search, Plus, Hash, Calendar, Copy, Check } from 'lucide-react';
 import { useToast } from '../../../components/ui/Toast';
 import { discountCodesApi, type DiscountCode } from '../api/discount-codes.api';
 import { useAuth } from '../../../contexts/auth';
-import { UserRole } from '@citydenapartments/shared';
+import { UserRole, getMaxCodeDiscount } from '@citydenapartments/shared';
 import { format } from 'date-fns';
 
 const LIMIT = 20;
@@ -44,8 +44,11 @@ export default function DiscountCodesPage() {
     searchTimer.current = setTimeout(() => setSearch(val), 400);
   };
 
+  const maxCodeDiscount = getMaxCodeDiscount(user?.role);
+
   const generate = async () => {
     if (genForm.percentage < 1) { toast('error', 'Percentage must be at least 1.'); return; }
+    if (genForm.percentage > maxCodeDiscount) { toast('error', `Max discount code percentage for your role is ${maxCodeDiscount}%.`); return; }
     setSaving(true);
     try {
       await discountCodesApi.generate({
@@ -147,8 +150,11 @@ export default function DiscountCodesPage() {
           <Button loading={saving} onClick={generate}>Generate</Button></div>}>
         <div className="space-y-4">
           <div>
-            <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline block mb-1">Discount Percentage *</label>
-            <Input size="lg" type="number" min={1} max={100}
+            <div className="flex justify-between items-center mb-1">
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline block">Discount Percentage *</label>
+              <span className="text-[10px] text-outline">Max {maxCodeDiscount}% ({user?.role || 'Role'})</span>
+            </div>
+            <Input size="lg" type="number" min={1} max={maxCodeDiscount}
               value={genForm.percentage} onChange={(e) => setGenForm({ ...genForm, percentage: Number(e.target.value) })} />
           </div>
           {/* [multi-use] uncomment to restore max usage input

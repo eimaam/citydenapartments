@@ -1,13 +1,15 @@
-import { IsString, IsMongoId, IsNumber, IsOptional, Min } from 'class-validator';
+import { IsString, IsMongoId, IsNumber, IsArray, IsOptional, Min, MinLength } from 'class-validator';
 
 export class CreateRoomDto {
+  @IsOptional()
   @IsMongoId()
-  branchId: string;
+  branchId?: string;
   
   @IsMongoId()
   roomTypeId: string;
   
   @IsString()
+  @MinLength(1)
   roomNumber: string;
   
   @IsNumber()
@@ -15,6 +17,13 @@ export class CreateRoomDto {
   @IsOptional()
   maxGuests?: number;
   
-  @IsMongoId()
-  createdBy: string;
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  amenities?: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  images?: string[];
 }

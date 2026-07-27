@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Department } from './department.schema';
 import { hasElevatedRole } from '../../common/utils/role.utils';
+import { AuditLogService } from '../audit-log/audit-log.service';
 import type { CreateDepartmentDto } from './dto/create-department.dto';
 import type { UpdateDepartmentDto } from './dto/update-department.dto';
 
@@ -12,6 +13,7 @@ export class DepartmentsService {
 
   constructor(
     @InjectModel(Department.name) private departmentModel: Model<Department>,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   async create(dto: CreateDepartmentDto, userId: string) {
@@ -23,6 +25,15 @@ export class DepartmentsService {
     if (existing) throw new ConflictException('A department with this name already exists in this branch.');
     const dept = await this.departmentModel.create({ ...dto, createdBy: userId, updatedBy: userId });
     this.logger.log(`Department created — ${dept.name} (${dept.branchId})`);
+    await this.auditLog.log({
+      entityType: 'department',
+      entityId: dept._id.toString(),
+      action: 'create',
+      description: `Department created: ${dept.name}`,
+      performedBy: userId,
+      branchId: dto.branchId,
+      details: { name: dept.name, description: dept.description },
+    });
     return dept;
   }
 
@@ -62,17 +73,26 @@ export class DepartmentsService {
     ).lean();
     if (!updated) throw new NotFoundException('Department not found.');
     this.logger.log(`Department updated — ${updated.name}`);
+    await this.auditLog.log({
+      entityType: 'department',
+      entityId: id,
+      action: 'update',
+      description: `Department updated: ${updated.name}`,
+      performedBy: userId,
+      branchId: updated.branchId.toString(),
+      details: { ...dto },
+    });
     return updated;
   }
 
-  async softDelete(id: string, userId: string) {
-    const dept = await this.departmentModel.findByIdAndUpdate(
-      id,
-      { isDeleted: true, updatedBy: userId },
-      { new: true },
-    ).lean();
-    if (!dept) throw new NotFoundException('Department not found.');
-    this.logger.log(`Department soft-deleted — ${dept.name}`);
-    return dept;
-  }
+  // async softDelete(id: string, userId: string) {
+  //   const dept = await this.departmentModel.findByIdAndUpdate(
+  //     id,
+  //     { isDeleted: true, updatedBy: userId },
+  //     { new: true },
+  //   ).lean();
+  //   if (!dept) throw new NotFoundException('Department not found.');
+  //   this.logger.log(`Department soft-deleted — ${dept.name}`);
+  //   return dept;
+  // }
 }

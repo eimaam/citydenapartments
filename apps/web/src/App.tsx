@@ -1,16 +1,22 @@
 import { Route, Routes } from 'react-router-dom'
 import { MainLayout } from './layouts/MainLayout'
+import { ScrollToTop } from './components/ScrollToTop'
 import { LandingPage } from './pages/LandingPage'
 import { CityPage } from './pages/CityPage'
 import { BookingPage } from './pages/BookingPage'
+import { GalleryPage } from './pages/GalleryPage'
+import { ContactPage } from './pages/ContactPage'
 
 const App = () => {
   return (
     <MainLayout>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/cities/:cityId" element={<CityPage />} />
         <Route path="/book" element={<BookingPage />} />
+        <Route path="/gallery" element={<GalleryPage />} />
+        <Route path="/contact" element={<ContactPage />} />
       </Routes>
     </MainLayout>
   )

@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Button, Input, Select, Option, Drawer, Badge, Table } from '@citydenapartments/shared';
+import { Button, Input, Select, Option, Drawer, Badge, Table, UserRole } from '@citydenapartments/shared';
 import { RoomStatus, type RoomStatusType } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, X } from 'lucide-react';
 import { Spinner } from '../../../components/ui/Spinner';
 import { useToast } from '../../../components/ui/Toast';
 import { useAuth } from '../../../contexts/auth';
@@ -23,6 +23,7 @@ interface Room {
   roomNumber: string;
   status: RoomStatusType;
   maxGuests: number;
+  amenities?: string[];
   roomTypeId: { _id: string; name: string; basePrice: number };
   branchId: { _id: string; name: string };
 }
@@ -33,6 +34,14 @@ interface PaginatedData {
   page: number;
   limit: number;
 }
+
+interface RoomType {
+  _id: string;
+  name: string;
+  basePrice: number;
+}
+
+const canCreate = (role: string) => role === UserRole.SuperAdmin || role === UserRole.IT;
 
 export default function AdminRoomsPage() {
   const { toast } = useToast();
@@ -47,7 +56,9 @@ export default function AdminRoomsPage() {
   const [drawer, setDrawer] = useState(false);
   const [edit, setEdit] = useState<Room | null>(null);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ roomNumber: '', maxGuests: 2, status: RoomStatus.Available as string });
+  const [form, setForm] = useState({ roomNumber: '', maxGuests: 2, status: RoomStatus.Available as string, roomTypeId: '', amenities: [] as string[] });
+  const [amenityInput, setAmenityInput] = useState('');
+  const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -64,22 +75,33 @@ export default function AdminRoomsPage() {
 
   useEffect(() => { setPage(1); }, [search, statusFilter]);
 
+  useEffect(() => {
+    api.get<{ items: RoomType[] }>('/room-types?limit=100').then((res) => setRoomTypes(res.items)).catch(() => {});
+  }, []);
+
   const onSearchChange = (val: string) => {
     setSearchInput(val);
     clearTimeout(searchTimer.current);
     searchTimer.current = setTimeout(() => setSearch(val), 400);
   };
 
-  const openEdit = (r: Room) => { setEdit(r); setForm({ roomNumber: r.roomNumber, maxGuests: r.maxGuests, status: r.status }); setDrawer(true); };
+  const openCreate = () => { setEdit(null); setForm({ roomNumber: '', maxGuests: 2, status: RoomStatus.Available, roomTypeId: '', amenities: [] }); setAmenityInput(''); setDrawer(true); };
+  const openEdit = (r: Room) => { setEdit(r); setForm({ roomNumber: r.roomNumber, maxGuests: r.maxGuests, status: r.status, roomTypeId: '', amenities: r.amenities ?? [] }); setAmenityInput(''); setDrawer(true); };
 
   const save = async () => {
+    if (!form.roomNumber.trim()) { toast('error', 'Room number is required.'); return; }
+    if (form.maxGuests < 1) { toast('error', 'Max guests must be at least 1.'); return; }
+    if (!edit && !form.roomTypeId) { toast('error', 'Room type is required.'); return; }
     setSaving(true);
     try {
       if (edit) {
-        await api.patch(`/rooms/${edit._id}`, { roomNumber: form.roomNumber, maxGuests: form.maxGuests });
+        await api.patch(`/rooms/${edit._id}`, { roomNumber: form.roomNumber, maxGuests: form.maxGuests, amenities: form.amenities });
         if (form.status !== edit.status) await api.patch(`/rooms/${edit._id}/status`, { status: form.status });
+        toast('success', 'Room updated.');
+      } else {
+        await api.post('/rooms', { roomNumber: form.roomNumber, roomTypeId: form.roomTypeId, maxGuests: form.maxGuests, amenities: form.amenities });
+        toast('success', 'Room created.');
       }
-      toast('success', 'Room updated.');
       setDrawer(false);
       fetch();
     } catch (e: any) { toast('error', e.message); }
@@ -102,7 +124,7 @@ export default function AdminRoomsPage() {
         <div className="flex items-center gap-3">
           <Input size="sm" placeholder="Search rooms..." prefix={<Search size={14} className="text-outline" />}
             value={searchInput} onChange={(e) => onSearchChange(e.target.value)} className="!w-64" />
-          <Button size="sm" icon={<Plus size={14} />} onClick={() => toast('info', 'Create rooms from the Room Types section.')}>New Room</Button>
+          {canCreate(user?.role ?? '') && <Button size="sm" icon={<Plus size={14} />} onClick={openCreate}>New Room</Button>}
         </div>
       </div>
 
@@ -132,14 +154,54 @@ export default function AdminRoomsPage() {
           onRow={(r) => ({ onClick: () => openEdit(r), style: { cursor: 'pointer' } })}
         />
       </div>
-      <Drawer open={drawer} onClose={() => setDrawer(false)} title="Edit Room" size="sm"
-        footer={<div className="flex justify-end gap-3"><Button variant="secondary" onClick={() => setDrawer(false)}>Cancel</Button><Button loading={saving} onClick={save}>Save</Button></div>}>
+
+      <Drawer open={drawer} onClose={() => setDrawer(false)}
+        title={edit ? 'Edit Room' : 'New Room'} size="sm"
+        footer={<div className="flex justify-end gap-3"><Button variant="secondary" onClick={() => setDrawer(false)}>Cancel</Button><Button loading={saving} onClick={save}>{edit ? 'Save' : 'Create'}</Button></div>}>
         <div className="space-y-4">
           <Input size="lg" placeholder="Room Number" value={form.roomNumber} onChange={(e) => setForm({ ...form, roomNumber: e.target.value })} />
+          {!edit && (
+            <Select size="lg" className="w-full" placeholder="Select room type" value={form.roomTypeId || undefined} onChange={(v) => setForm({ ...form, roomTypeId: v })}>
+              {roomTypes.map((rt) => <Option key={rt._id} value={rt._id}>{rt.name} (₦{rt.basePrice.toLocaleString()})</Option>)}
+            </Select>
+          )}
           <Input size="lg" type="number" placeholder="Max Guests" value={form.maxGuests} onChange={(e) => setForm({ ...form, maxGuests: Number(e.target.value) })} />
-          <Select size="lg" className="w-full" value={form.status} onChange={(v) => setForm({ ...form, status: v })}>
-            {Object.values(RoomStatus).map((s) => <Option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</Option>)}
-          </Select>
+          <div>
+            <label className="text-[10px] text-outline uppercase tracking-wide mb-1 block">Amenities</label>
+            <div className="flex items-center gap-2">
+              <Input size="sm" placeholder="Type and press Enter" value={amenityInput}
+                onChange={(e) => setAmenityInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if ((e.key === 'Enter' || e.key === ',') && amenityInput.trim()) {
+                    e.preventDefault();
+                    setForm({ ...form, amenities: [...form.amenities, amenityInput.trim()] });
+                    setAmenityInput('');
+                  }
+                }} />
+              <Button size="sm" variant="secondary"
+                onClick={() => { if (amenityInput.trim()) { setForm({ ...form, amenities: [...form.amenities, amenityInput.trim()] }); setAmenityInput(''); } }}>
+                Add
+              </Button>
+            </div>
+            {form.amenities.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {form.amenities.map((a, i) => (
+                  <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded bg-primary-container/20 text-primary">
+                    {a}
+                    <button type="button" onClick={() => setForm({ ...form, amenities: form.amenities.filter((_, j) => j !== i) })}
+                      className="cursor-pointer bg-transparent border-none p-0 text-primary/60 hover:text-primary">
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+          {edit && (
+            <Select size="lg" className="w-full" value={form.status} onChange={(v) => setForm({ ...form, status: v })}>
+              {Object.values(RoomStatus).map((s) => <Option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</Option>)}
+            </Select>
+          )}
         </div>
       </Drawer>
     </div>

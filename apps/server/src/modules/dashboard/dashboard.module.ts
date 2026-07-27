@@ -8,6 +8,7 @@ import { Branch, BranchSchema } from '../branches/branch.schema';
 import { BreakfastLog, BreakfastLogSchema } from '../breakfast/breakfast-log.schema';
 import { User, UserSchema } from '../users/user.schema';
 import { InventoryItem, InventoryItemSchema } from '../inventory/inventory-item.schema';
+import { DepartmentExpense, DepartmentExpenseSchema } from '../department-expenses/department-expense.schema';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { InventoryItem, InventoryItemSchema } from '../inventory/inventory-item.
       { name: BreakfastLog.name, schema: BreakfastLogSchema },
       { name: User.name, schema: UserSchema },
       { name: InventoryItem.name, schema: InventoryItemSchema },
+      { name: DepartmentExpense.name, schema: DepartmentExpenseSchema },
     ]),
   ],
   controllers: [DashboardController],

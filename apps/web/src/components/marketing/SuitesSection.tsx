@@ -1,8 +1,10 @@
 import { ArrowUpRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { SectionReveal } from './motionSection';
-import { suites } from './data';
 import { formatNGN } from '@citydenapartments/shared';
 import type { ISuiteCard } from './types';
+
+const FALLBACK_SUITE_IMAGE = 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80';
 
 interface SuitesSectionProps {
   suites?: ISuiteCard[];
@@ -10,7 +12,7 @@ interface SuitesSectionProps {
 }
 
 export const SuitesSection = ({
-  suites: suitesProp = suites,
+  suites: suitesProp = [],
   title = "Signature Suites",
 }: SuitesSectionProps) => {
   return (
@@ -23,13 +25,13 @@ export const SuitesSection = ({
           <h2 className="font-serif text-4xl font-normal leading-[1.12] tracking-[-0.02em] text-on-surface md:text-5xl lg:text-[3rem]">
             {title}
           </h2>
-          <a
-            href="#rooms"
+          <Link
+            to="/book"
             className="type-label-caps group inline-flex items-center gap-2 text-[11px] text-primary transition-colors hover:text-primary-container"
           >
             VIEW ALL ROOMS
             <ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-px group-hover:translate-x-px" />
-          </a>
+          </Link>
         </SectionReveal>
 
         <div className="mt-16 grid grid-cols-1 gap-14 lg:grid-cols-3 lg:gap-12 xl:gap-16">
@@ -38,19 +40,20 @@ export const SuitesSection = ({
               <article className="group flex flex-col">
                 <div className="overflow-hidden rounded-sm">
                   <img
-                    src={suite.imageUrl}
+                    src={suite.imageUrl || FALLBACK_SUITE_IMAGE}
                     alt=""
                     className="aspect-[4/3] w-full object-cover transition-all duration-700 ease-out group-hover:scale-[1.2]"
+                    onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_SUITE_IMAGE }}
                   />
                 </div>
                 <h3 className="mt-8 font-serif text-3xl font-normal tracking-tight text-on-surface">{suite.title}</h3>
                 <p className="mt-5 type-body-md text-secondary">{suite.description}</p>
-                <a
-                  href="#contact"
+                <Link
+                  to="/book"
                   className="type-label-caps mt-8 inline-flex w-fit items-center gap-1 border-b border-primary/40 pb-0.5 text-[11px] text-primary transition-colors hover:border-primary-container hover:text-primary-container"
                 >
                   from {formatNGN(suite.price)}
-                </a>
+                </Link>
               </article>
             </SectionReveal>
           ))}

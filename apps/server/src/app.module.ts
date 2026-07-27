@@ -23,6 +23,9 @@ import { CustomersModule } from './modules/customers/customers.module';
 import { EmployeesModule } from './modules/employees/employees.module';
 import { DiscountCodesModule } from './modules/discount-codes/discount-codes.module';
 import { DepartmentsModule } from './modules/departments/departments.module';
+import { DepartmentExpensesModule } from './modules/department-expenses/department-expenses.module';
+import { PublicModule } from './modules/public/public.module';
+import { AuditLogModule } from './modules/audit-log/audit-log.module';
 import mongoose from 'mongoose';
 
 if (AppConfig.NODE_ENV === 'development') {
@@ -67,7 +70,10 @@ if (AppConfig.NODE_ENV === 'development') {
     EmployeesModule,
     DiscountCodesModule,
     DepartmentsModule,
+    DepartmentExpensesModule,
     RedisModule,
+    PublicModule,
+    AuditLogModule,
   ],
   
   providers: [

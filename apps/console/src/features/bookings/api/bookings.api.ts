@@ -9,16 +9,23 @@ export interface StatusHistoryEntry {
   changedAt: string;
 }
 
-export interface BookingResponse {
-  _id: string;
-  bookingReference: string;
-  branchId: string;
+export interface RoomBookingEntry {
   roomId: {
     _id: string;
     roomNumber: string;
     roomTypeId?: { _id: string; name: string };
     status: RoomStatusType;
   };
+  actualPricePerNight: number;
+  totalForRoom: number;
+  maxGuests: number;
+}
+
+export interface BookingResponse {
+  _id: string;
+  bookingReference: string;
+  branchId: string;
+  rooms: RoomBookingEntry[];
   guestDetails: {
     name: string;
     phone: string;
@@ -37,10 +44,14 @@ export interface BookingResponse {
   numberOfGuests: number;
   checkInDate: string;
   checkOutDate: string;
-  actualPricePerNight: number;
   discount: number;
   discountReason?: string;
   totalAmountPaid: number;
+  baseRoomTotal?: number;
+  includeVat?: boolean;
+  includeServiceCharge?: boolean;
+  vatAmount?: number;
+  serviceChargeAmount?: number;
   paymentMethod: PaymentMethodType;
   paymentReference?: string;
   bookingStatus: BookingStatusType;
@@ -55,8 +66,14 @@ export interface BookingResponse {
   statusHistory?: StatusHistoryEntry[];
 }
 
-export interface CreateBookingPayload {
+export interface CreateRoomBookingPayload {
   roomId: string;
+  actualPricePerNight: number;
+  maxGuests: number;
+}
+
+export interface CreateBookingPayload {
+  rooms: CreateRoomBookingPayload[];
   guestName: string;
   guestPhone: string;
   guestEmail?: string;
@@ -73,10 +90,13 @@ export interface CreateBookingPayload {
   numberOfGuests?: number;
   checkInDate: string;
   checkOutDate: string;
-  actualPricePerNight: number;
   discountPercentage?: number;
   discountReason?: string;
   discountCode?: string;
+  includeVat?: boolean;
+  includeServiceCharge?: boolean;
+  vatAmount?: number;
+  serviceChargeAmount?: number;
   totalAmountPaid: number;
   paymentMethod: PaymentMethodType;
   paymentReference?: string;

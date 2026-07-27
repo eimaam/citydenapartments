@@ -14,6 +14,7 @@ import { ReportSpoilageDto, QuerySpoilageDto } from './dto/spoilage.dto';
 import { RedisService } from '../redis/redis.service';
 import { escapeRegex } from '../../common/utils/escape-regex';
 import { format } from 'date-fns';
+import { AuditLogService } from '../audit-log/audit-log.service';
 
 @Injectable()
 export class InventoryService {
@@ -26,6 +27,7 @@ export class InventoryService {
     @InjectModel(SpoilageReport.name) private spoilageModel: Model<SpoilageReport>,
     @InjectModel(Employee.name) private employeeModel: Model<Employee>,
     private readonly redis: RedisService,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   async findAllItems(params: {
@@ -87,6 +89,15 @@ export class InventoryService {
 
     await this.redis.del(`inventory:items:${branchId}`);
     this.logger.log(`Inventory item created — ${dto.name} | qty: ${dto.currentStock} | branch: ${branchId} | by ${userId}`);
+    await this.auditLog.log({
+      entityType: 'inventory_item',
+      entityId: item._id.toString(),
+      action: 'create',
+      description: `Inventory item created: ${dto.name}`,
+      performedBy: userId,
+      branchId,
+      details: { name: dto.name, category: dto.category, currentStock: dto.currentStock, unit: dto.unit },
+    });
     return item;
   }
 
@@ -99,6 +110,15 @@ export class InventoryService {
 
     await this.redis.del(`inventory:items:${branchId}`);
     this.logger.log(`Inventory item updated — ${item.name} | by ${userId}`);
+    await this.auditLog.log({
+      entityType: 'inventory_item',
+      entityId: id,
+      action: 'update',
+      description: `Inventory item updated: ${item.name}`,
+      performedBy: userId,
+      branchId,
+      details: { ...dto },
+    });
     return item;
   }
 
@@ -124,6 +144,15 @@ export class InventoryService {
 
     await this.redis.del(`inventory:items:${branchId}`);
     this.logger.log(`Inventory restock — ${item.name} | +${dto.quantity} | by ${userId}`);
+    await this.auditLog.log({
+      entityType: 'inventory_item',
+      entityId: id,
+      action: 'restock',
+      description: `Inventory restock: ${item.name} (+${dto.quantity} ${item.unit})`,
+      performedBy: userId,
+      branchId,
+      details: { itemName: item.name, quantity: dto.quantity, unit: item.unit, notes: dto.notes },
+    });
     return item;
   }
 
@@ -179,6 +208,15 @@ export class InventoryService {
 
     await this.redis.del(`inventory:items:${branchId}`);
     this.logger.log(`Inventory issue — ${item.name} | -${dto.quantity} | to ${requestedByName || dto.department || 'unspecified'} | by ${userId}`);
+    await this.auditLog.log({
+      entityType: 'inventory_item',
+      entityId: id,
+      action: 'issue',
+      description: `Inventory issue: ${item.name} (-${dto.quantity} ${item.unit}) to ${requestedByName || dto.department || 'unspecified'}`,
+      performedBy: userId,
+      branchId,
+      details: { itemName: item.name, quantity: dto.quantity, unit: item.unit, requestedBy: requestedByName, department: dto.department, notes: dto.notes },
+    });
     return item;
   }
 
@@ -211,6 +249,15 @@ export class InventoryService {
     });
 
     this.logger.log(`Spoilage reported — ${item.name} | qty: ${dto.quantity} | type: ${dto.spoilageType} | by ${userId}`);
+    await this.auditLog.log({
+      entityType: 'spoilage_report',
+      entityId: report._id.toString(),
+      action: 'report_spoilage',
+      description: `Spoilage reported: ${item.name} (-${dto.quantity} ${item.unit})`,
+      performedBy: userId,
+      branchId,
+      details: { itemName: item.name, quantity: dto.quantity, unit: item.unit, spoilageType: dto.spoilageType, reason: dto.reason },
+    });
     return report;
   }
 

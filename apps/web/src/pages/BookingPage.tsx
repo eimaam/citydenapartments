@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { SEOHead } from '../components/SEOHead';
 import { 
   Calendar, 
   Users, 
@@ -18,6 +19,9 @@ import {
 } from 'lucide-react';
 import { Button } from '@citydenapartments/shared';
 import { SectionReveal } from '../components/marketing/motionSection';
+import { getRoomTypes } from '../lib/api';
+import type { PublicRoomType } from '../lib/api';
+import { FALLBACK_SUITE_IMAGE } from '../data/branches';
 
 // Suite data interface
 interface Suite {
@@ -31,137 +35,32 @@ interface Suite {
   description: string;
   amenities: string[];
   reviews: { author: string; rating: number; text: string; date: string }[];
+  address: string;
+  contactPhone: string;
+  contactEmail: string;
 }
 
-// Global suite database
-const SUITES_DATABASE: Suite[] = [
-  // Abuja Suites
-  {
-    id: 'skyline-executive-abuja',
-    title: 'Skyline Executive',
-    city: 'abuja',
-    cityName: 'Abuja, Nigeria',
-    priceNaira: 120000,
-    imageUrl: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80',
-    tags: ['King Size', 'Workspace'],
-    description: 'A touch of pure luxury that our property has to offer, featuring sweeping views of the capital skyline and premium mid-century modern furnishings.',
-    amenities: ['High-speed Wi-Fi', 'Smart TV with Streaming', 'Dedicated Workspace', 'Nespresso Coffee Machine', 'Walk-in Rain Shower', 'Bathrobe & Slippers'],
-    reviews: [
-      { author: 'Chidi O.', rating: 5, text: 'Absolutely spectacular view. The workspace was perfect for my remote meetings.', date: 'May 2026' },
-      { author: 'Fatima A.', rating: 5, text: 'Impeccable service. The apartment was spotless and the design is pure art.', date: 'April 2026' }
-    ]
-  },
-  {
-    id: 'panorama-suite-abuja',
-    title: 'Panorama Suite',
-    city: 'abuja',
-    cityName: 'Abuja, Nigeria',
-    priceNaira: 185000,
-    imageUrl: 'https://images.unsplash.com/photo-1616594039964-3f59a4a3f6f9?auto=format&fit=crop&w=800&q=80',
-    tags: ['Pool View', 'Kitchenette'],
-    description: 'Unrivaled view of Jabi Lake and the urban horizon. Crafted with floor-to-ceiling windows and a private terrace to enjoy Abuja sunsets.',
-    amenities: ['Private Lakeside Balcony', 'Fully Equipped Kitchenette', 'Premium Sound System', 'King Size Bed', 'Integrated Climate Control', 'In-room Laundry'],
-    reviews: [
-      { author: 'Marcus K.', rating: 5, text: 'Sitting on the balcony watching Jabi Lake at sunset is therapeutic. Highly recommended.', date: 'May 2026' }
-    ]
-  },
-  {
-    id: 'maitama-penthouse-abuja',
-    title: 'Maitama Penthouse',
-    city: 'abuja',
-    cityName: 'Abuja, Nigeria',
-    priceNaira: 250000,
-    imageUrl: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80',
-    tags: ['Private Deck', 'Mini Bar'],
-    description: 'The pinnacle of luxury living. A sprawling penthouse retreat with expansive private decks, curated art installations, and elite concierge services.',
-    amenities: ['Wrap-around Private Deck', 'Fully Stocked Premium Bar', 'Dedicated 24/7 Concierge', 'Super King Size Bed', 'Private Dining Space', 'Soaking Bathtub'],
-    reviews: [
-      { author: 'Yusuf D.', rating: 5, text: 'The highest standard of luxury in Abuja. Worth every Naira.', date: 'March 2026' }
-    ]
-  },
-  // Kaduna Suites
-  {
-    id: 'executive-studio-kaduna',
-    title: 'Executive Studio',
-    city: 'kaduna',
-    cityName: 'Kaduna, Nigeria',
-    priceNaira: 65000,
-    imageUrl: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=800&q=80',
-    tags: ['Queen Size', 'Balcony'],
-    description: 'Designed for corporate and leisure travelers seeking a refined, quiet urban sanctuary in the heart of G.R.A Kaduna.',
-    amenities: ['High-speed Wi-Fi', 'Private Balcony', 'Nespresso Coffee Station', 'Premium Linens', 'Sleek Writing Desk'],
-    reviews: [
-      { author: 'Ibrahim M.', rating: 4, text: 'Very quiet and peaceful location. Perfect retreat after working in the city.', date: 'May 2026' }
-    ]
-  },
-  {
-    id: 'the-courtyard-kaduna',
-    title: 'The Courtyard Suite',
-    city: 'kaduna',
-    cityName: 'Kaduna, Nigeria',
-    priceNaira: 85000,
-    imageUrl: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800&q=80',
-    tags: ['Pool View', 'Kitchenette'],
-    description: 'Enjoy calming views of our vertical garden courtyard. A beautifully balanced space offering direct courtyard corridor access and custom local woodworking.',
-    amenities: ['Direct Courtyard Access', 'Kitchenette with Fridge', 'Smart Climate Control', 'Dedicated Sitting Area', '4K Smart TV'],
-    reviews: [
-      { author: 'Sarah B.', rating: 5, text: 'Love the greenery views. The design feels very warm and premium.', date: 'May 2026' }
-    ]
-  },
-  {
-    id: 'deluxe-one-bedroom-kaduna',
-    title: 'Deluxe One-Bedroom',
-    city: 'kaduna',
-    cityName: 'Kaduna, Nigeria',
-    priceNaira: 110000,
-    imageUrl: 'https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80',
-    tags: ['King Size', 'Workspace'],
-    description: 'Expansive separate living and bedroom layouts featuring premium finishes, state-of-the-art climate zone control, and executive workspace amenities.',
-    amenities: ['Separate Living Area', 'Executive Workspace', 'High-Speed Internet', 'King Size Bed', 'Dual Vanity Bathroom', 'Dishwasher & Washer'],
-    reviews: [
-      { author: 'Tunde E.', rating: 5, text: 'Great business apartment. High-speed internet was incredibly stable.', date: 'April 2026' }
-    ]
-  },
-  {
-    id: 'presidential-suite-kaduna',
-    title: 'Presidential Suite',
-    city: 'kaduna',
-    cityName: 'Kaduna, Nigeria',
-    priceNaira: 180000,
-    imageUrl: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=800&q=80',
-    tags: ['Private Lounge', 'Terrace'],
-    description: 'The pinnacle of Kaduna residence, offering unrivaled space, privacy, panoramic G.R.A views, and a dedicated host/butler service.',
-    amenities: ['Grand Private Terrace', 'In-suite Private Lounge', 'Butler Service', 'Walk-in Wardrobe', 'Purity Soaking Tub', 'Exclusive Art Collection'],
-    reviews: [
-      { author: 'Amina U.', rating: 5, text: 'An extraordinary experience. The privacy and service were outstanding.', date: 'May 2026' }
-    ]
-  },
-  // Maiduguri Suites
-  {
-    id: 'oasis-studio-maiduguri',
-    title: 'Oasis Studio',
-    city: 'maiduguri',
-    cityName: 'Maiduguri, Nigeria',
-    priceNaira: 75000,
-    imageUrl: 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=800&q=80',
-    tags: ['Queen Size', 'City View'],
-    description: 'A clean, modern space designed for quiet concentration, featuring warm desert tone materials and advanced air filtration systems.',
-    amenities: ['High-efficiency Air Purifier', 'Ergonomic Desk', 'High-speed Wi-Fi', 'Premium Coffee Setup', 'Blackout Curtains'],
-    reviews: []
-  },
-  {
-    id: 'savannah-suite-maiduguri',
-    title: 'Savannah Penthouse',
-    city: 'maiduguri',
-    cityName: 'Maiduguri, Nigeria',
-    priceNaira: 160000,
-    imageUrl: 'https://images.unsplash.com/photo-1545324224-fa8b6a84d48a?auto=format&fit=crop&w=800&q=80',
-    tags: ['Panoramic Views', 'Private Deck'],
-    description: 'Enjoy sunset views of the northern plains from a spacious layout. Incorporates hand-selected local fabrics, private deck, and sunset lounge access.',
-    amenities: ['Sunset viewing deck', 'Premium Bedding', 'Espresso Machine', 'Spacious Living Zone', 'Lounge access'],
-    reviews: []
-  }
-];
+const BRANCH_CITY_MAP: Record<string, 'abuja' | 'kaduna' | 'maiduguri'> = {
+  ABJ: 'abuja',
+  KAD: 'kaduna',
+  MAI: 'maiduguri',
+};
+
+const toSuite = (rt: PublicRoomType): Suite => ({
+  id: rt.id,
+  title: rt.name,
+  city: BRANCH_CITY_MAP[rt.branch.code] || 'abuja',
+  cityName: `${rt.branch.name}, Nigeria`,
+  priceNaira: rt.basePrice,
+  imageUrl: rt.images.length > 0 ? rt.images[Math.floor(Math.random() * rt.images.length)] : '',
+  tags: [],
+  description: rt.description,
+  amenities: rt.amenities,
+  reviews: [],
+  address: rt.branch.address,
+  contactPhone: rt.branch.contactPhone,
+  contactEmail: rt.branch.contactEmail,
+});
 
 export const BookingPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -169,6 +68,12 @@ export const BookingPage = () => {
 
   // Wizard state: 1 (Suite select), 2 (Details & Payment), 3 (Confirmation)
   const [step, setStep] = useState<1 | 2 | 3>(1);
+
+  // Fetch suites from API
+  const [suitesDb, setSuitesDb] = useState<Suite[]>([]);
+  useEffect(() => {
+    getRoomTypes().then((items) => setSuitesDb(items.map(toSuite))).catch(() => {});
+  }, []);
 
   // Search parameters state
   const [cityFilter, setCityFilter] = useState<string>(searchParams.get('city') || 'all');
@@ -272,7 +177,7 @@ export const BookingPage = () => {
   };
 
   // Filtered Suites list
-  const filteredSuites = SUITES_DATABASE.filter(suite => {
+  const filteredSuites = suitesDb.filter(suite => {
     const matchesCity = cityFilter === 'all' || suite.city === cityFilter;
     const matchesType = suiteTypeFilter === 'all' || 
       (suiteTypeFilter === 'studio' && suite.title.toLowerCase().includes('studio')) ||
@@ -338,6 +243,11 @@ export const BookingPage = () => {
 
   return (
     <div className="min-h-screen bg-[#FAF8F6] pt-[5.85rem] md:pt-[6.25rem] pb-24 text-on-surface">
+      <SEOHead
+        title="Book a Suite"
+        description="Book your luxury suite at City Den Apartments. Choose from premium accommodations in Abuja, Kaduna, and Maiduguri."
+        canonical="/book"
+      />
       {/* Step Indicator Header */}
       <div className="sticky top-[5.85rem] md:top-[6.25rem] z-30 flex justify-center items-center gap-4 md:gap-8 py-5 border-b border-outline-variant/30 bg-white shadow-sm px-4">
         <button 
@@ -439,9 +349,10 @@ export const BookingPage = () => {
                     className="overflow-hidden rounded-sm relative aspect-[4/3] w-full bg-surface-container-low cursor-pointer"
                   >
                     <img
-                      src={suite.imageUrl}
+                      src={suite.imageUrl || FALLBACK_SUITE_IMAGE}
                       alt={suite.title}
                       className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                      onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_SUITE_IMAGE }}
                     />
                     <div className="absolute top-4 right-4 bg-black/65 text-white text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-sm backdrop-blur-xs">
                       {suite.cityName.split(',')[0]}
@@ -680,9 +591,10 @@ export const BookingPage = () => {
             <div className="lg:col-span-5 bg-white border border-outline-variant/35 rounded-sm p-6 md:p-8 shadow-sm">
               <div className="overflow-hidden rounded-sm relative aspect-[16/10] w-full bg-surface-container-low mb-6">
                 <img
-                  src={selectedSuite.imageUrl}
+                  src={selectedSuite.imageUrl || FALLBACK_SUITE_IMAGE}
                   alt={selectedSuite.title}
                   className="size-full object-cover"
+                  onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_SUITE_IMAGE }}
                 />
               </div>
 
@@ -893,27 +805,25 @@ export const BookingPage = () => {
               {/* Map Layout */}
               <div className="bg-white border border-outline-variant/35 p-4 rounded-sm shadow-sm">
                 <div className="overflow-hidden rounded-sm relative aspect-[16/9] w-full bg-surface-container-low mb-4">
-                  <img
-                    src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=800&q=80"
-                    alt="Map Location"
-                    className="size-full object-cover"
+                  <iframe
+                    src={
+                      selectedSuite.city === 'abuja'
+                        ? 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3939.940917111082!2d7.426410000000002!3d9.0691474!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x104e74d813aa5555%3A0x9dde89910b8c07ca!2s5%20Audu%20Ogbe%20St%2C%20Jabi%2C%20Abuja%20900108%2C%20Federal%20Capital%20Territory!5e0!3m2!1sen!2sng!4v1783096157239!5m2!1sen!2sng'
+                        : selectedSuite.city === 'kaduna'
+                        ? 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3922.436011058829!2d7.456493775717975!3d10.545013363418246!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x11b2b50047b0b985%3A0xbb0c01b2e4bb4ec6!2sCITY%20DEN%20APARTMENT!5e0!3m2!1sen!2sng!4v1783096211779!5m2!1sen!2sng'
+                        : 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3905.4395400736767!2d13.150351275728267!3d11.804458439389704!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x11049f00722ef797%3A0x7d09be4ee458df8c!2sCITY%20DEN%20APARTMENTS%20MAIDUGURI!5e0!3m2!1sen!2sng!4v1783096250430!5m2!1sen!2sng'
+                    }
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0, position: 'absolute', inset: 0 }}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    title={`City Den ${selectedSuite.cityName.split(',')[0]} location`}
                   />
-                  <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
-                    <a
-                      href={`https://maps.google.com/?q=City+Den+${selectedSuite.cityName.split(',')[0]}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-white text-on-surface font-sans text-xs font-bold uppercase tracking-widest px-4 py-2.5 shadow-md flex items-center gap-1.5"
-                    >
-                      📍 View on Maps
-                    </a>
-                  </div>
                 </div>
-                <p className="text-xs font-semibold text-on-surface font-sans">
-                  {selectedSuite.city === 'abuja' && '11, Jabi Lake View Drive, Central Business District, Abuja, Nigeria'}
-                  {selectedSuite.city === 'kaduna' && 'No. 12, Isa Kaita Road, G.R.A, Kaduna, Nigeria'}
-                  {selectedSuite.city === 'maiduguri' && 'Savannah Drive, GRA Extension, Maiduguri, Nigeria'}
-                </p>
+                <p className="text-xs font-semibold text-on-surface font-sans">{selectedSuite.address}</p>
+                <p className="text-xs text-secondary/80 font-sans mt-1">{selectedSuite.contactPhone}</p>
               </div>
 
               {/* Need Assistance Card */}
@@ -923,11 +833,11 @@ export const BookingPage = () => {
                   Our dedicated guest relations team is available around the clock to ensure your stay is perfect before you even arrive.
                 </p>
                 <div className="mt-6 flex flex-col gap-4 text-xs font-semibold">
-                  <a href="tel:+2348002489336" className="flex items-center gap-3 text-white hover:text-white/85 transition-colors">
-                    <Phone className="size-4 text-[#C9A23E]" /> +234 (0) 800 CITYDEN
+                  <a href={`tel:${selectedSuite.contactPhone.replace(/\s/g, '')}`} className="flex items-center gap-3 text-white hover:text-white/85 transition-colors">
+                    <Phone className="size-4 text-[#C9A23E]" /> {selectedSuite.contactPhone}
                   </a>
-                  <a href="mailto:concierge@cityden.com" className="flex items-center gap-3 text-white hover:text-white/85 transition-colors">
-                    <Mail className="size-4 text-[#C9A23E]" /> concierge@cityden.com
+                  <a href={`mailto:${selectedSuite.contactEmail}`} className="flex items-center gap-3 text-white hover:text-white/85 transition-colors">
+                    <Mail className="size-4 text-[#C9A23E]" /> {selectedSuite.contactEmail}
                   </a>
                   <span className="flex items-center gap-3 text-white/95">
                     <MessageSquare className="size-4 text-[#C9A23E]" /> Live Chat via Member App
@@ -990,9 +900,10 @@ export const BookingPage = () => {
             <div className="flex flex-col gap-6">
               <div className="overflow-hidden rounded-sm relative aspect-[16/9] w-full bg-surface-container-low">
                 <img
-                  src={detailedSuiteView.imageUrl}
+                  src={detailedSuiteView.imageUrl || FALLBACK_SUITE_IMAGE}
                   alt={detailedSuiteView.title}
                   className="size-full object-cover"
+                  onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_SUITE_IMAGE }}
                 />
               </div>
 
@@ -1145,7 +1056,7 @@ export const BookingPage = () => {
 
               {/* Receipt Footer */}
               <div className="text-center text-[10px] text-secondary/70 leading-relaxed italic border-t border-outline-variant/20 pt-4">
-                Thank you for your business. For refunds or change request policies, please review your booking details or contact concierge@cityden.com.
+                Thank you for your business. For refunds or change request policies, please review your booking details or contact {selectedSuite.contactEmail}.
               </div>
 
               <div className="mt-8 flex justify-end gap-3 no-print">

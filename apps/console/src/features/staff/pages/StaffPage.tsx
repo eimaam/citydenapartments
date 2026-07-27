@@ -50,6 +50,7 @@ export default function StaffPage() {
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [drawer, setDrawer] = useState(false);
   const [edit, setEdit] = useState<StaffUser | null>(null);
+  const [detailUser, setDetailUser] = useState<StaffUser | null>(null);
   const [saving, setSaving] = useState(false);
   const [createdAccount, setCreatedAccount] = useState<CreatedAccount | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
@@ -186,11 +187,11 @@ export default function StaffPage() {
     <div className="p-6 md:p-8">
       <div className="flex items-center gap-3 mb-6"><span className="w-8 h-px bg-primary" /><span className="text-xs font-bold tracking-[0.15em] uppercase text-outline">Administration</span></div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="font-serif text-2xl sm:text-3xl text-on-surface">Staff</h1>
+        <h1 className="font-serif text-2xl sm:text-3xl text-on-surface">Users</h1>
         <div className="flex items-center gap-3">
-          <Input size="sm" placeholder="Search staff..." prefix={<Search size={14} className="text-outline" />}
+          <Input size="sm" placeholder="Search users..." prefix={<Search size={14} className="text-outline" />}
             value={searchInput} onChange={(e) => onSearchChange(e.target.value)} className="!w-64" />
-          <Button size="sm" icon={<Plus size={14} />} onClick={openCreate}>Add Staff</Button>
+          <Button size="sm" icon={<Plus size={14} />} onClick={openCreate}>Add User</Button>
         </div>
       </div>
       <div className="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden">
@@ -206,10 +207,27 @@ export default function StaffPage() {
             showSizeChanger: true,
             onChange: (p) => setPage(p),
           }}
+          onRow={(record) => ({
+            onClick: () => setDetailUser(record),
+            style: { cursor: 'pointer' },
+          })}
         />
       </div>
 
-      <Drawer open={drawer} onClose={() => setDrawer(false)} title={edit ? 'Edit Staff' : 'Add Staff'} size="sm"
+      <Drawer open={!!detailUser} onClose={() => setDetailUser(null)} title="User Details" size="sm"
+        footer={<div className="flex justify-end"><Button variant="secondary" onClick={() => setDetailUser(null)}>Close</Button></div>}>
+        {detailUser && (
+          <div className="space-y-4">
+            <Field label="Name" value={detailUser.name} />
+            <Field label="Email" value={detailUser.email} />
+            <Field label="Role" value={detailUser.role} />
+            <Field label="Branches" value={detailUser.allowedBranches?.length ? `${detailUser.allowedBranches.length} branch(es) assigned` : 'None'} />
+            <Field label="Status" value={detailUser.isActive ? 'Active' : 'Inactive'} />
+          </div>
+        )}
+      </Drawer>
+
+      <Drawer open={drawer} onClose={() => setDrawer(false)} title={edit ? 'Edit User' : 'Add User'} size="sm"
         footer={!createdAccount ? (
           <div className="flex justify-end gap-3">
             <Button variant="secondary" onClick={() => setDrawer(false)}>Cancel</Button>
@@ -277,6 +295,15 @@ export default function StaffPage() {
           </div>
         )}
       </Drawer>
+    </div>
+  );
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <label className="text-[10px] font-bold tracking-[0.1em] uppercase text-outline">{label}</label>
+      <p className="mt-0.5 text-sm text-on-surface">{value}</p>
     </div>
   );
 }

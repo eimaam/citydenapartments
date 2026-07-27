@@ -54,6 +54,24 @@ export class Customer extends Document {
 
   @Prop({ type: Types.ObjectId, ref: 'Branch' })
   firstBranchId?: Types.ObjectId;
+
+  @Prop({
+    type: [{
+      branchId: { type: Types.ObjectId, ref: 'Branch', required: true },
+      percentage: { type: Number, required: true, min: 0, max: 100 },
+      updatedBy: { type: Types.ObjectId, ref: 'User' },
+      updatedAt: { type: Date, default: Date.now },
+      reason: { type: String },
+    }],
+    default: [],
+  })
+  branchLifetimeDiscounts: Array<{
+    branchId: Types.ObjectId;
+    percentage: number;
+    updatedBy?: Types.ObjectId;
+    updatedAt?: Date;
+    reason?: string;
+  }>;
 }
 
 export const CustomerSchema = SchemaFactory.createForClass(Customer);

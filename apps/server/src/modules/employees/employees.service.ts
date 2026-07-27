@@ -6,6 +6,7 @@ import { RedisService } from '../redis/redis.service';
 import { CACHE_TTL } from '../../config/cache.constants';
 import { escapeRegex } from '../../common/utils/escape-regex';
 import { hasElevatedRole } from '../../common/utils/role.utils';
+import { AuditLogService } from '../audit-log/audit-log.service';
 import type { CreateEmployeeDto } from './dto/create-employee.dto';
 import type { UpdateEmployeeDto } from './dto/update-employee.dto';
 
@@ -16,6 +17,7 @@ export class EmployeesService {
   constructor(
     @InjectModel(Employee.name) private employeeModel: Model<Employee>,
     private readonly redis: RedisService,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   async findAll(params: { branchId: string; page: number; limit: number; search?: string; includeInactive?: boolean }) {
@@ -49,16 +51,25 @@ export class EmployeesService {
     return result;
   }
 
-  async create(dto: CreateEmployeeDto) {
+  async create(dto: CreateEmployeeDto, userId?: string) {
     const existing = await this.employeeModel.findOne({ email: dto.email.toLowerCase() });
     if (existing) throw new ConflictException('An employee with this email already exists.');
     const employee = await this.employeeModel.create(dto);
     await this.redis.clearPattern('employees:list:*');
     this.logger.log(`Employee created — ${employee.name} (${employee.email})`);
+    await this.auditLog.log({
+      entityType: 'employee',
+      entityId: employee._id.toString(),
+      action: 'create',
+      description: `Employee created: ${employee.name} (${employee.email})`,
+      performedBy: userId || 'system',
+      branchId: dto.branchId,
+      details: { name: employee.name, email: employee.email, position: employee.position, departmentId: dto.departmentId },
+    });
     return this.employeeModel.findById(employee._id).populate('departmentId', 'name').lean();
   }
 
-  async update(id: string, dto: UpdateEmployeeDto) {
+  async update(id: string, dto: UpdateEmployeeDto, userId?: string) {
     if (dto.email) {
       const dup = await this.employeeModel.findOne({ email: dto.email.toLowerCase(), _id: { $ne: id } });
       if (dup) throw new ConflictException('An employee with this email already exists.');
@@ -68,6 +79,17 @@ export class EmployeesService {
     await this.redis.clearPattern('employees:list:*');
     await this.redis.del(`employees:${id}`);
     this.logger.log(`Employee updated — ${updated.name} (${updated.email})`);
+    await this.auditLog.log({
+      entityType: 'employee',
+      entityId: id,
+      action: dto.isActive !== undefined ? (dto.isActive ? 'activate' : 'deactivate') : 'update',
+      description: dto.isActive !== undefined
+        ? `Employee ${dto.isActive ? 'activated' : 'deactivated'}: ${updated.name}`
+        : `Employee updated: ${updated.name}`,
+      performedBy: userId || 'system',
+      branchId: updated.branchId.toString(),
+      details: { ...dto },
+    });
     return updated;
   }
 

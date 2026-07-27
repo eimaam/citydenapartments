@@ -4,12 +4,7 @@ import { Model } from 'mongoose';
 import { DiscountCode } from './discount-code.schema';
 import { CreateDiscountCodeDto } from './dto/create-discount-code.dto';
 
-const MAX_DISCOUNT_PCT: Record<string, number> = {
-  FrontOfficeManager: 10,
-  FacilityManager: 15,
-  GroupGM: 50,
-  SuperAdmin: 50,
-};
+import { ROLE_MAX_CODE_DISCOUNT } from '@citydenapartments/shared';
 
 function generateCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -27,7 +22,7 @@ export class DiscountCodesService {
   ) {}
 
   async generate(userRole: string, userId: string, branchId: string, dto: CreateDiscountCodeDto) {
-    const maxPct = MAX_DISCOUNT_PCT[userRole];
+    const maxPct = ROLE_MAX_CODE_DISCOUNT[userRole];
     if (!maxPct) throw new ForbiddenException('Your role cannot generate discount codes.');
     if (dto.percentage > maxPct) throw new BadRequestException(`Max discount for your role is ${maxPct}%.`);
     if (dto.expiresAt && new Date(dto.expiresAt) <= new Date()) throw new BadRequestException('Expiry date cannot be in the past.');

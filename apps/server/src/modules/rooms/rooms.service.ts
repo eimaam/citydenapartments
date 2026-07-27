@@ -31,7 +31,7 @@ export class RoomsService {
           { checkInDate: { $lt: checkOut }, checkOutDate: { $gt: checkIn } },
         ],
       })
-      .distinct('roomId');
+      .distinct('rooms.roomId');
 
     return this.roomModel
       .find({
@@ -77,7 +77,7 @@ export class RoomsService {
     if (existing) {
       throw new BadRequestException('Room number already exists in this branch.');
     }
-    return this.roomModel.create({ ...dto, createdBy: userId });
+    return this.roomModel.create({ ...dto, createdBy: userId, updatedBy: userId });
   }
 
   async update(roomId: string, dto: UpdateRoomDto, userId: string, user?: any) {
@@ -106,10 +106,12 @@ export class RoomsService {
     const from = room.status;
     const to = status;
 
+    const isElevated = user && hasElevatedRole(user.role);
+
     const allowed: Record<string, string[]> = {
       [RoomStatusEnum.AVAILABLE]:   [RoomStatusEnum.OCCUPIED, RoomStatusEnum.DIRTY, RoomStatusEnum.MAINTENANCE],
       [RoomStatusEnum.DIRTY]:       [RoomStatusEnum.AVAILABLE],
-      [RoomStatusEnum.OCCUPIED]:    [RoomStatusEnum.DIRTY],
+      [RoomStatusEnum.OCCUPIED]:    isElevated ? [RoomStatusEnum.DIRTY, RoomStatusEnum.AVAILABLE] : [RoomStatusEnum.DIRTY],
       [RoomStatusEnum.MAINTENANCE]: [RoomStatusEnum.AVAILABLE],
     };
 

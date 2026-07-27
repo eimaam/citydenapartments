@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, DoorOpen, Users } from 'lucide-react';
-import { Input, Badge, RoomStatus, Table, Select, Option, UserRole, type RoomStatusType } from '@citydenapartments/shared';
+import { Search, DoorOpen, Users, Plus, X } from 'lucide-react';
+import { Input, Badge, RoomStatus, Table, Select, Option, UserRole, Drawer, Button, type RoomStatusType } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
 import { useAuth } from '../../../contexts/auth';
 import { can } from '../../../components/ui/Can';
 import { useToast } from '../../../components/ui/Toast';
+import { api } from '../../../lib/api';
 import { roomsApi, type RoomResponse, type PaginatedRooms } from '../api/rooms.api';
 
 type StatusFilter = 'all' | RoomStatusType;
@@ -30,9 +31,18 @@ export default function RoomsPage() {
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
+  const [createOpen, setCreateOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [createForm, setCreateForm] = useState({ roomNumber: '', roomTypeId: '', maxGuests: 2, amenities: [] as string[] });
+  const [amenityInput, setAmenityInput] = useState('');
+  const [roomTypes, setRoomTypes] = useState<{ _id: string; name: string; basePrice: number }[]>([]);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const canUpdateStatus = can(user, [UserRole.SuperAdmin, UserRole.FacilityManager, UserRole.FrontOfficeManager, UserRole.HouseKeeper, UserRole.Reception]);
+
+  const canCreateRoom = can(user, [UserRole.SuperAdmin, UserRole.IT]);
+
+  const isElevated = user ? [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT].includes(user.role as any) : false;
 
   const validTransitions: Record<string, { value: RoomStatusType; label: string }[]> = {
     [RoomStatus.Available]: [
@@ -42,7 +52,10 @@ export default function RoomsPage() {
     [RoomStatus.Dirty]: [
       { value: RoomStatus.Available, label: 'Available' },
     ],
-    [RoomStatus.Occupied]: [
+    [RoomStatus.Occupied]: isElevated ? [
+      { value: RoomStatus.Dirty, label: 'Dirty' },
+      { value: RoomStatus.Available, label: 'Available' },
+    ] : [
       { value: RoomStatus.Dirty, label: 'Dirty' },
     ],
     [RoomStatus.Maintenance]: [
@@ -69,6 +82,11 @@ export default function RoomsPage() {
   useEffect(() => { fetchCounts(); }, [fetchCounts]);
   useEffect(() => { setPage(1); }, [filter, search]);
 
+  useEffect(() => {
+    api.get<{ items: { _id: string; name: string; basePrice: number }[] }>('/room-types?limit=100')
+      .then((res) => setRoomTypes(res.items)).catch(() => {});
+  }, []);
+
   const onSearchChange = (val: string) => {
     setSearchInput(val);
     if (searchTimer.current) clearTimeout(searchTimer.current);
@@ -90,6 +108,26 @@ export default function RoomsPage() {
         next.delete(roomId);
         return next;
       });
+    }
+  };
+
+  const handleCreate = async () => {
+    if (!createForm.roomNumber.trim()) { toast('error', 'Room number is required.'); return; }
+    if (createForm.maxGuests < 1) { toast('error', 'Max guests must be at least 1.'); return; }
+    if (!createForm.roomTypeId) { toast('error', 'Room type is required.'); return; }
+    setSaving(true);
+    try {
+      await api.post('/rooms', createForm);
+      toast('success', 'Room created.');
+      setCreateOpen(false);
+      setCreateForm({ roomNumber: '', roomTypeId: '', maxGuests: 2, amenities: [] });
+      setAmenityInput('');
+      fetchRooms();
+      fetchCounts();
+    } catch (e: any) {
+      toast('error', e.message ?? 'Failed to create room.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -134,8 +172,11 @@ export default function RoomsPage() {
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h1 className="font-serif text-2xl sm:text-3xl text-on-surface">Rooms</h1>
-        <Input size="sm" placeholder="Search rooms..." prefix={<Search size={14} className="text-outline" />}
-          value={searchInput} onChange={(e) => onSearchChange(e.target.value)} className="!w-56" />
+        <div className="flex items-center gap-3">
+          <Input size="sm" placeholder="Search rooms..." prefix={<Search size={14} className="text-outline" />}
+            value={searchInput} onChange={(e) => onSearchChange(e.target.value)} className="!w-56" />
+          {canCreateRoom && <Button size="sm" icon={<Plus size={14} />} onClick={() => setCreateOpen(true)}>New Room</Button>}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
@@ -178,6 +219,52 @@ export default function RoomsPage() {
           }}
         />
       </div>
+
+      <Drawer open={createOpen} onClose={() => setCreateOpen(false)} title="New Room" size="sm"
+        footer={<div className="flex justify-end gap-3"><Button variant="secondary" onClick={() => setCreateOpen(false)}>Cancel</Button><Button loading={saving} onClick={handleCreate}>Create</Button></div>}>
+        <div className="space-y-4">
+          <Input size="lg" placeholder="Room Number" value={createForm.roomNumber}
+            onChange={(e) => setCreateForm({ ...createForm, roomNumber: e.target.value })} />
+          <Select size="lg" className="w-full" placeholder="Select room type"
+            value={createForm.roomTypeId || undefined}
+            onChange={(v) => setCreateForm({ ...createForm, roomTypeId: v })}>
+            {roomTypes.map((rt) => <Option key={rt._id} value={rt._id}>{rt.name} (₦{rt.basePrice.toLocaleString()})</Option>)}
+          </Select>
+          <Input size="lg" type="number" placeholder="Max Guests" value={createForm.maxGuests}
+            onChange={(e) => setCreateForm({ ...createForm, maxGuests: Number(e.target.value) })} />
+          <div>
+            <label className="text-[10px] text-outline uppercase tracking-wide mb-1 block">Amenities</label>
+            <div className="flex items-center gap-2">
+              <Input size="sm" placeholder="Type and press Enter" value={amenityInput}
+                onChange={(e) => setAmenityInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if ((e.key === 'Enter' || e.key === ',') && amenityInput.trim()) {
+                    e.preventDefault();
+                    setCreateForm({ ...createForm, amenities: [...createForm.amenities, amenityInput.trim()] });
+                    setAmenityInput('');
+                  }
+                }} />
+              <Button size="sm" variant="secondary"
+                onClick={() => { if (amenityInput.trim()) { setCreateForm({ ...createForm, amenities: [...createForm.amenities, amenityInput.trim()] }); setAmenityInput(''); } }}>
+                Add
+              </Button>
+            </div>
+            {createForm.amenities.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {createForm.amenities.map((a, i) => (
+                  <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded bg-primary-container/20 text-primary">
+                    {a}
+                    <button type="button" onClick={() => setCreateForm({ ...createForm, amenities: createForm.amenities.filter((_, j) => j !== i) })}
+                      className="cursor-pointer bg-transparent border-none p-0 text-primary/60 hover:text-primary">
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </Drawer>
     </div>
   );
 }

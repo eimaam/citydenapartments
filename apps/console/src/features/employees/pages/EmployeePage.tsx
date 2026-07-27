@@ -48,6 +48,7 @@ export default function EmployeePage() {
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [drawer, setDrawer] = useState(false);
   const [edit, setEdit] = useState<Employee | null>(null);
+  const [detailEmployee, setDetailEmployee] = useState<Employee | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', phone: '', department: '', departmentId: '', position: '', branchId: '' });
 
@@ -167,8 +168,28 @@ export default function EmployeePage() {
             showSizeChanger: true,
             onChange: (p) => setPage(p),
           }}
+          onRow={(record) => ({
+            onClick: () => setDetailEmployee(record),
+            style: { cursor: 'pointer' },
+          })}
         />
       </div>
+
+      <Drawer open={!!detailEmployee} onClose={() => setDetailEmployee(null)} title="Employee Details" size="sm"
+        footer={<div className="flex justify-end"><Button variant="secondary" onClick={() => setDetailEmployee(null)}>Close</Button></div>}>
+        {detailEmployee && (
+          <div className="space-y-4">
+            <Field label="Name" value={detailEmployee.name} />
+            <Field label="Email" value={detailEmployee.email} />
+            <Field label="Phone" value={detailEmployee.phone} />
+            <Field label="Department" value={(detailEmployee as any).departmentId?.name || detailEmployee.department || '—'} />
+            <Field label="Position" value={detailEmployee.position || '—'} />
+            <Field label="Branch" value={branchMap(detailEmployee.branchId)?.name || '—'} />
+            <Field label="Status" value={detailEmployee.isActive ? 'Active' : 'Inactive'} />
+            <Field label="Created" value={new Date(detailEmployee.createdAt).toLocaleDateString()} />
+          </div>
+        )}
+      </Drawer>
 
       <Drawer open={drawer} onClose={() => setDrawer(false)} title={edit ? 'Edit Employee' : 'Add Employee'} size="sm"
         footer={
@@ -195,6 +216,15 @@ export default function EmployeePage() {
           </div>
         </div>
       </Drawer>
+    </div>
+  );
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <label className="text-[10px] font-bold tracking-[0.1em] uppercase text-outline">{label}</label>
+      <p className="mt-0.5 text-sm text-on-surface">{value}</p>
     </div>
   );
 }

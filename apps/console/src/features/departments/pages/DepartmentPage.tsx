@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Button, Input, Drawer, Modal, Badge, RoomStatus } from '@citydenapartments/shared';
-import { Plus, Search, Trash2 } from 'lucide-react';
+import { Button, Input, Drawer } from '@citydenapartments/shared';
+import { Plus, Search } from 'lucide-react';
 import { useToast } from '../../../components/ui/Toast';
 import { useAuth } from '../../../contexts/auth';
 import { departmentsApi, type Department } from '../api/departments.api';
@@ -14,8 +14,6 @@ export default function DepartmentPage() {
   const [edit, setEdit] = useState<Department | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name: '', description: '' });
-  const [deleteConfirm, setDeleteConfirm] = useState<Department | null>(null);
-
   const branchId = user?.activeBranchId || '';
 
   const fetchAll = useCallback(async () => {
@@ -59,16 +57,6 @@ export default function DepartmentPage() {
     finally { setSaving(false); }
   };
 
-  const confirmDelete = async () => {
-    if (!deleteConfirm) return;
-    try {
-      await departmentsApi.remove(deleteConfirm._id);
-      toast('success', 'Department deleted.');
-      setDeleteConfirm(null);
-      fetchAll();
-    } catch (e: any) { toast('error', e.message); }
-  };
-
   return (
     <div className="p-6 md:p-8">
       <div className="flex items-center gap-3 mb-6"><span className="w-8 h-px bg-primary" /><span className="text-xs font-bold tracking-[0.15em] uppercase text-outline">Organization</span></div>
@@ -89,10 +77,6 @@ export default function DepartmentPage() {
             </div>
             <div className="flex items-center gap-1 shrink-0">
               <Button size="sm" variant="secondary" onClick={() => openEdit(d)}>Edit</Button>
-              <button onClick={() => setDeleteConfirm(d)}
-                className="p-1.5 rounded hover:bg-error-container/20 text-outline hover:text-error cursor-pointer bg-transparent border-none">
-                <Trash2 size={14} />
-              </button>
             </div>
           </div>
         ))}
@@ -112,14 +96,6 @@ export default function DepartmentPage() {
           </div>
         </div>
       </Drawer>
-
-      <Modal isOpen={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} title="Delete Department">
-        <p className="text-sm text-on-surface mb-4">Are you sure you want to delete <strong>{deleteConfirm?.name}</strong>? This action can be undone by an administrator.</p>
-        <div className="flex justify-end gap-3">
-          <Button variant="secondary" onClick={() => setDeleteConfirm(null)}>Cancel</Button>
-          <Button variant="destructive" onClick={confirmDelete}>Delete</Button>
-        </div>
-      </Modal>
     </div>
   );
 }

@@ -45,7 +45,7 @@ export class RoomTypesService {
     if (existing) {
       throw new BadRequestException('A room type with this name already exists in this branch.');
     }
-    return this.roomTypeModel.create({ ...dto, createdBy: userId }).then((roomType) => {
+    return this.roomTypeModel.create({ ...dto, createdBy: userId, updatedBy: userId }).then((roomType) => {
       this.logger.log(`Room type created — ${roomType.name} | branch: ${roomType.branchId}`);
       return roomType;
     });

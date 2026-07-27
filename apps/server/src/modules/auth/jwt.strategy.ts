@@ -62,7 +62,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       isActive: user.isActive,
       passwordChangedAt: user.passwordChangedAt?.toISOString?.() ?? null,
       allowedBranches: user.allowedBranches.map((b) => b.toString()),
-      activeBranchId: payload.activeBranchId || null,
+      activeBranchId: user.activeBranchId?.toString() || null,
     };
 
     // save to cache for 1 hour

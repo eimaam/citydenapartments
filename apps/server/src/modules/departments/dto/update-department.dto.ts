@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsMongoId } from 'class-validator';
 
 export class UpdateDepartmentDto {
   @IsOptional()
@@ -8,6 +8,10 @@ export class UpdateDepartmentDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsMongoId()
+  branchId?: string;
 
   @IsOptional()
   @IsBoolean()

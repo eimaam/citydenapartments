@@ -25,6 +25,9 @@ import InventoryTransactionsPage from './features/inventory/pages/TransactionsPa
 import SpoilagePage from './features/inventory/pages/SpoilagePage';
 import RolesPage from './features/roles/pages/RolesPage';
 import DiscountCodesPage from './features/discount-codes/pages/DiscountCodesPage';
+import AuditLogsPage from './features/audit/pages/AuditLogsPage';
+import DepartmentExpensesPage from './features/department-expenses/pages/DepartmentExpensesPage';
+import CustomersPage from './features/customers/pages/CustomersPage';
 import type { UserRoleType } from './lib/types';
 
 function ProtectedRoute({ roles, children }: { roles: UserRoleType[]; children: React.ReactNode }) {
@@ -42,7 +45,8 @@ const routeRoles: Record<string, UserRoleType[]> = {
   '/bookings': [UserRole.SuperAdmin, UserRole.GroupGM],
   '/bookings/calendar': [UserRole.SuperAdmin, UserRole.GroupGM],
   '/bookings/status-history': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
-  '/staff': [UserRole.SuperAdmin, UserRole.IT],
+  '/users': [UserRole.SuperAdmin, UserRole.IT],
+  '/customers': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/employees': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/departments': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/breakfast': [UserRole.SuperAdmin, UserRole.GroupGM],
@@ -50,7 +54,9 @@ const routeRoles: Record<string, UserRoleType[]> = {
   '/inventory/transactions': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.Accountant],
   '/inventory/spoilage': [UserRole.SuperAdmin, UserRole.GroupGM],
   '/discount-codes': [UserRole.SuperAdmin, UserRole.GroupGM],
+  '/audit-logs': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/roles': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
+  '/department-expenses': [UserRole.Accountant, UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
 };
 
 export default function App() {
@@ -81,7 +87,8 @@ export default function App() {
                           case '/bookings': return <BookingsPage />;
                           case '/bookings/calendar': return <CalendarPage />;
                           case '/bookings/status-history': return <StatusHistoryPage />;
-                          case '/staff': return <StaffPage />;
+                          case '/customers': return <CustomersPage />;
+                          case '/users': return <StaffPage />;
                           case '/employees': return <EmployeePage />;
                           case '/departments': return <DepartmentPage />;
                           case '/breakfast': return <BreakfastPage />;
@@ -89,6 +96,8 @@ export default function App() {
                           case '/inventory/transactions': return <InventoryTransactionsPage />;
                           case '/inventory/spoilage': return <SpoilagePage />;
                           case '/discount-codes': return <DiscountCodesPage />;
+                          case '/audit-logs': return <AuditLogsPage />;
+                          case '/department-expenses': return <DepartmentExpensesPage />;
                           case '/roles': return <RolesPage />;
                           default: return null;
                         }

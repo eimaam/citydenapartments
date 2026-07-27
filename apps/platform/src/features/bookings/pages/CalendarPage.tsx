@@ -6,7 +6,7 @@ import {
   BookingCalendar,
   Button, Input, Select, Option, Drawer, Modal, Badge,
   BookingStatus, PaymentMethod, BookingSource, RoomStatus,
-  BookingReceipt,
+  BookingReceipt, getMaxManualDiscount,
   type BookingStatusType, type PaymentMethodType, type BookingSourceType,
   type BranchInfo, type ReceiptBooking
 } from '@citydenapartments/shared';
@@ -106,21 +106,20 @@ export default function CalendarPage() {
     guestNextDestination: string; guestGender: string; guestReligion: string;
     numberOfGuests: number; checkInDate: string; nights: number; checkOutDate: string;
     useNights: boolean; actualPricePerNight: number;
-    discountPercentage: number; totalAmountPaid: number;
+    discountPercentage: number; includeVat: boolean; includeServiceCharge: boolean;
     paymentMethod: PaymentMethodType; bookingSource: BookingSourceType;
   }>({
     roomId: '', guestName: '', guestPhone: '', guestEmail: '',
-    guestAddress: '', guestNationality: '', guestDob: '', guestPhone2: '',
+    guestAddress: '', guestNationality: 'Nigerian', guestDob: '', guestPhone2: '',
     guestComingFrom: '', guestStateOfOrigin: '', guestOccupation: '',
     guestNextDestination: '', guestGender: '', guestReligion: '',
     numberOfGuests: 1,
     checkInDate: todayStr(), nights: 1, checkOutDate: tomorrowStr(), useNights: true,
-    actualPricePerNight: 0, discountPercentage: 0, totalAmountPaid: 0,
+    actualPricePerNight: 0, discountPercentage: 0, includeVat: false, includeServiceCharge: false,
     paymentMethod: PaymentMethod.Cash, bookingSource: BookingSource.WalkIn,
   });
   
   const [phoneError, setPhoneError] = useState<string | null>(null);
-  const [priceError, setPriceError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // ── Customer Search State ──
@@ -245,9 +244,11 @@ export default function CalendarPage() {
       const targetDate = new Date(activeDate.getFullYear(), activeDate.getMonth(), activeDate.getDate());
       
       if (targetDate >= ciDate && targetDate < coDate) {
-        if (b.roomId?._id) {
-          occupiedRooms.add(b.roomId._id);
-        }
+        (b.rooms || []).forEach((rm) => {
+          if (rm.roomId?._id) {
+            occupiedRooms.add(rm.roomId._id);
+          }
+        });
       }
     });
     
@@ -332,18 +333,16 @@ export default function CalendarPage() {
       
       setForm({
         roomId: room._id, guestName: '', guestPhone: '', guestEmail: '',
-        guestAddress: '', guestNationality: '', guestDob: '', guestPhone2: '',
+    guestAddress: '', guestNationality: 'Nigerian', guestDob: '', guestPhone2: '',
         guestComingFrom: '', guestStateOfOrigin: '', guestOccupation: '',
         guestNextDestination: '', guestGender: '', guestReligion: '',
         numberOfGuests: 1,
         checkInDate: ci, nights: 1, checkOutDate: co, useNights: true,
-        actualPricePerNight: 0, discountPercentage: 0,
-        totalAmountPaid: 0,
+        actualPricePerNight: 0, discountPercentage: 0, includeVat: false, includeServiceCharge: false,
         paymentMethod: PaymentMethod.Cash, bookingSource: BookingSource.WalkIn,
       });
 
       setPhoneError(null);
-      setPriceError(null);
       setFormErrors({});
       setCustomerSearchPhone('');
       setCustomerResults([]);
@@ -367,16 +366,15 @@ export default function CalendarPage() {
     const co = tomorrowStr();
     setForm({
       roomId: '', guestName: '', guestPhone: '', guestEmail: '',
-      guestAddress: '', guestNationality: '', guestDob: '', guestPhone2: '',
+      guestAddress: '', guestNationality: 'Nigerian', guestDob: '', guestPhone2: '',
       guestComingFrom: '', guestStateOfOrigin: '', guestOccupation: '',
       guestNextDestination: '', guestGender: '', guestReligion: '',
       numberOfGuests: 1,
       checkInDate: ci, nights: 1, checkOutDate: co, useNights: true,
-      actualPricePerNight: 0, discountPercentage: 0, totalAmountPaid: 0,
+      actualPricePerNight: 0, discountPercentage: 0, includeVat: false, includeServiceCharge: false,
       paymentMethod: PaymentMethod.Cash, bookingSource: BookingSource.WalkIn,
     });
     setPhoneError(null);
-    setPriceError(null);
     setFormErrors({});
     setCustomerSearchPhone('');
     setCustomerResults([]);
@@ -400,21 +398,28 @@ export default function CalendarPage() {
     return diff;
   }, [form.checkInDate, form.checkOutDate]);
 
+  const pricing = useMemo(() => {
+    const n = form.useNights ? form.nights : computedNights;
+    const roomType = allRoomTypes.find((rt) => rt._id === selectedRoom?.roomTypeId?._id);
+    const price = form.actualPricePerNight || roomType?.basePrice || 0;
+    const sub = price * n;
+    const pct = form.discountPercentage || 0;
+    const disc = Math.round((sub * pct) / 100);
+    const vat = form.includeVat ? Math.round(sub * 7.5 / 100) : 0;
+    const sc = form.includeServiceCharge ? Math.round(sub * 10 / 100) : 0;
+    return { nights: n, subtotal: sub, discountAmt: disc, vatAmt: vat, scAmt: sc, total: Math.max(0, sub - disc + vat + sc) };
+  }, [form.actualPricePerNight, form.discountPercentage, form.includeVat, form.includeServiceCharge, form.nights, form.useNights, computedNights, selectedRoom, allRoomTypes]);
+
   const onRoomChange = (roomId: string) => {
     updateField('roomId', roomId);
     if (!roomId) {
       updateField('actualPricePerNight', 0);
-      updateField('totalAmountPaid', 0);
-      setPriceError(null);
       return;
     }
     const room = availableRooms.find((r) => r._id === roomId);
     const roomType = allRoomTypes.find((rt) => rt._id === room?.roomTypeId?._id);
     const price = roomType?.basePrice ?? 0;
-    const nights = form.useNights ? form.nights : computedNights;
     updateField('actualPricePerNight', price);
-    updateField('totalAmountPaid', Math.max(0, (price * nights) - Math.round((price * nights * form.discountPercentage) / 100)));
-    setPriceError(null);
   };
 
   const fetchAvailableRooms = useCallback(async (ci: string, co: string, currentRoomId?: string) => {
@@ -424,24 +429,17 @@ export default function CalendarPage() {
       if (currentRoomId && !fetched.find((r) => r._id === currentRoomId)) {
         updateField('roomId', '');
         updateField('actualPricePerNight', 0);
-        updateField('totalAmountPaid', 0);
       }
     } catch {
       toast('error', 'Failed to load rooms.');
     }
   }, [toast]);
 
-  const recalcTotal = (price: number, pct: number, nights: number) => {
-    const discountAmt = Math.round((price * nights * pct) / 100);
-    updateField('totalAmountPaid', Math.max(0, (price * nights) - discountAmt));
-  };
-
   const onNightsChange = (n: number) => {
     const nights = Math.max(1, n);
     let co = addDays(new Date(form.checkInDate), nights);
     updateField('nights', nights);
     updateField('checkOutDate', toDateStr(co));
-    recalcTotal(Number(form.actualPricePerNight) || 0, form.discountPercentage, nights);
     fetchAvailableRooms(form.checkInDate, toDateStr(co), form.roomId);
   };
 
@@ -458,21 +456,15 @@ export default function CalendarPage() {
     updateField('useNights', false);
     const nights = Math.max(1, differenceInDays(new Date(date), new Date(form.checkInDate)));
     updateField('nights', nights);
-    recalcTotal(Number(form.actualPricePerNight) || 0, form.discountPercentage, nights);
     fetchAvailableRooms(form.checkInDate, date, form.roomId);
   };
 
   const onPriceChange = (price: number) => {
     updateField('actualPricePerNight', price);
-    recalcTotal(price, form.discountPercentage, form.useNights ? form.nights : computedNights);
-    setPriceError(null);
   };
 
   const onDiscountPctChange = (pct: number) => {
     updateField('discountPercentage', pct);
-    const nights = form.useNights ? form.nights : computedNights;
-    const price = Number(form.actualPricePerNight) || 0;
-    recalcTotal(price, pct, nights);
   };
 
   const onPhoneChange = (phone: string) => {
@@ -487,21 +479,23 @@ export default function CalendarPage() {
       const result = await discountCodesApi.validate(discountCodeInput.trim());
       setAppliedDiscountCode(result);
       updateField('discountPercentage', result.percentage);
-      const nights = form.useNights ? form.nights : computedNights;
-      const price = Number(form.actualPricePerNight) || 0;
-      recalcTotal(price, result.percentage, nights);
       toast('success', `Discount code applied: ${result.percentage}% off`);
     } catch (e: any) { toast('error', e.message); setAppliedDiscountCode(null); }
     finally { setDiscountCodeLoading(false); }
   };
 
+  const selectedCustomerVipDiscount = useMemo(() => {
+    if (!selectedCustomer || !selectedCustomer.branchLifetimeDiscounts) return 0;
+    const match = selectedCustomer.branchLifetimeDiscounts.find(
+      (b) => !user?.activeBranchId || b.branchId === user.activeBranchId,
+    );
+    return match ? match.percentage : 0;
+  }, [selectedCustomer, user?.activeBranchId]);
+
   const removeDiscountCode = () => {
     setAppliedDiscountCode(null);
     setDiscountCodeInput('');
-    updateField('discountPercentage', 0);
-    const nights = form.useNights ? form.nights : computedNights;
-    const price = Number(form.actualPricePerNight) || 0;
-    recalcTotal(price, 0, nights);
+    updateField('discountPercentage', selectedCustomerVipDiscount);
   };
 
   const onCustomerSearchPhoneChange = (phone: string) => {
@@ -527,6 +521,15 @@ export default function CalendarPage() {
     updateField('guestComingFrom', '');
     updateField('guestNextDestination', '');
     setPhoneError(null);
+
+    if (c.branchLifetimeDiscounts && c.branchLifetimeDiscounts.length > 0 && !appliedDiscountCode) {
+      const match = c.branchLifetimeDiscounts.find(
+        (b) => !user?.activeBranchId || b.branchId === user.activeBranchId,
+      );
+      if (match && match.percentage > 0) {
+        updateField('discountPercentage', match.percentage);
+      }
+    }
   };
 
   const handleCreate = async (e: FormEvent) => {
@@ -545,13 +548,22 @@ export default function CalendarPage() {
     if (!form.guestOccupation.trim()) { toast('error', 'Occupation is required.'); return; }
     if (!form.guestNextDestination.trim()) { toast('error', 'Next destination is required.'); return; }
     const price = Number(form.actualPricePerNight) || 0;
-    if (Number(form.totalAmountPaid) <= 0) { toast('error', 'Total amount paid must be greater than zero.'); return; }
+    if (pricing.total <= 0) { toast('error', 'Total amount paid must be greater than zero.'); return; }
+
+    const maxManualDiscount = getMaxManualDiscount(user?.role);
+    const maxAllowedDiscount = Math.max(maxManualDiscount, selectedCustomerVipDiscount);
+    if (!appliedDiscountCode && Number(form.discountPercentage) > maxAllowedDiscount) {
+      toast('error', `Max direct discount for your role / guest VIP tier is ${maxAllowedDiscount}%. Use a discount code for higher rates.`);
+      return;
+    }
 
     setSubmitting(true);
     try {
       const bookingStatus = form.bookingSource === BookingSource.WalkIn ? BookingStatus.Checked_In : BookingStatus.Reserved;
+      const selectedRoomData = availableRooms.find(r => r._id === form.roomId);
       const created = await bookingsApi.create({
-        roomId: form.roomId, customerId: selectedCustomer?._id || undefined, customerPhone: form.guestPhone,
+        rooms: [{ roomId: form.roomId, actualPricePerNight: price, maxGuests: selectedRoomData?.maxGuests ?? (Number(form.numberOfGuests) || 1) }],
+        customerId: selectedCustomer?._id || undefined, customerPhone: form.guestPhone,
         guestName: form.guestName, guestPhone: form.guestPhone, guestEmail: form.guestEmail || undefined,
         guestAddress: form.guestAddress, guestNationality: form.guestNationality,
         guestDob: form.guestDob || undefined, guestPhone2: form.guestPhone2 || undefined,
@@ -559,9 +571,13 @@ export default function CalendarPage() {
         guestOccupation: form.guestOccupation, guestNextDestination: form.guestNextDestination,
         guestGender: form.guestGender, guestReligion: form.guestReligion || undefined,
         numberOfGuests: Number(form.numberOfGuests) || 1, checkInDate: form.checkInDate, checkOutDate: form.checkOutDate,
-        actualPricePerNight: price, discountPercentage: Number(form.discountPercentage) || 0,
+        discountPercentage: Number(form.discountPercentage) || 0,
         discountCode: appliedDiscountCode?.code,
-        totalAmountPaid: Number(form.totalAmountPaid), paymentMethod: form.paymentMethod, bookingSource: form.bookingSource,
+        includeVat: form.includeVat,
+        includeServiceCharge: form.includeServiceCharge,
+        vatAmount: pricing.vatAmt,
+        serviceChargeAmount: pricing.scAmt,
+        totalAmountPaid: pricing.total, paymentMethod: form.paymentMethod, bookingSource: form.bookingSource,
         bookingStatus,
       });
       setShowCreate(false);
@@ -609,7 +625,7 @@ export default function CalendarPage() {
     }
   }, [toast]);
 
-  const formValid = form.roomId && form.guestName && form.guestPhone && form.guestAddress.trim() && form.guestNationality.trim() && !phoneError && !priceError && Number(form.totalAmountPaid) > 0;
+  const formValid = form.roomId && form.guestName && form.guestPhone && form.guestAddress.trim() && form.guestNationality.trim() && !phoneError && pricing.total > 0;
 
   return (
     <div className="p-6 md:p-8 relative">
@@ -855,7 +871,7 @@ export default function CalendarPage() {
             <div><label className="text-[10px] text-outline uppercase tracking-wide">Phone Number<span className="text-error ml-0.5">*</span></label><Input size="lg" placeholder="e.g. 0803xxxxxxx" value={form.guestPhone} onChange={(e) => onPhoneChange(e.target.value)} status={phoneError ? 'error' : undefined} required /></div>
             {phoneError && <p className="col-span-2 -mt-2 text-xs text-error">{phoneError}</p>}
             <div><label className="text-[10px] text-outline uppercase tracking-wide">Email</label><Input size="lg" type="email" placeholder="guestname@email.com" value={form.guestEmail} onChange={(e) => updateField('guestEmail', e.target.value)} /></div>
-            <div><label className="text-[10px] text-outline uppercase tracking-wide">Number of Guests</label><Input size="lg" type="number" min={1} placeholder="e.g. 2" value={form.numberOfGuests} onChange={(e) => updateField('numberOfGuests', Number(e.target.value))} /></div>
+            <div><label className="text-[10px] text-outline uppercase tracking-wide">Number of Guests</label><Input size="lg" type="number" min={1} max={availableRooms.find(r => r._id === form.roomId)?.maxGuests ?? 99} placeholder="e.g. 2" value={form.numberOfGuests} onChange={(e) => updateField('numberOfGuests', Number(e.target.value))} /></div>
           </div>}</div>
           <div className="mb-5"><SectionHeader label="Additional Guest Info" sectionKey="additional" icon={undefined} />
             {!collapsedSections['additional'] && <div className="mt-2 space-y-3">
@@ -882,7 +898,36 @@ export default function CalendarPage() {
           </div>
           {selectedRoom && (<div className="p-4 mb-5 rounded-lg border border-outline-variant bg-surface-container">
             <SectionHeader label="Pricing" sectionKey="pricing" icon={undefined} />
-            {!collapsedSections['pricing'] && <div className="contents"><div className="grid grid-cols-3 gap-3 mt-2"><div><span className="text-[10px] text-outline uppercase tracking-wide">Price / Night<span className="text-error ml-0.5">*</span></span><Input size="sm" type="number" min={0} value={form.actualPricePerNight || ''} onChange={(e) => onPriceChange(Number(e.target.value))} status={priceError ? 'error' : undefined} /></div><div><span className="text-[10px] text-outline uppercase tracking-wide">Discount (%)</span><Input size="sm" type="number" min={0} max={100} step={1} value={form.discountPercentage || ''} onChange={(e) => onDiscountPctChange(Number(e.target.value))} /></div><div><span className="text-[10px] text-outline uppercase tracking-wide">Total Paid<span className="text-error ml-0.5">*</span></span><Input size="sm" type="number" min={1} value={form.totalAmountPaid || ''} onChange={(e) => updateField('totalAmountPaid', Number(e.target.value))} /></div></div>
+            {!collapsedSections['pricing'] && <div className="contents"><div className="grid grid-cols-4 gap-3 mt-2"><div><span className="text-[10px] text-outline uppercase tracking-wide">Price / Night<span className="text-error ml-0.5">*</span></span><Input size="sm" type="number" min={0} value={form.actualPricePerNight || ''} onChange={(e) => onPriceChange(Number(e.target.value))} /></div><div><div className="flex justify-between items-center"><span className="text-[10px] text-outline uppercase tracking-wide">Discount (%)</span><span className="text-[9px] text-outline">{appliedDiscountCode ? 'Code Applied' : selectedCustomerVipDiscount > 0 ? `VIP ${selectedCustomerVipDiscount}%` : `Max ${getMaxManualDiscount(user?.role)}%`}</span></div><Input size="sm" type="number" min={0} max={appliedDiscountCode ? 100 : Math.max(getMaxManualDiscount(user?.role), selectedCustomerVipDiscount)} step={1} value={form.discountPercentage || ''} onChange={(e) => onDiscountPctChange(Number(e.target.value))} />{!appliedDiscountCode && form.discountPercentage > Math.max(getMaxManualDiscount(user?.role), selectedCustomerVipDiscount) && (<p className="text-[10px] text-error mt-0.5">Max {Math.max(getMaxManualDiscount(user?.role), selectedCustomerVipDiscount)}% for your role / guest VIP tier.</p>)}</div><div><span className="text-[10px] text-outline uppercase tracking-wide">Total Paid</span><p className="text-sm font-bold mt-1.5">₦{pricing.total.toLocaleString()}</p></div></div>
+            {!appliedDiscountCode && selectedCustomerVipDiscount > 0 && (
+              <div className="mt-2.5 p-2 bg-amber-500/10 border border-amber-500/30 rounded text-[11px] text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+                <span>⭐</span>
+                <span><strong>VIP Lifetime Discount ({selectedCustomerVipDiscount}%)</strong> auto-applied for this customer.</span>
+              </div>
+            )}
+            {appliedDiscountCode && selectedCustomerVipDiscount > 0 && (
+              <div className="mt-2.5 p-2 bg-blue-500/10 border border-blue-500/30 rounded text-[11px] text-blue-700 dark:text-blue-300 flex items-center gap-1.5">
+                <span>🏷️</span>
+                <span>Promo code <strong>{appliedDiscountCode.code} ({appliedDiscountCode.percentage}%)</strong> overrides customer VIP Lifetime Discount ({selectedCustomerVipDiscount}%).</span>
+              </div>
+            )}
+            <div className="flex items-center gap-4 mt-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.includeVat} onChange={(e) => updateField('includeVat', e.target.checked)} className="w-4 h-4 accent-primary" />
+                <span className="text-xs text-outline">VAT (7.5%)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.includeServiceCharge} onChange={(e) => updateField('includeServiceCharge', e.target.checked)} className="w-4 h-4 accent-primary" />
+                <span className="text-xs text-outline">Service Charge (10%)</span>
+              </label>
+            </div>
+            <div className="mt-3 p-3 bg-surface-container-lowest rounded border border-outline-variant space-y-1 text-xs">
+              <div className="flex justify-between"><span>Subtotal ({pricing.nights} night{pricing.nights > 1 ? 's' : ''})</span><span>₦{pricing.subtotal.toLocaleString()}</span></div>
+              {pricing.discountAmt > 0 && <div className="flex justify-between text-error"><span>Discount ({form.discountPercentage}%)</span><span>-₦{pricing.discountAmt.toLocaleString()}</span></div>}
+              {pricing.vatAmt > 0 && <div className="flex justify-between text-amber-600"><span>VAT (7.5%)</span><span>+₦{pricing.vatAmt.toLocaleString()}</span></div>}
+              {pricing.scAmt > 0 && <div className="flex justify-between text-blue-600"><span>Service Charge (10%)</span><span>+₦{pricing.scAmt.toLocaleString()}</span></div>}
+              <div className="flex justify-between font-bold text-on-surface pt-1 border-t border-outline-variant"><span>Total</span><span>₦{pricing.total.toLocaleString()}</span></div>
+            </div>
   <div className="flex items-center gap-2 mt-3 pt-3 border-t border-outline-variant/60">
     {appliedDiscountCode ? (
       <div className="flex items-center gap-2 flex-1">
@@ -901,8 +946,7 @@ export default function CalendarPage() {
       <button onClick={removeDiscountCode}
         className="text-xs text-error hover:underline cursor-pointer whitespace-nowrap">Remove</button>
     )}
-  </div>
-{priceError && <p className="mt-2 text-xs text-error">{priceError}</p>}<div className="flex flex-wrap gap-4 mt-2 text-[10px] text-outline"><span>Nights: {form.useNights ? form.nights : computedNights}</span><span>Subtotal: ₦{((Number(form.actualPricePerNight) || 0) * (form.useNights ? form.nights : computedNights)).toLocaleString()}</span>{form.discountPercentage > 0 && <span className="text-error">Discount: {form.discountPercentage}%</span>}</div></div>}</div>)}
+  </div></div>}</div>)}
           <div className="mb-5"><SectionHeader label="Payment Method *" sectionKey="payment" icon={undefined} />
             {!collapsedSections['payment'] && <div className="grid grid-cols-3 gap-2 mt-1">{paymentMethods.map((pm) => { const Icon = pm.icon; const active = form.paymentMethod === pm.key; return (<button key={pm.key} type="button" onClick={() => updateField('paymentMethod', pm.key)} className="flex flex-col items-center gap-1 p-3 rounded-lg border text-center transition-all cursor-pointer" style={{ borderColor: active ? 'var(--color-primary)' : 'var(--color-outline-variant)', background: active ? 'var(--color-primary-container)/10' : 'var(--color-surface-container-lowest)' }}><Icon size={20} style={{ color: active ? 'var(--color-primary)' : 'var(--color-outline)' }} /><span className="text-xs font-medium" style={{ color: active ? 'var(--color-on-surface)' : 'var(--color-on-surface-variant)' }}>{pm.label}</span><span className="text-[9px] leading-tight" style={{ color: active ? 'var(--color-on-surface-variant)' : 'var(--color-outline)' }}>{pm.desc}</span></button>); })}</div>}</div>
           <div className="mb-5"><SectionHeader label="Source" sectionKey="source" icon={undefined} />
@@ -914,7 +958,7 @@ export default function CalendarPage() {
       <Drawer open={!!showDetail} onClose={() => setShowDetail(null)} title="Booking Details" width={480}>
         {showDetail && (<div className="space-y-5">
           <div className="flex items-center justify-between"><div><p className="text-xs text-outline">Reference</p><div className="flex items-center gap-2"><p className="font-mono font-medium">{showDetail.bookingReference}</p><button onClick={() => { navigator.clipboard.writeText(showDetail.bookingReference); setCopiedRef(true); setTimeout(() => setCopiedRef(false), 2000); }} className="p-0.5 rounded hover:bg-surface-container cursor-pointer bg-transparent border-none text-outline hover:text-primary">{copiedRef ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}</button></div></div><Badge status={showDetail.bookingStatus} /></div>
-          <div className="grid grid-cols-2 gap-4 text-sm"><div><p className="text-xs text-outline">Guest</p><p className="font-medium">{showDetail.guestDetails.name}</p><p className="text-xs">{showDetail.guestDetails.phone}</p>{showDetail.guestDetails.email && <p className="text-xs">{showDetail.guestDetails.email}</p>}</div><div><p className="text-xs text-outline">Room</p><p className="font-medium">{showDetail.roomId?.roomNumber}</p><p className="text-xs">{showDetail.roomId?.roomTypeId?.name}</p></div><div><p className="text-xs text-outline">Check-in</p><p>{format(new Date(showDetail.checkInDate), 'EEE d MMM, yyyy')}</p></div><div><p className="text-xs text-outline">Check-out</p><p>{format(new Date(showDetail.checkOutDate), 'EEE d MMM, yyyy')}</p></div><div><p className="text-xs text-outline">Price/Night</p><p className="font-medium">₦{showDetail.actualPricePerNight?.toLocaleString()}</p></div><div><p className="text-xs text-outline">Total Paid</p><p className="font-medium">₦{showDetail.totalAmountPaid?.toLocaleString()}</p></div><div><p className="text-xs text-outline">Payment</p><p>{showDetail.paymentMethod?.replace('_', ' ')}</p></div><div><p className="text-xs text-outline">Source</p><p>{showDetail.bookingSource}</p></div></div>
+          <div className="grid grid-cols-2 gap-4 text-sm"><div><p className="text-xs text-outline">Guest</p><p className="font-medium">{showDetail.guestDetails.name}</p><p className="text-xs">{showDetail.guestDetails.phone}</p>{showDetail.guestDetails.email && <p className="text-xs">{showDetail.guestDetails.email}</p>}</div><div><p className="text-xs text-outline">Rooms</p><div className="font-medium text-sm flex flex-wrap gap-x-1">{showDetail.rooms?.map((r, i) => (<span key={r.roomId._id}>{i > 0 && <span className="text-outline-muted">, </span>}{r.roomId.roomNumber} <span className="text-[10px] text-outline-normal">({r.roomId.roomTypeId?.name})</span></span>))}</div><p className="text-xs mt-0.5">₦{(showDetail.rooms || []).reduce((s, r) => s + r.totalForRoom, 0).toLocaleString()} total</p></div><div><p className="text-xs text-outline">Check-in</p><p>{format(new Date(showDetail.checkInDate), 'EEE d MMM, yyyy')}</p></div><div><p className="text-xs text-outline">Check-out</p><p>{format(new Date(showDetail.checkOutDate), 'EEE d MMM, yyyy')}</p></div><div><p className="text-xs text-outline">Total Paid</p><p className="font-medium">₦{showDetail.totalAmountPaid?.toLocaleString()}</p></div><div><p className="text-xs text-outline">Payment</p><p>{showDetail.paymentMethod?.replace('_', ' ')}</p></div><div><p className="text-xs text-outline">Source</p><p>{showDetail.bookingSource}</p></div></div>
           <div className="pt-2 border-t border-outline-variant/60"><p className="text-xs font-bold tracking-[0.1em] uppercase text-outline mb-2">Guest Info</p><div className="grid grid-cols-2 gap-3 text-sm">{[
             ['Address', showDetail.guestDetails.address],
             ['Nationality', showDetail.guestDetails.nationality],

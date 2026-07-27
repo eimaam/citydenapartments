@@ -22,7 +22,4 @@ export const departmentsApi = {
 
   update: (id: string, data: { name?: string; description?: string }) =>
     api.patch<Department>(`/departments/${id}`, data),
-
-  remove: (id: string) =>
-    api.delete<Department>(`/departments/${id}`),
 };

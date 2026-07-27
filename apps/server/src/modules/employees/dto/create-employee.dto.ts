@@ -25,7 +25,7 @@ export class CreateEmployeeDto {
   @IsString()
   position?: string;
 
+  @IsOptional()
   @IsMongoId()
-  @IsNotEmpty()
-  branchId: string;
+  branchId?: string;
 }

@@ -1,4 +1,5 @@
 import { motion, useReducedMotion } from 'motion/react';
+import { Link } from 'react-router-dom';
 import { Button } from '@citydenapartments/shared';
 import { SectionReveal } from './motionSection';
 
@@ -25,12 +26,14 @@ export const CtaSection = ({
           whileHover={reduce ? undefined : { scale: 1.025 }}
           whileTap={reduce ? undefined : { scale: 0.985 }}
         >
-          <Button
-            size="lg"
-            className="uppercase"
-          >
-            {buttonText}
-          </Button>
+          <Link to="/cities/abuja">
+            <Button
+              size="lg"
+              className="uppercase"
+            >
+              {buttonText}
+            </Button>
+          </Link>
         </motion.div>
       </SectionReveal>
     </section>
