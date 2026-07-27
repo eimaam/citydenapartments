@@ -1,25 +1,6 @@
 import { api } from '../../../lib/api';
-
-export interface CustomerResponse {
-  _id: string;
-  name: string;
-  phone: string;
-  email?: string;
-  address: string;
-  nationality: string;
-  dob?: string;
-  phone2?: string;
-  comingFrom: string;
-  stateOfOrigin: string;
-  occupation: string;
-  nextDestination: string;
-  gender: string;
-  religion?: string;
-  totalVisits: number;
-  totalSpent: number;
-  lastVisitDate?: string;
-  createdAt: string;
-}
+import type { CustomerResponse } from '@citydenapartments/shared';
+export type { CustomerResponse };
 
 export interface PaginatedCustomers {
   items: CustomerResponse[];
@@ -39,4 +20,7 @@ export const customersApi = {
   search: (phone: string) =>
     api.get<CustomerResponse[]>(`/customers/search?phone=${encodeURIComponent(phone)}`),
   get: (id: string) => api.get<CustomerResponse>(`/customers/${id}`),
+  create: (data: any) => api.post<CustomerResponse>('/customers', data),
+  updateBranchDiscount: (id: string, data: { branchId: string; percentage: number; reason?: string }) =>
+    api.patch<CustomerResponse>(`/customers/${id}/branch-discounts`, data),
 };

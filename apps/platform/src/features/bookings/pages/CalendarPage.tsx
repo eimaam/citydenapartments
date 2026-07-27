@@ -484,10 +484,18 @@ export default function CalendarPage() {
     finally { setDiscountCodeLoading(false); }
   };
 
+  const selectedCustomerVipDiscount = useMemo(() => {
+    if (!selectedCustomer || !selectedCustomer.branchLifetimeDiscounts) return 0;
+    const match = selectedCustomer.branchLifetimeDiscounts.find(
+      (b) => !user?.activeBranchId || b.branchId === user.activeBranchId,
+    );
+    return match ? match.percentage : 0;
+  }, [selectedCustomer, user?.activeBranchId]);
+
   const removeDiscountCode = () => {
     setAppliedDiscountCode(null);
     setDiscountCodeInput('');
-    updateField('discountPercentage', 0);
+    updateField('discountPercentage', selectedCustomerVipDiscount);
   };
 
   const onCustomerSearchPhoneChange = (phone: string) => {
@@ -513,6 +521,15 @@ export default function CalendarPage() {
     updateField('guestComingFrom', '');
     updateField('guestNextDestination', '');
     setPhoneError(null);
+
+    if (c.branchLifetimeDiscounts && c.branchLifetimeDiscounts.length > 0 && !appliedDiscountCode) {
+      const match = c.branchLifetimeDiscounts.find(
+        (b) => !user?.activeBranchId || b.branchId === user.activeBranchId,
+      );
+      if (match && match.percentage > 0) {
+        updateField('discountPercentage', match.percentage);
+      }
+    }
   };
 
   const handleCreate = async (e: FormEvent) => {
@@ -534,8 +551,9 @@ export default function CalendarPage() {
     if (pricing.total <= 0) { toast('error', 'Total amount paid must be greater than zero.'); return; }
 
     const maxManualDiscount = getMaxManualDiscount(user?.role);
-    if (!appliedDiscountCode && Number(form.discountPercentage) > maxManualDiscount) {
-      toast('error', `Max direct discount for your role is ${maxManualDiscount}%. Use a discount code for higher rates.`);
+    const maxAllowedDiscount = Math.max(maxManualDiscount, selectedCustomerVipDiscount);
+    if (!appliedDiscountCode && Number(form.discountPercentage) > maxAllowedDiscount) {
+      toast('error', `Max direct discount for your role / guest VIP tier is ${maxAllowedDiscount}%. Use a discount code for higher rates.`);
       return;
     }
 
@@ -880,7 +898,19 @@ export default function CalendarPage() {
           </div>
           {selectedRoom && (<div className="p-4 mb-5 rounded-lg border border-outline-variant bg-surface-container">
             <SectionHeader label="Pricing" sectionKey="pricing" icon={undefined} />
-            {!collapsedSections['pricing'] && <div className="contents"><div className="grid grid-cols-4 gap-3 mt-2"><div><span className="text-[10px] text-outline uppercase tracking-wide">Price / Night<span className="text-error ml-0.5">*</span></span><Input size="sm" type="number" min={0} value={form.actualPricePerNight || ''} onChange={(e) => onPriceChange(Number(e.target.value))} /></div><div><div className="flex justify-between items-center"><span className="text-[10px] text-outline uppercase tracking-wide">Discount (%)</span><span className="text-[9px] text-outline">{appliedDiscountCode ? 'Code Applied' : `Max ${getMaxManualDiscount(user?.role)}%`}</span></div><Input size="sm" type="number" min={0} max={appliedDiscountCode ? 100 : getMaxManualDiscount(user?.role)} step={1} value={form.discountPercentage || ''} onChange={(e) => onDiscountPctChange(Number(e.target.value))} />{!appliedDiscountCode && form.discountPercentage > getMaxManualDiscount(user?.role) && (<p className="text-[10px] text-error mt-0.5">Max {getMaxManualDiscount(user?.role)}% without promo code.</p>)}</div><div><span className="text-[10px] text-outline uppercase tracking-wide">Total Paid</span><p className="text-sm font-bold mt-1.5">₦{pricing.total.toLocaleString()}</p></div></div>
+            {!collapsedSections['pricing'] && <div className="contents"><div className="grid grid-cols-4 gap-3 mt-2"><div><span className="text-[10px] text-outline uppercase tracking-wide">Price / Night<span className="text-error ml-0.5">*</span></span><Input size="sm" type="number" min={0} value={form.actualPricePerNight || ''} onChange={(e) => onPriceChange(Number(e.target.value))} /></div><div><div className="flex justify-between items-center"><span className="text-[10px] text-outline uppercase tracking-wide">Discount (%)</span><span className="text-[9px] text-outline">{appliedDiscountCode ? 'Code Applied' : selectedCustomerVipDiscount > 0 ? `VIP ${selectedCustomerVipDiscount}%` : `Max ${getMaxManualDiscount(user?.role)}%`}</span></div><Input size="sm" type="number" min={0} max={appliedDiscountCode ? 100 : Math.max(getMaxManualDiscount(user?.role), selectedCustomerVipDiscount)} step={1} value={form.discountPercentage || ''} onChange={(e) => onDiscountPctChange(Number(e.target.value))} />{!appliedDiscountCode && form.discountPercentage > Math.max(getMaxManualDiscount(user?.role), selectedCustomerVipDiscount) && (<p className="text-[10px] text-error mt-0.5">Max {Math.max(getMaxManualDiscount(user?.role), selectedCustomerVipDiscount)}% for your role / guest VIP tier.</p>)}</div><div><span className="text-[10px] text-outline uppercase tracking-wide">Total Paid</span><p className="text-sm font-bold mt-1.5">₦{pricing.total.toLocaleString()}</p></div></div>
+            {!appliedDiscountCode && selectedCustomerVipDiscount > 0 && (
+              <div className="mt-2.5 p-2 bg-amber-500/10 border border-amber-500/30 rounded text-[11px] text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+                <span>⭐</span>
+                <span><strong>VIP Lifetime Discount ({selectedCustomerVipDiscount}%)</strong> auto-applied for this customer.</span>
+              </div>
+            )}
+            {appliedDiscountCode && selectedCustomerVipDiscount > 0 && (
+              <div className="mt-2.5 p-2 bg-blue-500/10 border border-blue-500/30 rounded text-[11px] text-blue-700 dark:text-blue-300 flex items-center gap-1.5">
+                <span>🏷️</span>
+                <span>Promo code <strong>{appliedDiscountCode.code} ({appliedDiscountCode.percentage}%)</strong> overrides customer VIP Lifetime Discount ({selectedCustomerVipDiscount}%).</span>
+              </div>
+            )}
             <div className="flex items-center gap-4 mt-3">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={form.includeVat} onChange={(e) => updateField('includeVat', e.target.checked)} className="w-4 h-4 accent-primary" />

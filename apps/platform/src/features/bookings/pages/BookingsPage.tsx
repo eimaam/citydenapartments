@@ -172,6 +172,7 @@ export default function BookingsPage() {
         roomSelection="multiple"
         showCustomerLookup={true}
         userRole={user?.role}
+        activeBranchId={user?.activeBranchId || undefined}
       />
 
       {/* Detail Drawer */}

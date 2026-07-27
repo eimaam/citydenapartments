@@ -86,3 +86,33 @@ export interface LoginResponse {
   accessToken: string;
   user: AuthUser;
 }
+
+export interface BranchLifetimeDiscount {
+  branchId: string;
+  percentage: number;
+  updatedBy?: string;
+  updatedAt?: string;
+  reason?: string;
+}
+
+export interface CustomerResponse {
+  _id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  address: string;
+  nationality: string;
+  dob?: string;
+  phone2?: string;
+  comingFrom: string;
+  stateOfOrigin: string;
+  occupation: string;
+  nextDestination: string;
+  gender: string;
+  religion?: string;
+  totalVisits: number;
+  totalSpent: number;
+  lastVisitDate?: string;
+  createdAt: string;
+  branchLifetimeDiscounts?: BranchLifetimeDiscount[];
+}

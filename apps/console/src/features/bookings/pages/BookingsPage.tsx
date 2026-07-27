@@ -15,6 +15,7 @@ import { bookingsApi, type BookingResponse } from '../api/bookings.api';
 import { roomsApi } from '../../rooms/api/rooms.api';
 import { roomTypesApi } from '../../room-types/api/room-types.api';
 import { discountCodesApi } from '../../../features/discount-codes/api/discount-codes.api';
+import { customersApi } from '../api/customers.api';
 
 const LIMIT = 20;
 
@@ -165,10 +166,13 @@ export default function BookingsPage() {
         fetchAvailableRooms={(ci, co) => roomsApi.available(ci, co)}
         fetchRoomTypes={() => roomTypesApi.list().then(r => r.items)}
         createBooking={(data) => bookingsApi.create(data as any)}
+        searchCustomer={(phone) => customersApi.search(phone)}
         validateDiscountCode={(code) => discountCodesApi.validate(code)}
         onBookingCreated={(booking) => { fetchBookings(); openReceipt(booking as unknown as ReceiptBooking); }}
         roomSelection="multiple"
+        showCustomerLookup={true}
         userRole={user?.role}
+        activeBranchId={user?.activeBranchId || undefined}
       />
 
       {/* Detail Drawer */}

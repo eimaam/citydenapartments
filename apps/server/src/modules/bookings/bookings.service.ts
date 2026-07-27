@@ -155,6 +155,20 @@ export class BookingsService {
         discountCodeDoc = await this.discountCodesService.validate(dto.discountCode, branchId);
       }
 
+      let customerLifetimeDiscount = 0;
+      if (dto.customerId || dto.customerPhone) {
+        const customerFilter: any = dto.customerId ? { _id: dto.customerId } : { phone: dto.customerPhone };
+        const customerDoc = await this.customerModel.findOne(customerFilter).session(session);
+        if (customerDoc && customerDoc.branchLifetimeDiscounts) {
+          const match = customerDoc.branchLifetimeDiscounts.find(
+            (b) => b.branchId.toString() === branchId,
+          );
+          if (match) {
+            customerLifetimeDiscount = match.percentage;
+          }
+        }
+      }
+
       let pct = dto.discountPercentage || 0;
       if (discountCodeDoc) {
         if (!pct) {
@@ -165,10 +179,10 @@ export class BookingsService {
           );
         }
       } else if (pct > 0) {
-        const maxAllowed = getMaxManualDiscount(actorRole);
-        if (pct > maxAllowed) {
+        const maxAllowedManual = getMaxManualDiscount(actorRole);
+        if (pct > customerLifetimeDiscount && pct > maxAllowedManual) {
           throw new BadRequestException(
-            `Role "${actorRole || 'User'}" cannot apply a manual discount of ${pct}%. Maximum allowed direct manual discount for your role is ${maxAllowed}%. Use a valid discount code for higher discounts.`,
+            `Role "${actorRole || 'User'}" cannot apply a manual discount of ${pct}%. Maximum allowed direct manual discount for your role is ${maxAllowedManual}%. Use a valid discount code for higher discounts.`,
           );
         }
       }
