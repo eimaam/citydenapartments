@@ -7,6 +7,7 @@ import { formatNGN } from '@citydenapartments/shared';
 import { getRoomTypes } from '../../lib/api';
 import type { PublicRoomType } from '../../lib/api';
 import { SEOHead } from '../../components/SEOHead';
+import { RoomDetailDrawer } from '../../components/marketing/RoomDetailDrawer';
 import {
   BRANCH_COORDINATES,
   BRANCH_CONTACTS,
@@ -25,6 +26,7 @@ export const KadunaPage = () => {
   const [suites, setSuites] = useState<PublicRoomType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [detailRoom, setDetailRoom] = useState<PublicRoomType | null>(null);
   const [heroImg, setHeroImg] = useState(HERO_IMAGES[city]);
 
   useEffect(() => {
@@ -157,7 +159,7 @@ export const KadunaPage = () => {
             <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
               {suites.map((suite, index) => (
                 <SectionReveal key={suite.id} delay={index * 0.08}>
-                  <article className="group flex flex-col bg-white border border-outline-variant/35 p-3 rounded-sm shadow-card hover:shadow-ambient transition-all duration-500">
+                  <article onClick={() => setDetailRoom(suite)} className="group flex flex-col bg-white border border-outline-variant/35 p-3 rounded-sm shadow-card hover:shadow-ambient transition-all duration-500 cursor-pointer">
                     <div className="overflow-hidden rounded-sm relative aspect-[4/3] w-full bg-surface-container-low">
                       <img
                         src={suite.images[0] || FALLBACK_SUITE_IMAGE}
@@ -176,7 +178,7 @@ export const KadunaPage = () => {
                           <span className="text-[10px] text-secondary/60 font-bold uppercase tracking-widest">STARTING FROM</span>
                           <span className="font-serif text-lg font-bold text-on-surface">{formatNGN(suite.basePrice)}<span className="text-xs font-normal text-secondary">/night</span></span>
                         </div>
-                        <Link to="/book?city=kaduna" className="text-xs font-bold tracking-widest text-[#735c00] hover:text-[#554300] border-b border-[#735c00]/30 hover:border-[#554300]/80 pb-0.5 uppercase transition-colors">
+                        <Link to="/book?city=kaduna" onClick={(e) => e.stopPropagation()} className="text-xs font-bold tracking-widest text-[#735c00] hover:text-[#554300] border-b border-[#735c00]/30 hover:border-[#554300]/80 pb-0.5 uppercase transition-colors">
                           BOOK NOW
                         </Link>
                       </div>
@@ -241,6 +243,7 @@ export const KadunaPage = () => {
           </div>
         </div>
       </section>
+      <RoomDetailDrawer room={detailRoom} onClose={() => setDetailRoom(null)} branchCode="kaduna" />
     </div>
   );
 };

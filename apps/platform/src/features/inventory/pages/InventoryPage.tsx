@@ -16,6 +16,7 @@ export default function InventoryPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const isManager = can(user, [UserRole.StoreManager, UserRole.SuperAdmin, UserRole.Accountant]);
+  const canAdd = can(user, [UserRole.StoreManager, UserRole.SuperAdmin, UserRole.StoreKeeper]);
   const canIssue = can(user, [UserRole.StoreKeeper, UserRole.StoreManager, UserRole.SuperAdmin]);
 
   const [items, setItems] = useState<InventoryItem[]>([]);
@@ -207,7 +208,7 @@ export default function InventoryPage() {
         <div className="flex items-center gap-3">
           <Input size="sm" placeholder="Search items..." prefix={<Search size={14} className="text-outline" />}
             value={searchInput} onChange={(e) => onSearchChange(e.target.value)} className="!w-56" />
-          {isManager && (
+          {canAdd && (
             <Button size="sm" icon={<Plus size={14} />} onClick={() => setShowCreate(true)}>Add Item</Button>
           )}
         </div>
