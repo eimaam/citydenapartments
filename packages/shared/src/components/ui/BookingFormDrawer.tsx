@@ -479,8 +479,8 @@ export function BookingFormDrawer({
     const errs: Record<string, string> = {};
     if (!form.guestAddress.trim()) errs.guestAddress = 'Address is required.';
     if (!form.guestNationality.trim()) errs.guestNationality = 'Nationality is required.';
-    if (!appliedDiscountCode && form.discountPercentage > maxManualDiscount) {
-      errs.discountPercentage = `Direct discount exceeds limit of ${maxManualDiscount}%.`;
+    if (!appliedDiscountCode && form.discountPercentage > Math.max(maxManualDiscount, selectedCustomerVipDiscount)) {
+      errs.discountPercentage = `Direct discount exceeds limit of ${Math.max(maxManualDiscount, selectedCustomerVipDiscount)}%.`;
     }
     setFormErrors(errs);
     if (Object.keys(errs).length) return;
@@ -749,7 +749,7 @@ export function BookingFormDrawer({
                       {appliedDiscountCode ? 'Code Applied' : selectedCustomerVipDiscount > 0 ? `VIP ${selectedCustomerVipDiscount}%` : `Max ${maxManualDiscount}%`}
                     </span>
                   </div>
-                  <Input size="sm" type="number" min={0} max={appliedDiscountCode ? 100 : Math.max(maxManualDiscount, selectedCustomerVipDiscount)} step={1} value={form.discountPercentage || ''} onChange={(e) => onDiscountPctChange(Number(e.target.value))} />
+                  <Input size="sm" type="number" min={0} max={appliedDiscountCode ? 100 : Math.max(maxManualDiscount, selectedCustomerVipDiscount)} step={1} value={form.discountPercentage || ''} onChange={(e) => onDiscountPctChange(Number(e.target.value))} disabled={!appliedDiscountCode && selectedCustomerVipDiscount > 0} />
                   {!appliedDiscountCode && form.discountPercentage > Math.max(maxManualDiscount, selectedCustomerVipDiscount) && (
                     <p className="text-[10px] text-error mt-0.5">Max {Math.max(maxManualDiscount, selectedCustomerVipDiscount)}% for your role / guest VIP tier.</p>
                   )}

@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   History,
   Receipt,
+  BookUser,
 } from 'lucide-react';
 import type { UserRoleType } from '../../lib/types';
 import { cn } from '../../lib/utils';
@@ -62,6 +63,7 @@ const menuConfig: MenuConfig = {
     ]},
     { heading: 'People', items: [
       { label: 'Users', icon: Users, path: '/users' },
+      { label: 'Customers', icon: BookUser, path: '/customers' },
       { label: 'Employees', icon: Users, path: '/employees' },
     ]},
     { heading: 'Settings', items: [
@@ -95,6 +97,7 @@ const menuConfig: MenuConfig = {
       { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
     ]},
     { heading: 'People', items: [
+      { label: 'Customers', icon: BookUser, path: '/customers' },
       { label: 'Employees', icon: Users, path: '/employees' },
     ]},
     { heading: 'Settings', items: [
@@ -116,6 +119,7 @@ const menuConfig: MenuConfig = {
     ]},
     { heading: 'People', items: [
       { label: 'Users', icon: Users, path: '/users' },
+      { label: 'Customers', icon: BookUser, path: '/customers' },
       { label: 'Employees', icon: Users, path: '/employees' },
     ]},
     { heading: 'Settings', items: [

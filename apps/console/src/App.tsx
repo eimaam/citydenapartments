@@ -27,6 +27,7 @@ import RolesPage from './features/roles/pages/RolesPage';
 import DiscountCodesPage from './features/discount-codes/pages/DiscountCodesPage';
 import AuditLogsPage from './features/audit/pages/AuditLogsPage';
 import DepartmentExpensesPage from './features/department-expenses/pages/DepartmentExpensesPage';
+import CustomersPage from './features/customers/pages/CustomersPage';
 import type { UserRoleType } from './lib/types';
 
 function ProtectedRoute({ roles, children }: { roles: UserRoleType[]; children: React.ReactNode }) {
@@ -45,6 +46,7 @@ const routeRoles: Record<string, UserRoleType[]> = {
   '/bookings/calendar': [UserRole.SuperAdmin, UserRole.GroupGM],
   '/bookings/status-history': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/users': [UserRole.SuperAdmin, UserRole.IT],
+  '/customers': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/employees': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/departments': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/breakfast': [UserRole.SuperAdmin, UserRole.GroupGM],
@@ -85,6 +87,7 @@ export default function App() {
                           case '/bookings': return <BookingsPage />;
                           case '/bookings/calendar': return <CalendarPage />;
                           case '/bookings/status-history': return <StatusHistoryPage />;
+                          case '/customers': return <CustomersPage />;
                           case '/users': return <StaffPage />;
                           case '/employees': return <EmployeePage />;
                           case '/departments': return <DepartmentPage />;
