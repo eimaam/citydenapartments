@@ -43,7 +43,7 @@ export class InventoryController {
   }
 
   @Post('items')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.ACCOUNTANT)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER)
   createItem(@Body() dto: CreateItemDto, @ActiveUser() user: any) {
     return this.inventoryService.createItem(dto, user.id, user.activeBranchId);
   }
