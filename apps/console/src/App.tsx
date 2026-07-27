@@ -10,6 +10,7 @@ import { MainLayout } from './components/layout/MainLayout';
 import { Spinner } from './components/ui/Spinner';
 import LoginPage from './features/auth/pages/LoginPage';
 import AdminDashboard from './features/dashboard/pages/DashboardPage';
+import AccountantDashboard from './features/dashboard/pages/AccountantDashboard';
 import BranchesPage from './features/branches/pages/BranchesPage';
 import RoomTypesPage from './features/room-types/pages/RoomTypesPage';
 import RoomsPage from './features/rooms/pages/RoomsPage';
@@ -36,8 +37,16 @@ function ProtectedRoute({ roles, children }: { roles: UserRoleType[]; children: 
   return <>{children}</>;
 }
 
+function DashboardSwitch() {
+  const { user } = useAuth();
+  if (user?.role === UserRole.Accountant || user?.role === UserRole.FacilityManager) {
+    return <AccountantDashboard />;
+  }
+  return <AdminDashboard />;
+}
+
 const routeRoles: Record<string, UserRoleType[]> = {
-  '/': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.Accountant, UserRole.Reception],
+  '/': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.Accountant, UserRole.Reception, UserRole.FacilityManager],
   '/branches': [UserRole.SuperAdmin],
   '/room-types': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/rooms': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
@@ -54,7 +63,7 @@ const routeRoles: Record<string, UserRoleType[]> = {
   '/discount-codes': [UserRole.SuperAdmin, UserRole.GroupGM],
   '/audit-logs': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/roles': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
-  '/department-expenses': [UserRole.Accountant, UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
+  '/department-expenses': [UserRole.Accountant, UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.FacilityManager],
 };
 
 export default function App() {
@@ -78,7 +87,7 @@ export default function App() {
                     <ProtectedRoute roles={roles}>
                       {(() => {
                         switch (path) {
-                          case '/': return <AdminDashboard />;
+                          case '/': return <DashboardSwitch />;
                           case '/branches': return <BranchesPage />;
                           case '/room-types': return <RoomTypesPage />;
                           case '/rooms': return <RoomsPage />;

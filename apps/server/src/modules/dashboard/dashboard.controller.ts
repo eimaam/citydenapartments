@@ -35,7 +35,7 @@ export class DashboardController {
 
   @Get('revenue')
   @UseGuards(RolesGuard)
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.ACCOUNTANT)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.ACCOUNTANT, UserRoleEnum.FACILITY_MANAGER)
   getRevenue(
     @Query('fromDate') fromDate: string,
     @Query('toDate') toDate: string,
