@@ -137,6 +137,9 @@ const menuConfig: MenuConfig = {
     { heading: 'Overview', items: [
       { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
     ]},
+    { heading: 'Monitoring', items: [
+      { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
+    ]},
   ],
   FrontOfficeManager: [],
   Accountant: [

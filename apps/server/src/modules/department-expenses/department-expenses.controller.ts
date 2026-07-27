@@ -21,7 +21,7 @@ export class DepartmentExpensesController {
   }
 
   @Get()
-  @Roles(UserRoleEnum.ACCOUNTANT, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT)
+  @Roles(UserRoleEnum.ACCOUNTANT, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.FACILITY_MANAGER)
   findAll(
     @Query('departmentId') departmentId: string,
     @Query('fromDate') fromDate: string,
@@ -41,13 +41,13 @@ export class DepartmentExpensesController {
   }
 
   @Get('groups')
-  @Roles(UserRoleEnum.ACCOUNTANT, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT)
+  @Roles(UserRoleEnum.ACCOUNTANT, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.FACILITY_MANAGER)
   getGroups(@ActiveUser() user: any) {
     return this.expensesService.getGroupedTotals(user.activeBranchId);
   }
 
   @Get(':id')
-  @Roles(UserRoleEnum.ACCOUNTANT, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT)
+  @Roles(UserRoleEnum.ACCOUNTANT, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.FACILITY_MANAGER)
   findOne(@Param('id') id: string) {
     return this.expensesService.findOne(id);
   }
