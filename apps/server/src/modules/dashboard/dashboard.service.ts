@@ -466,6 +466,9 @@ export class DashboardService {
       toDate = new Date(params.toDate);
     } else if (params.period) {
       switch (params.period) {
+        case 'daily':
+          fromDate = startOfDay(toDate);
+          break;
         case 'week':
           fromDate = subDays(toDate, 7);
           break;
@@ -479,7 +482,7 @@ export class DashboardService {
           fromDate = subMonths(toDate, 6);
           break;
         default:
-          fromDate = startOfMonth(toDate);
+          fromDate = startOfDay(toDate);
       }
     } else {
       fromDate = startOfMonth(toDate);

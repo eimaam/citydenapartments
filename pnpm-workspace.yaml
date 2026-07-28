@@ -3,3 +3,4 @@ packages:
   - 'packages/*'
 allowBuilds:
   '@nestjs/core': true
+  core-js: true

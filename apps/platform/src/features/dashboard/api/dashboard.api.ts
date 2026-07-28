@@ -69,4 +69,23 @@ export interface AccountingSummary {
 export const dashboardApi = {
   summary: () => api.get<DashboardSummary>('/dashboard/summary'),
   accounting: () => api.get<AccountingSummary>('/dashboard/accounting'),
+  revenue: (params: { period?: string; fromDate?: string; toDate?: string }) => {
+    const qs = new URLSearchParams();
+    if (params.period) qs.set('period', params.period);
+    if (params.fromDate) qs.set('fromDate', params.fromDate);
+    if (params.toDate) qs.set('toDate', params.toDate);
+    const s = qs.toString();
+    return api.get<{
+      period: { from: string; to: string; label: string | null };
+      bookingRevenue: number;
+      bookingCount: number;
+      departmentExpenses: number;
+      expenseCount: number;
+      totalRevenue: number;
+      vatCollected: number;
+      serviceChargeCollected: number;
+      vatCount: number;
+      scCount: number;
+    }>(`/dashboard/revenue${s ? `?${s}` : ''}`);
+  },
 };

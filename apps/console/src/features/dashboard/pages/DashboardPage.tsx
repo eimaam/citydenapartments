@@ -1,12 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../../../contexts/auth';
 import { Spinner } from '../../../components/ui/Spinner';
 import { api } from '../../../lib/api';
-import { Input } from '@citydenapartments/shared';
-import { Building2, TrendingUp, Users, BedDouble, CalendarCheck, MapPin, ChevronDown, Coffee, Receipt, DollarSign } from 'lucide-react';
+import { MetricCard, Input, exportToCSV, exportToPDF, formatCompactNumber } from '@citydenapartments/shared';
+import { Building2, TrendingUp, Users, BedDouble, CalendarCheck, MapPin, ChevronDown, Coffee, Receipt, DollarSign, Download, FileText } from 'lucide-react';
 import { revenueApi } from '../../department-expenses/api/department-expenses.api';
 
 const PERIODS = [
+  { label: 'Daily', value: 'daily' },
   { label: 'Week', value: 'week' },
   { label: 'Month', value: 'month' },
   { label: '3 Months', value: '3months' },
@@ -83,7 +84,7 @@ export default function AdminDashboard() {
 
   const activeBranch = branches.find((b) => b._id === selectedBranchId);
 
-  const [revenuePeriod, setRevenuePeriod] = useState('month');
+  const [revenuePeriod, setRevenuePeriod] = useState('daily');
   const [revFromDate, setRevFromDate] = useState('');
   const [revToDate, setRevToDate] = useState('');
   const [revenueData, setRevenueData] = useState<{
@@ -99,6 +100,7 @@ export default function AdminDashboard() {
     period: { from: string; to: string; label: string | null };
   } | null>(null);
   const [revenueLoading, setRevenueLoading] = useState(false);
+  const [exporting, setExporting] = useState<'csv' | 'pdf' | null>(null);
 
   const fetchRevenue = async (period: string, from?: string, to?: string) => {
     setRevenueLoading(true);
@@ -117,7 +119,7 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    fetchRevenue('month');
+    fetchRevenue('daily');
   }, []);
 
   const onPeriodClick = (period: string) => {
@@ -133,6 +135,34 @@ export default function AdminDashboard() {
       fetchRevenue('', revFromDate, revToDate);
     }
   };
+
+  const handleExport = useCallback(async (format: 'csv' | 'pdf') => {
+    if (!revenueData) return;
+    setExporting(format);
+    try {
+      const opts = {
+        filename: 'revenue_overview',
+        title: 'Revenue Overview Report',
+        columns: [
+          { title: 'Metric', dataIndex: 'metric' as const },
+          { title: 'Value', dataIndex: 'value' as const },
+        ],
+        data: [
+          { metric: 'Total Revenue', value: `₦${revenueData.totalRevenue.toLocaleString()}` },
+          { metric: 'Booking Revenue', value: `₦${revenueData.bookingRevenue.toLocaleString()}` },
+          { metric: 'Booking Count', value: revenueData.bookingCount },
+          { metric: 'Department Expenses', value: `₦${revenueData.departmentExpenses.toLocaleString()}` },
+          { metric: 'Expense Count', value: revenueData.expenseCount },
+          { metric: 'Net Revenue', value: `₦${(revenueData.bookingRevenue - revenueData.departmentExpenses).toLocaleString()}` },
+          { metric: 'VAT Collected', value: `₦${revenueData.vatCollected.toLocaleString()}` },
+          { metric: 'Service Charge Collected', value: `₦${revenueData.serviceChargeCollected.toLocaleString()}` },
+          { metric: 'Period', value: revenueData.period?.label || `${revenueData.period?.from} — ${revenueData.period?.to}` },
+        ],
+      };
+      if (format === 'csv') exportToCSV(opts);
+      else exportToPDF(opts);
+    } finally { setExporting(null); }
+  }, [revenueData]);
 
   if (loading) return <div className="flex items-center justify-center py-20"><Spinner size={20} className="text-primary" /></div>;
   if (error) return <div className="p-8 text-center text-error">{error}</div>;
@@ -209,16 +239,8 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-        {stats.map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="bg-surface-container-lowest border border-outline-variant rounded-lg p-5 hover:border-outline hover:shadow-ambient transition-all">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 rounded flex items-center justify-center" style={{ backgroundColor: `${color}15` }}>
-                <div style={{ color }}><Icon size={16} /></div>
-              </div>
-              <span className="text-xs text-outline">{label}</span>
-            </div>
-            <p className="text-3xl font-bold text-on-surface">{value}</p>
-          </div>
+        {stats.map((s) => (
+          <MetricCard key={s.label} icon={s.icon} label={s.label} value={s.value} color={s.color} className="!bg-surface-container-lowest" />
         ))}
       </div>
 
@@ -233,7 +255,7 @@ export default function AdminDashboard() {
                   <span className="text-[10px] font-mono text-outline">{b.code}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div><span className="text-xs text-outline">Revenue</span><p className="font-medium">₦{b.revenue.toLocaleString()}</p></div>
+                  <div><span className="text-xs text-outline">Revenue</span><p className="font-medium">₦{formatCompactNumber(b.revenue)}</p></div>
                   <div><span className="text-xs text-outline">Occupancy</span><p className="font-medium">{b.occupancyRate}%</p></div>
                   <div><span className="text-xs text-outline">Rooms</span><p>{b.rooms} ({b.occupied} occupied)</p></div>
                   <div><span className="text-xs text-outline">Bookings</span><p>{b.bookings}</p></div>
@@ -256,6 +278,18 @@ export default function AdminDashboard() {
             <DollarSign size={22} className="text-outline" />
             <h2 className="font-serif text-xl sm:text-2xl text-on-surface">Revenue Overview</h2>
           </div>
+          {revenueData && (
+            <div className="flex gap-2">
+              <button onClick={() => handleExport('csv')} disabled={exporting !== null} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-outline-variant/50 text-[11px] font-medium text-secondary/80 hover:text-on-surface hover:border-outline transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed bg-white">
+                {exporting === 'csv' ? <Spinner size={12} className="text-primary" /> : <FileText size={13} />}
+                CSV
+              </button>
+              <button onClick={() => handleExport('pdf')} disabled={exporting !== null} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-outline-variant/50 text-[11px] font-medium text-secondary/80 hover:text-on-surface hover:border-outline transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed bg-white">
+                {exporting === 'pdf' ? <Spinner size={12} className="text-primary" /> : <Download size={13} />}
+                PDF
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Period selector */}
@@ -298,77 +332,12 @@ export default function AdminDashboard() {
           </div>
         ) : revenueData ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-5">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-9 h-9 rounded flex items-center justify-center" style={{ backgroundColor: '#10b98115' }}>
-                  <DollarSign size={16} style={{ color: '#10b981' }} />
-                </div>
-                <span className="text-xs text-outline">Total Revenue</span>
-              </div>
-              <p className="text-3xl font-bold text-on-surface">₦{revenueData.totalRevenue.toLocaleString()}</p>
-              <p className="text-[10px] text-outline mt-1">
-                Booking Revenue: ₦{revenueData.bookingRevenue.toLocaleString()} · Expenses: ₦{revenueData.departmentExpenses.toLocaleString()}
-              </p>
-            </div>
-
-            <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-5">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-9 h-9 rounded flex items-center justify-center" style={{ backgroundColor: '#3b82f615' }}>
-                  <CalendarCheck size={16} style={{ color: '#3b82f6' }} />
-                </div>
-                <span className="text-xs text-outline">Booking Revenue</span>
-              </div>
-              <p className="text-3xl font-bold text-on-surface">₦{revenueData.bookingRevenue.toLocaleString()}</p>
-              <p className="text-[10px] text-outline mt-1">{revenueData.bookingCount} booking{revenueData.bookingCount !== 1 ? 's' : ''}</p>
-            </div>
-
-            <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-5">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-9 h-9 rounded flex items-center justify-center" style={{ backgroundColor: '#f59e0b15' }}>
-                  <Receipt size={16} style={{ color: '#f59e0b' }} />
-                </div>
-                <span className="text-xs text-outline">Department Expenses</span>
-              </div>
-              <p className="text-3xl font-bold text-on-surface">₦{revenueData.departmentExpenses.toLocaleString()}</p>
-              <p className="text-[10px] text-outline mt-1">{revenueData.expenseCount} expense{revenueData.expenseCount !== 1 ? 's' : ''}</p>
-            </div>
-
-            <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-5">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-9 h-9 rounded flex items-center justify-center" style={{ backgroundColor: '#8b5cf615' }}>
-                  <TrendingUp size={16} style={{ color: '#8b5cf6' }} />
-                </div>
-                <span className="text-xs text-outline">Net Revenue</span>
-              </div>
-              <p className="text-3xl font-bold text-on-surface">
-                ₦{(revenueData.bookingRevenue - revenueData.departmentExpenses).toLocaleString()}
-              </p>
-              <p className="text-[10px] text-outline mt-1">
-                {revenueData.period?.label || `${new Date(revenueData.period?.from).toLocaleDateString()} — ${new Date(revenueData.period?.to).toLocaleDateString()}`}
-              </p>
-            </div>
-
-            <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-5">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-9 h-9 rounded flex items-center justify-center" style={{ backgroundColor: '#d9770615' }}>
-                  <Receipt size={16} style={{ color: '#d97706' }} />
-                </div>
-                <span className="text-xs text-outline">VAT Collected</span>
-              </div>
-              <p className="text-3xl font-bold text-on-surface">₦{revenueData.vatCollected.toLocaleString()}</p>
-              <p className="text-[10px] text-outline mt-1">{revenueData.vatCount} booking{revenueData.vatCount !== 1 ? 's' : ''} with VAT</p>
-            </div>
-
-            <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-5">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-9 h-9 rounded flex items-center justify-center" style={{ backgroundColor: '#2563eb15' }}>
-                  <Receipt size={16} style={{ color: '#2563eb' }} />
-                </div>
-                <span className="text-xs text-outline">Service Charge Collected</span>
-              </div>
-              <p className="text-3xl font-bold text-on-surface">₦{revenueData.serviceChargeCollected.toLocaleString()}</p>
-              <p className="text-[10px] text-outline mt-1">{revenueData.scCount} booking{revenueData.scCount !== 1 ? 's' : ''} with Service Charge</p>
-            </div>
+            <MetricCard icon={DollarSign} label="Total Revenue" value={`₦${formatCompactNumber(revenueData.totalRevenue)}`} sub={`Booking: ₦${formatCompactNumber(revenueData.bookingRevenue)} · Expenses: ₦${formatCompactNumber(revenueData.departmentExpenses)}`} color="#10b981" className="bg-surface-container-lowest" />
+            <MetricCard icon={CalendarCheck} label="Booking Revenue" value={`₦${formatCompactNumber(revenueData.bookingRevenue)}`} sub={`${revenueData.bookingCount} booking${revenueData.bookingCount !== 1 ? 's' : ''}`} color="#3b82f6" className="bg-surface-container-lowest" />
+            <MetricCard icon={Receipt} label="Department Expenses" value={`₦${formatCompactNumber(revenueData.departmentExpenses)}`} sub={`${revenueData.expenseCount} expense${revenueData.expenseCount !== 1 ? 's' : ''}`} color="#f59e0b" className="bg-surface-container-lowest" />
+            <MetricCard icon={TrendingUp} label="Net Revenue" value={`₦${formatCompactNumber(revenueData.bookingRevenue - revenueData.departmentExpenses)}`} sub={revenueData.period?.label || `${new Date(revenueData.period?.from).toLocaleDateString()} — ${new Date(revenueData.period?.to).toLocaleDateString()}`} color="#8b5cf6" className="bg-surface-container-lowest" />
+            <MetricCard icon={Receipt} label="VAT Collected" value={`₦${formatCompactNumber(revenueData.vatCollected)}`} sub={`${revenueData.vatCount} booking${revenueData.vatCount !== 1 ? 's' : ''} with VAT`} color="#d97706" className="bg-surface-container-lowest" />
+            <MetricCard icon={Receipt} label="Service Charge" value={`₦${formatCompactNumber(revenueData.serviceChargeCollected)}`} sub={`${revenueData.scCount} booking${revenueData.scCount !== 1 ? 's' : ''} with SC`} color="#2563eb" className="bg-surface-container-lowest" />
           </div>
         ) : null}
       </div>
