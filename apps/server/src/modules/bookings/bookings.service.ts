@@ -9,8 +9,8 @@ import { InjectModel, InjectConnection } from '@nestjs/mongoose';
 import { Model, Connection, Types } from 'mongoose';
 import { Booking } from './booking.schema';
 import { Room, RoomStatusEnum } from '../rooms/room.schema';
-import { UserRoleEnum } from '../users/user.schema';
 import { RoomType } from '../room-types/room-type.schema';
+import { Branch } from '../branches/branch.schema';
 import { Customer } from '../customers/customer.schema';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { RedisService } from '../redis/redis.service';
@@ -20,6 +20,8 @@ import { BreakfastLog } from '../breakfast/breakfast-log.schema';
 import { isPastBreakfastCutoff } from '../breakfast/breakfast.constants';
 import { DiscountCodesService } from '../discount-codes/discount-codes.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
+import { EmailService } from '../email/email.service';
+import { BookingReceiptEmail } from '@citydenapartments/email';
 
 @Injectable()
 export class BookingsService {
@@ -29,10 +31,12 @@ export class BookingsService {
     @InjectModel(RoomType.name) private roomTypeModel: Model<RoomType>,
     @InjectModel(BreakfastLog.name) private breakfastLogModel: Model<BreakfastLog>,
     @InjectModel(Customer.name) private customerModel: Model<Customer>,
+    @InjectModel(Branch.name) private branchModel: Model<Branch>,
     @InjectConnection() private readonly connection: Connection,
     private readonly redis: RedisService,
     private readonly discountCodesService: DiscountCodesService,
     private readonly auditLog: AuditLogService,
+    private readonly emailService: EmailService,
   ) {}
 
   private readonly logger = new Logger(BookingsService.name);
@@ -465,6 +469,55 @@ export class BookingsService {
         details: { bookingReference: newBooking.bookingReference, guestName: guestDetails.name, rooms: roomEntries.length },
         persistForever: true,
       });
+
+      if (guestDetails.email) {
+        try {
+          const [branch, populatedRooms] = await Promise.all([
+            this.branchModel.findById(branchId).lean(),
+            this.roomModel.find({ _id: { $in: roomEntries.map(r => r.roomId) } }).populate<{ roomTypeId: { name: string } }>('roomTypeId', 'name').lean(),
+          ]);
+
+          this.emailService.sendEmail(
+            guestDetails.email,
+            `Booking Confirmed — #${newBooking.bookingReference}`,
+            BookingReceiptEmail({
+              guestName: guestDetails.name,
+              guestEmail: guestDetails.email,
+              guestPhone: guestDetails.phone,
+              bookingReference: newBooking.bookingReference,
+              branchName: branch?.name || 'City Den Apartments',
+              checkInDate: newBooking.checkInDate.toString(),
+              checkOutDate: newBooking.checkOutDate.toString(),
+              rooms: roomEntries.map((re) => {
+                const room = populatedRooms.find((r) => r._id.toString() === re.roomId.toString());
+                return {
+                  roomNumber: room?.roomNumber || re.roomId.toString(),
+                  roomType: (room as any)?.roomTypeId?.name || 'Room',
+                  nights: Math.ceil(
+                    (new Date(dto.checkOutDate).getTime() - new Date(dto.checkInDate).getTime()) / (1000 * 60 * 60 * 24),
+                  ),
+                  pricePerNight: re.actualPricePerNight,
+                  total: re.totalForRoom,
+                };
+              }),
+              numberOfGuests: newBooking.numberOfGuests,
+              subtotal,
+              discount: computedDiscount,
+              discountPercentage: pct,
+              vatAmount: computedVat,
+              serviceChargeAmount: computedSc,
+              totalPaid: newBooking.totalAmountPaid,
+              paymentMethod: newBooking.paymentMethod,
+              paymentReference: newBooking.paymentReference || undefined,
+              bookingStatus: newBooking.bookingStatus,
+              bookingDate: (newBooking as any).createdAt?.toString() || new Date().toISOString(),
+            }),
+          );
+        } catch (emailErr: any) {
+          this.logger.error(`Failed to send booking receipt to ${guestDetails.email}: ${emailErr.message}`);
+        }
+      }
+
       return newBooking;
     } catch (error) {
       await session.abortTransaction();

@@ -22,6 +22,11 @@ interface AppConfig {
   R2_ENDPOINT: string;
   VAT_PERCENTAGE: number;
   SERVICE_CHARGE_PERCENTAGE: number;
+  EMAIL_FROM_NAME?: string;
+  EMAIL_FROM_EMAIL?: string;
+  ZEPTOMAIL_API_TOKEN?: string;
+  RESEND_API_KEY?: string;
+  PLATFORM_DOMAIN?: string;
 }
 
 export const AppConfigValidationSchema = Joi.object({
@@ -43,6 +48,11 @@ export const AppConfigValidationSchema = Joi.object({
   R2_ENDPOINT: Joi.string().uri().required(),
   VAT_PERCENTAGE: Joi.number().default(7.5),
   SERVICE_CHARGE_PERCENTAGE: Joi.number().default(10),
+  EMAIL_FROM_NAME: Joi.string().default('City Den Apartments'),
+  EMAIL_FROM_EMAIL: Joi.string().email().optional(),
+  ZEPTOMAIL_API_TOKEN: Joi.string().optional(),
+  RESEND_API_KEY: Joi.string().optional(),
+  PLATFORM_DOMAIN: Joi.string().default('https://citydenapartments.com'),
 });
 
 const { error, value } = AppConfigValidationSchema.validate(process.env, {

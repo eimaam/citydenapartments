@@ -26,6 +26,7 @@ import { DepartmentsModule } from './modules/departments/departments.module';
 import { DepartmentExpensesModule } from './modules/department-expenses/department-expenses.module';
 import { PublicModule } from './modules/public/public.module';
 import { AuditLogModule } from './modules/audit-log/audit-log.module';
+import { EmailModule } from './modules/email/email.module';
 import mongoose from 'mongoose';
 
 if (AppConfig.NODE_ENV === 'development') {
@@ -74,6 +75,7 @@ if (AppConfig.NODE_ENV === 'development') {
     RedisModule,
     PublicModule,
     AuditLogModule,
+    EmailModule,
   ],
   
   providers: [

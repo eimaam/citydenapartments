@@ -9,6 +9,9 @@ import { RedisService } from '../redis/redis.service';
 import { CACHE_KEYS, CACHE_TTL } from '../../config/cache.constants';
 import { escapeRegex } from '../../common/utils/escape-regex';
 import { AuditLogService } from '../audit-log/audit-log.service';
+import { EmailService } from '../email/email.service';
+import { AccountCreatedEmail } from '@citydenapartments/email';
+import { AppConfig } from 'src/config/app.config';
 
 function generatePassword(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
@@ -26,6 +29,7 @@ export class UsersService {
     @InjectModel(Branch.name) private branchModel: Model<Branch>,
     private readonly redis: RedisService,
     private readonly auditLog: AuditLogService,
+    private readonly emailService: EmailService,
   ) {}
 
   async findAll(
@@ -135,6 +139,18 @@ export class UsersService {
       branchId: user.activeBranchId?.toString() || undefined,
       details: { name: user.name, role: user.role, allowedBranches: dto.allowedBranches },
     });
+
+    this.emailService.sendEmail(
+      user.email,
+      'Your City Den Apartments Account',
+      AccountCreatedEmail({
+        name: user.name,
+        email: user.email,
+        password: rawPassword,
+        role: user.role,
+        loginUrl: `${AppConfig.PLATFORM_DOMAIN}/login`,
+      }),
+    );
 
     return { user: sanitized, generatedPassword: rawPassword };
   }
