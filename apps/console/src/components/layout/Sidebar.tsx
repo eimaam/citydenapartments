@@ -141,7 +141,15 @@ const menuConfig: MenuConfig = {
       { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
     ]},
   ],
-  FrontOfficeManager: [],
+  FrontOfficeManager: [
+    { heading: 'Overview', items: [
+      { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    ]},
+    { heading: 'Reservations', items: [
+      { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
+      { label: 'Calendar', icon: CalendarFold, path: '/bookings/calendar' },
+    ]},
+  ],
   Accountant: [
     { heading: 'Overview', items: [
       { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
