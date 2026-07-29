@@ -2,7 +2,7 @@
   "name": "@citydenapartments/shared",
   "private": true,
   "version": "0.0.0",
-  "main": "./index.ts",
+  "main": "./dist/server.js",
   "scripts": {
     "build": "tsc -p tsconfig.build.json"
   },
