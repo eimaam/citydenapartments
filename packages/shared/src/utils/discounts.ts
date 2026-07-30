@@ -4,7 +4,7 @@ import { UserRole } from '../types';
  * Single source of truth for maximum direct manual discount percentages allowed when creating a booking, by role.
  */
 export const ROLE_MAX_MANUAL_DISCOUNT: Record<string, number> = {
-  [UserRole.Reception]: 5,
+  [UserRole.Reception]: 50,
   [UserRole.FrontOfficeManager]: 10,
   [UserRole.FacilityManager]: 15,
   [UserRole.GroupGM]: 50,
