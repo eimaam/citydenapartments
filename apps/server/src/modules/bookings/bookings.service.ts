@@ -211,6 +211,7 @@ export class BookingsService {
         actualPricePerNight: number;
         totalForRoom: number;
         maxGuests: number;
+        minPriceAllowed: number;
       }> = [];
 
       for (const roomDto of dto.rooms) {
@@ -267,6 +268,7 @@ export class BookingsService {
           actualPricePerNight: roomDto.actualPricePerNight,
           totalForRoom: roomDto.actualPricePerNight * nights,
           maxGuests: roomDto.maxGuests,
+          minPriceAllowed: typeConfig.minPriceAllowed,
         });
 
         if (roomDto.maxGuests > room.maxGuests) {
@@ -278,6 +280,18 @@ export class BookingsService {
 
       const subtotal = roomEntries.reduce((sum, r) => sum + r.totalForRoom, 0);
       const computedDiscount = Math.round((subtotal * pct) / 100);
+
+      // ensure discount does not drop room effective rate below minimum allowed
+      if (pct > 0) {
+        for (const re of roomEntries) {
+          const effectivePerNight = re.actualPricePerNight * (1 - pct / 100);
+          if (effectivePerNight < re.minPriceAllowed - 1) {
+            throw new BadRequestException(
+              `Discount of ${pct}% drops room effective rate (₦${Math.round(effectivePerNight).toLocaleString()}/night) below minimum allowed (₦${re.minPriceAllowed.toLocaleString()}/night).`,
+            );
+          }
+        }
+      }
 
       const includeVat = dto.includeVat || false;
       const includeServiceCharge = dto.includeServiceCharge || false;
