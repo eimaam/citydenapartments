@@ -204,9 +204,9 @@ function buildPrintHtml({
   <thead><tr><th>Description</th><th>Rate</th><th>Amount</th></tr></thead>
   <tbody>
     ${roomRowsHtml}
-    ${booking.discount > 0 ? `<tr><td>Discount${booking.discountPercentage ? ` (${booking.discountPercentage}%)` : ''}${booking.discountReason ? ` - ${booking.discountReason}` : ''}</td><td></td><td>-\u20A6${booking.discount.toLocaleString()}</td></tr>` : ''}
     ${booking.includeVat && booking.vatAmount ? `<tr><td>VAT (7.5%)</td><td></td><td>\u20A6${booking.vatAmount.toLocaleString()}</td></tr>` : ''}
     ${booking.includeServiceCharge && booking.serviceChargeAmount ? `<tr><td>Service Charge (10%)</td><td></td><td>\u20A6${booking.serviceChargeAmount.toLocaleString()}</td></tr>` : ''}
+    ${booking.discount > 0 ? `<tr><td>Discount${booking.discountPercentage ? ` (${booking.discountPercentage}%)` : ''}${booking.discountReason ? ` - ${booking.discountReason}` : ''}</td><td></td><td>-\u20A6${booking.discount.toLocaleString()}</td></tr>` : ''}
     <tr class="receipt-total-row"><td colspan="2">Total Paid</td><td>\u20A6${booking.totalAmountPaid.toLocaleString()}</td></tr>
   </tbody>
 </table>
@@ -402,17 +402,6 @@ export function BookingReceipt({ booking, branch, receptionistName }: BookingRec
                 <td>₦{r.totalForRoom.toLocaleString()}</td>
               </tr>
             ))}
-            {booking.discount > 0 && (
-              <tr>
-                <td>
-                  Discount
-                  {booking.discountPercentage ? ` (${booking.discountPercentage}%)` : ''}
-                  {booking.discountReason ? ` - ${booking.discountReason}` : ''}
-                </td>
-                <td></td>
-                <td>-₦{booking.discount.toLocaleString()}</td>
-              </tr>
-            )}
             {booking.includeVat && booking.vatAmount ? (
               <tr>
                 <td>VAT (7.5%)</td>
@@ -427,6 +416,17 @@ export function BookingReceipt({ booking, branch, receptionistName }: BookingRec
                 <td>₦{booking.serviceChargeAmount.toLocaleString()}</td>
               </tr>
             ) : null}
+            {booking.discount > 0 && (
+              <tr>
+                <td>
+                  Discount
+                  {booking.discountPercentage ? ` (${booking.discountPercentage}%)` : ''}
+                  {booking.discountReason ? ` - ${booking.discountReason}` : ''}
+                </td>
+                <td></td>
+                <td>-₦{booking.discount.toLocaleString()}</td>
+              </tr>
+            )}
             <tr className="receipt-total-row">
               <td colSpan={2}>Total Paid</td>
               <td>₦{booking.totalAmountPaid.toLocaleString()}</td>

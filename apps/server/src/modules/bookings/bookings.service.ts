@@ -279,19 +279,6 @@ export class BookingsService {
       }
 
       const subtotal = roomEntries.reduce((sum, r) => sum + r.totalForRoom, 0);
-      const computedDiscount = Math.round((subtotal * pct) / 100);
-
-      // ensure discount does not drop room effective rate below minimum allowed
-      if (pct > 0) {
-        for (const re of roomEntries) {
-          const effectivePerNight = re.actualPricePerNight * (1 - pct / 100);
-          if (effectivePerNight < re.minPriceAllowed - 1) {
-            throw new BadRequestException(
-              `Discount of ${pct}% drops room effective rate (₦${Math.round(effectivePerNight).toLocaleString()}/night) below minimum allowed (₦${re.minPriceAllowed.toLocaleString()}/night).`,
-            );
-          }
-        }
-      }
 
       const includeVat = dto.includeVat || false;
       const includeServiceCharge = dto.includeServiceCharge || false;
@@ -299,6 +286,10 @@ export class BookingsService {
       const scRate = 10;
       const computedVat = includeVat ? Math.round((subtotal * vatRate) / 100) : 0;
       const computedSc = includeServiceCharge ? Math.round((subtotal * scRate) / 100) : 0;
+
+      const grossTotal = subtotal + computedVat + computedSc;
+      const computedDiscount = Math.round((grossTotal * pct) / 100);
+      const computedTotal = Math.max(0, grossTotal - computedDiscount);
 
       if (includeVat && Math.abs((dto.vatAmount || 0) - computedVat) > 1) {
         throw new BadRequestException(
@@ -311,11 +302,9 @@ export class BookingsService {
         );
       }
 
-      const computedTotal = subtotal - computedDiscount + computedVat + computedSc;
-
       if (Math.abs(dto.totalAmountPaid - computedTotal) > 1) {
         throw new BadRequestException(
-          `Price mismatch. Expected ₦${computedTotal} (₦${roomEntries.map(r => `${r.actualPricePerNight}×${nights}`).join(' + ')}${pct > 0 ? ` − ${pct}% discount` : ''}${includeVat ? ` + ${vatRate}% VAT` : ''}${includeServiceCharge ? ` + ${scRate}% service charge` : ''}), got ₦${dto.totalAmountPaid}`,
+          `Price mismatch. Expected ₦${computedTotal} (₦${subtotal}${includeVat ? ` + ₦${computedVat} VAT` : ''}${includeServiceCharge ? ` + ₦${computedSc} service charge` : ''}${pct > 0 ? ` − ${pct}% discount` : ''}), got ₦${dto.totalAmountPaid}`,
         );
       }
 

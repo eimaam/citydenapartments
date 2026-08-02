@@ -403,11 +403,12 @@ export default function CalendarPage() {
     const roomType = allRoomTypes.find((rt) => rt._id === selectedRoom?.roomTypeId?._id);
     const price = form.actualPricePerNight || roomType?.basePrice || 0;
     const sub = price * n;
-    const pct = form.discountPercentage || 0;
-    const disc = Math.round((sub * pct) / 100);
     const vat = form.includeVat ? Math.round(sub * 7.5 / 100) : 0;
     const sc = form.includeServiceCharge ? Math.round(sub * 10 / 100) : 0;
-    return { nights: n, subtotal: sub, discountAmt: disc, vatAmt: vat, scAmt: sc, total: Math.max(0, sub - disc + vat + sc) };
+    const gross = sub + vat + sc;
+    const pct = form.discountPercentage || 0;
+    const disc = Math.round((gross * pct) / 100);
+    return { nights: n, subtotal: sub, grossTotal: gross, discountAmt: disc, vatAmt: vat, scAmt: sc, total: Math.max(0, gross - disc) };
   }, [form.actualPricePerNight, form.discountPercentage, form.includeVat, form.includeServiceCharge, form.nights, form.useNights, computedNights, selectedRoom, allRoomTypes]);
 
   const onRoomChange = (roomId: string) => {

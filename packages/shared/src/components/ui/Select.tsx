@@ -42,11 +42,12 @@ interface BaseSelectProps {
   status?: 'error' | 'warning' | 'success';
   fullWidth?: boolean;
   className?: string;
+  role?: string;
 }
 
 export const Select = React.forwardRef<
   RefSelectProps,
-  BaseSelectProps & Omit<AntSelectProps, 'size'>
+  BaseSelectProps & Omit<AntSelectProps, 'size' | 'role'> & { role?: string }
 >(({ className, variant, status, disabled, size, ...props }, ref) => {
   const antStatus = status as AntSelectProps['status'];
 
@@ -63,4 +64,5 @@ export const Select = React.forwardRef<
 
 Select.displayName = 'Select';
 
-export const { Option, OptGroup } = AntSelect;
+export const Option = AntSelect.Option as any;
+export const OptGroup = AntSelect.OptGroup as any;

@@ -18,25 +18,25 @@ export class CustomersController {
   constructor(private customersService: CustomersService) {}
 
   @Get()
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.FRONT_OFFICE_MANAGER)
   findAll(@Query() query: PaginatedQueryDto) {
     return this.customersService.findAll({ page: query.page ?? 1, limit: query.limit ?? 20, search: query.search });
   }
 
   @Get('search')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.RECEPTION)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.RECEPTION, UserRoleEnum.FRONT_OFFICE_MANAGER)
   search(@Query() query: SearchCustomerDto) {
     return this.customersService.searchByPhone(query.phone);
   }
 
   @Get(':id')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.FRONT_OFFICE_MANAGER)
   findOne(@Param('id') id: string) {
     return this.customersService.findById(id);
   }
 
   @Post()
-  @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM)
+  @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.FRONT_OFFICE_MANAGER)
   create(@Body() dto: CreateCustomerDto) {
     return this.customersService.create(dto);
   }

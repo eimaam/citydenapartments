@@ -318,11 +318,12 @@ export function BookingFormDrawer({
         return sum + price * n;
       }, 0);
     }
-    const pct = form.discountPercentage || 0;
-    const disc = Math.round((sub * pct) / 100);
     const vat = form.includeVat ? Math.round(sub * 7.5 / 100) : 0;
     const sc = form.includeServiceCharge ? Math.round(sub * 10 / 100) : 0;
-    return { nights: n, subtotal: sub, discountAmt: disc, vatAmt: vat, scAmt: sc, total: Math.max(0, sub - disc + vat + sc) };
+    const gross = sub + vat + sc;
+    const pct = form.discountPercentage || 0;
+    const disc = Math.round((gross * pct) / 100);
+    return { nights: n, subtotal: sub, grossTotal: gross, discountAmt: disc, vatAmt: vat, scAmt: sc, total: Math.max(0, gross - disc) };
   }, [form.rooms, form.discountPercentage, form.includeVat, form.includeServiceCharge, form.nights, form.useNights, computedNights, rooms, roomTypes, roomSelection, form.actualPricePerNight, selectedRoom]);
 
   // ── Room management (multi-room) ────────────────────────────
