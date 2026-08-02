@@ -19,7 +19,7 @@ export function BaseEmail({ preview, children }: BaseProps) {
   return (
     <Html>
       <Head>
-        <Font fontFamily="Inter" fallbackFontFamily="system-ui" webFont={{ url: 'https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff2', format: 'woff2' }} />
+        <Font fontFamily="Inter" fallbackFontFamily="sans-serif" webFont={{ url: 'https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff2', format: 'woff2' }} />
       </Head>
       <Preview>{preview}</Preview>
       <Body style={{ fontFamily: 'Inter, system-ui, sans-serif', backgroundColor: surface, margin: 0, padding: 0 }}>
