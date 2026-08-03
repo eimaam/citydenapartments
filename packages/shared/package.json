@@ -3,23 +3,16 @@
   "private": true,
   "version": "0.0.0",
   "main": "./dist/server.js",
-  "types": "./dist/server.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.build.json"
   },
   "exports": {
     ".": {
-      "types": "./dist/server.d.ts",
-      "import": "./dist/server.js",
+      "import": "./index.ts",
       "require": "./dist/server.js",
-      "default": "./dist/server.js"
+      "default": "./index.ts"
     },
-    "./types": {
-      "types": "./dist/types.d.ts",
-      "import": "./dist/types.js",
-      "require": "./dist/types.js",
-      "default": "./dist/types.js"
-    }
+    "./types": "./src/types.ts"
   },
   "dependencies": {
     "antd": "^6.3.0",
