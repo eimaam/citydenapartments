@@ -36,8 +36,8 @@ export const AppConfigValidationSchema = Joi.object({
   JWT_SECRET: Joi.string().min(16).required(),
   JWT_EXPIRES_IN: Joi.string().default('7d'),
   CORS_ORIGINS: Joi.string().default('http://localhost:5174,http://localhost:5175'),
-  REDIS_URL: Joi.string().uri().optional(),
-  REDIS_HOST: Joi.string().optional(),
+  REDIS_URL: Joi.string().uri().allow('').optional(),
+  REDIS_HOST: Joi.string().allow('').optional(),
   REDIS_PORT: Joi.number().optional(),
   REDIS_PASSWORD: Joi.string().allow('').optional(),
   REDIS_DB: Joi.number().optional(),
@@ -49,9 +49,9 @@ export const AppConfigValidationSchema = Joi.object({
   VAT_PERCENTAGE: Joi.number().default(7.5),
   SERVICE_CHARGE_PERCENTAGE: Joi.number().default(10),
   EMAIL_FROM_NAME: Joi.string().default('City Den Apartments'),
-  EMAIL_FROM_EMAIL: Joi.string().email().optional(),
-  ZEPTOMAIL_API_TOKEN: Joi.string().optional(),
-  RESEND_API_KEY: Joi.string().optional(),
+  EMAIL_FROM_EMAIL: Joi.string().email().allow('').optional(),
+  ZEPTOMAIL_API_TOKEN: Joi.string().allow('').optional(),
+  RESEND_API_KEY: Joi.string().allow('').optional(),
   PLATFORM_DOMAIN: Joi.string().default('https://citydenapartments.com'),
 });
 
