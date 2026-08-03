@@ -23,6 +23,7 @@ export const CACHE_TTL = {
     GLOBAL_SETTINGS: 'settings:global',
     DASHBOARD_SUMMARY: 'dashboard:summary',
     USERS_LIST: 'users:list',
+    TOKEN_BLACKLIST: (jti: string) => `blacklist:jti:${jti}`,
   } as const;
   
 

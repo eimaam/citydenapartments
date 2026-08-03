@@ -58,6 +58,65 @@ export const Gender = {
 } as const;
 export type GenderType = (typeof Gender)[keyof typeof Gender];
 
+// ── Laundry ───────────────────────────────────────────────────
+export const LaundryService = {
+  Laundry: 'laundry',
+  Pressing: 'pressing',
+} as const;
+export type LaundryServiceType = (typeof LaundryService)[keyof typeof LaundryService];
+
+export const LaundryStatus = {
+  Pending: 'pending',
+  Paid: 'paid',
+} as const;
+export type LaundryStatusType = (typeof LaundryStatus)[keyof typeof LaundryStatus];
+
+export interface LaundryCategoryResponse {
+  _id: string;
+  name: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface LaundryItemResponse {
+  _id: string;
+  categoryId: string;
+  category: string;
+  item: string;
+  laundryPrice: number;
+  pressingPrice: number | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface LaundryBillLineResponse {
+  itemId: string;
+  itemName: string;
+  category: string;
+  service: LaundryServiceType;
+  qty: number;
+  unitPrice: number;
+  lineTotal: number;
+}
+
+export interface LaundryBillResponse {
+  _id: string;
+  billNumber: string;
+  branchId: string;
+  customerId?: string;
+  customer?: Pick<CustomerResponse, '_id' | 'name' | 'phone'>;
+  walkIn?: { name: string; phone?: string };
+  roomNumber?: string;
+  lines: LaundryBillLineResponse[];
+  subtotal: number;
+  total: number;
+  status: LaundryStatusType;
+  notes?: string;
+  createdBy?: { _id: string; name?: string };
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ── Departments ────────────────────────────────────────────────
 export const Departments = [
   'Housekeeping',

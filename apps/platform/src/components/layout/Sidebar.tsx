@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   BookOpen,
   Receipt,
+  Shirt,
 } from 'lucide-react';
 import type { UserRoleType } from '../../lib/types';
 import { cn } from '../../lib/utils';
@@ -104,6 +105,9 @@ const menuConfig: MenuConfig = {
       { label: 'Calendar', icon: CalendarFold, path: '/bookings/calendar' },
       { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
     ]},
+    { heading: 'Services', items: [
+      { label: 'Laundry', icon: Shirt, path: '/laundry' },
+    ]},
     { heading: 'Settings', items: [
       { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
     ]},
@@ -153,6 +157,9 @@ const menuConfig: MenuConfig = {
       { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
       { label: 'Calendar', icon: CalendarFold, path: '/bookings/calendar' },
       { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
+    ]},
+    { heading: 'Services', items: [
+      { label: 'Laundry', icon: Shirt, path: '/laundry' },
     ]},
   ],
   KitchenStaff: [

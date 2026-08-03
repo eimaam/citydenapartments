@@ -17,7 +17,8 @@ import InventoryPage from './features/inventory/pages/InventoryPage';
 import TransactionsPage from './features/inventory/pages/TransactionsPage';
 import SpoilagePage from './features/inventory/pages/SpoilagePage';
 import InventoryBookPage from './features/inventory/pages/InventoryBookPage';
-// import CustomersPage from './features/customers/pages/CustomersPage';
+import CustomersPage from './features/customers/pages/CustomersPage';
+import LaundryPage from './features/laundry/pages/LaundryPage';
 import DiscountCodesPage from './features/discount-codes/pages/DiscountCodesPage';
 import DepartmentExpensesPage from './features/department-expenses/pages/DepartmentExpensesPage';
 
@@ -62,9 +63,13 @@ export default function App() {
                 <Route path="inventory/book" element={<InventoryBookPage />} />
               </Route>
 
-              {/* <Route element={<RoleGuard roles={[UserRole.Reception]} />}>
+              <Route element={<RoleGuard roles={[UserRole.Reception, UserRole.FrontOfficeManager, UserRole.FacilityManager]} />}>
                 <Route path="customers" element={<CustomersPage />} />
-              </Route> */}
+              </Route>
+
+              <Route element={<RoleGuard roles={[UserRole.Reception, UserRole.FrontOfficeManager]} />}>
+                <Route path="laundry" element={<LaundryPage />} />
+              </Route>
 
               <Route element={<RoleGuard roles={[UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FrontOfficeManager, UserRole.FacilityManager]} />}>
                 <Route path="discount-codes" element={<DiscountCodesPage />} />

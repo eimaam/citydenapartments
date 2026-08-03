@@ -18,6 +18,7 @@ import {
   History,
   Receipt,
   BookUser,
+  Shirt,
 } from 'lucide-react';
 import type { UserRoleType } from '../../lib/types';
 import { cn } from '../../lib/utils';
@@ -61,6 +62,9 @@ const menuConfig: MenuConfig = {
       { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
       { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
     ]},
+    { heading: 'Services', items: [
+      { label: 'Laundry Price List', icon: Shirt, path: '/laundry-items' },
+    ]},
     { heading: 'People', items: [
       { label: 'Users', icon: Users, path: '/users' },
       { label: 'Customers', icon: BookUser, path: '/customers' },
@@ -96,6 +100,9 @@ const menuConfig: MenuConfig = {
       { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
       { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
     ]},
+    { heading: 'Services', items: [
+      { label: 'Laundry Price List', icon: Shirt, path: '/laundry-items' },
+    ]},
     { heading: 'People', items: [
       { label: 'Customers', icon: BookUser, path: '/customers' },
       { label: 'Employees', icon: Users, path: '/employees' },
@@ -129,6 +136,9 @@ const menuConfig: MenuConfig = {
     { heading: 'Monitoring', items: [
       { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
     ]},
+    { heading: 'Services', items: [
+      { label: 'Laundry Price List', icon: Shirt, path: '/laundry-items' },
+    ]},
     { heading: 'Audit', items: [
       { label: 'Audit Logs', icon: History, path: '/audit-logs' },
     ]},
@@ -148,6 +158,9 @@ const menuConfig: MenuConfig = {
     { heading: 'Reservations', items: [
       { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
       { label: 'Calendar', icon: CalendarFold, path: '/bookings/calendar' },
+    ]},
+    { heading: 'People', items: [
+      { label: 'Customers', icon: BookUser, path: '/customers' },
     ]},
   ],
   Accountant: [

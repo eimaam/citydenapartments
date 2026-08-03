@@ -29,6 +29,7 @@ import DiscountCodesPage from './features/discount-codes/pages/DiscountCodesPage
 import AuditLogsPage from './features/audit/pages/AuditLogsPage';
 import DepartmentExpensesPage from './features/department-expenses/pages/DepartmentExpensesPage';
 import CustomersPage from './features/customers/pages/CustomersPage';
+import LaundryItemsPage from './features/laundry-items/pages/LaundryItemsPage';
 import type { UserRoleType } from './lib/types';
 
 function ProtectedRoute({ roles, children }: { roles: UserRoleType[]; children: React.ReactNode }) {
@@ -55,7 +56,7 @@ const routeRoles: Record<string, UserRoleType[]> = {
   '/bookings/calendar': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FrontOfficeManager],
   '/bookings/status-history': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/users': [UserRole.SuperAdmin, UserRole.IT],
-  '/customers': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
+  '/customers': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.FrontOfficeManager],
   '/employees': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/departments': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/breakfast': [UserRole.SuperAdmin, UserRole.GroupGM],
@@ -66,6 +67,7 @@ const routeRoles: Record<string, UserRoleType[]> = {
   '/audit-logs': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/roles': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/department-expenses': [UserRole.Accountant, UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.FacilityManager],
+  '/laundry-items': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
 };
 
 export default function App() {
@@ -107,6 +109,7 @@ export default function App() {
                           case '/discount-codes': return <DiscountCodesPage />;
                           case '/audit-logs': return <AuditLogsPage />;
                           case '/department-expenses': return <DepartmentExpensesPage />;
+                          case '/laundry-items': return <LaundryItemsPage />;
                           case '/roles': return <RolesPage />;
                           default: return null;
                         }
