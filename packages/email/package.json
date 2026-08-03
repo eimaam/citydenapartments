@@ -3,14 +3,16 @@
   "version": "0.0.1",
   "private": true,
   "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.build.json"
   },
   "exports": {
     ".": {
-      "import": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
       "require": "./dist/index.js",
-      "default": "./src/index.ts"
+      "default": "./dist/index.js"
     }
   },
   "dependencies": {

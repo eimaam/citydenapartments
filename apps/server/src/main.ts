@@ -44,7 +44,7 @@ async function bootstrap() {
   app.useGlobalFilters(new AllExceptionsFilter());
   app.useGlobalInterceptors(new LoggingInterceptor(), new ResponseInterceptor());
 
-  await app.listen(AppConfig.PORT);
+  await app.listen(AppConfig.PORT, '0.0.0.0');
   console.log(`Server running on http://localhost:${AppConfig.PORT}/api/v1`);
 }
 bootstrap();
