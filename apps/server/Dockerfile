@@ -27,7 +27,7 @@ COPY --from=builder /app/apps/server/package.json apps/server/
 COPY --from=builder /app/packages/shared/package.json packages/shared/
 COPY --from=builder /app/packages/email/package.json packages/email/
 
-RUN pnpm install --frozen-lockfile --filter @citydenapartments/server --prod
+RUN pnpm install --frozen-lockfile --filter @citydenapartments/server --filter @citydenapartments/shared --filter @citydenapartments/email --prod
 
 COPY --from=builder /app/packages/shared/dist packages/shared/dist
 COPY --from=builder /app/packages/email/dist packages/email/dist
