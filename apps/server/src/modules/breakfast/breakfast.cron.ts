@@ -7,7 +7,7 @@ import { startOfDay, endOfDay } from 'date-fns';
 import { BreakfastLog } from './breakfast-log.schema';
 import { Booking } from '../bookings/booking.schema';
 import { BookingStatus } from '@citydenapartments/shared';
-import { BREAKFAST_CUTOFF_HOUR, BREAKFAST_CUTOFF_MINUTE } from './breakfast.constants';
+import { BREAKFAST_CUTOFF_HOUR, BREAKFAST_CUTOFF_MINUTE, getMaxBreakfastDiscountPercentage } from './breakfast.constants';
 
 const SYSTEM_USER_ID = new mongoose.Types.ObjectId('000000000000000000000000');
 
@@ -27,6 +27,7 @@ export class BreakfastCron {
     try {
       const todayStart = startOfDay(new Date());
       const todayEnd = endOfDay(new Date());
+      const maxDiscount = getMaxBreakfastDiscountPercentage();
 
       const unservedByBranch = await this.bookingModel.aggregate<{
         _id: mongoose.Types.ObjectId;
@@ -36,7 +37,16 @@ export class BreakfastCron {
           guestName: string;
         }>;
       }>([
-        { $match: { bookingStatus: BookingStatus.Checked_In } },
+        {
+          $match: {
+            bookingStatus: BookingStatus.Checked_In,
+            $or: [
+              { discountPercentage: { $lt: maxDiscount } },
+              { discountPercentage: { $exists: false } },
+              { discountPercentage: null },
+            ],
+          },
+        },
         { $unwind: '$rooms' },
         {
           $lookup: {

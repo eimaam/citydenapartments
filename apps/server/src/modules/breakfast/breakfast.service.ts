@@ -10,6 +10,8 @@ import { escapeRegex } from '../../common/utils/escape-regex';
 import { RedisService } from '../redis/redis.service';
 import { BookingStatus } from '@citydenapartments/shared';
 
+import { getMaxBreakfastDiscountPercentage } from './breakfast.constants';
+
 @Injectable()
 export class BreakfastService {
   private readonly logger = new Logger(BreakfastService.name);
@@ -31,12 +33,18 @@ export class BreakfastService {
     const skip = (page - 1) * limit;
     const start = startOfDay(new Date(targetDate));
     const end = endOfDay(new Date(targetDate));
+    const maxDiscount = getMaxBreakfastDiscountPercentage();
 
     const pipeline: any[] = [
       {
         $match: {
           branchId: new mongoose.Types.ObjectId(branchId),
           bookingStatus: BookingStatus.Checked_In,
+          $or: [
+            { discountPercentage: { $lt: maxDiscount } },
+            { discountPercentage: { $exists: false } },
+            { discountPercentage: null },
+          ],
         },
       },
       { $unwind: '$rooms' },
@@ -119,9 +127,10 @@ export class BreakfastService {
       throw new BadRequestException('Booking is not checked in.');
     }
 
-    if ((booking.discountPercentage || 0) >= 15) {
+    const maxDiscount = getMaxBreakfastDiscountPercentage();
+    if ((booking.discountPercentage || 0) >= maxDiscount) {
       this.logger.warn(`Breakfast denied — Guest ${booking.guestDetails.name} | booking has ${booking.discountPercentage}% discount`);
-      throw new BadRequestException('Bookings with 15% or more discount are not eligible for complimentary breakfast.');
+      throw new BadRequestException(`Bookings with ${maxDiscount}% or more discount are not eligible for complimentary breakfast.`);
     }
 
     const roomInBooking = booking.rooms?.some((r) => r.roomId.toString() === dto.roomId);
