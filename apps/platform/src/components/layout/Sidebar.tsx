@@ -72,6 +72,12 @@ const menuConfig: MenuConfig = {
     ]},
   ],
   IT: [
+    { heading: 'Logistics', items: [
+      { label: 'Inventory Book', icon: BookOpen, path: '/inventory/book' },
+    ]},
+    { heading: 'Services', items: [
+      { label: 'Laundry', icon: Shirt, path: '/laundry' },
+    ]},
     { heading: 'People', items: [
       { label: 'Customers', icon: BookUser, path: '/customers' },
     ]},
@@ -79,6 +85,17 @@ const menuConfig: MenuConfig = {
   FacilityManager: [
     { heading: 'Overview', items: [
       { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    ]},
+    { heading: 'Monitoring', items: [
+      { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
+    ]},
+    { heading: 'Logistics', items: [
+      { label: 'Inventory', icon: Package, path: '/inventory' },
+      { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
+      { label: 'Inventory Book', icon: BookOpen, path: '/inventory/book' },
+    ]},
+    { heading: 'Services', items: [
+      { label: 'Laundry', icon: Shirt, path: '/laundry' },
     ]},
     { heading: 'Reservations', items: [
       { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
