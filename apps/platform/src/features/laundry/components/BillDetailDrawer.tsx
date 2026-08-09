@@ -9,9 +9,10 @@ interface Props {
   onClose: () => void;
   onToggleStatus: (id: string, status: 'pending' | 'paid') => void;
   busy: boolean;
+  readOnly?: boolean;
 }
 
-export default function BillDetailDrawer({ bill, onClose, onToggleStatus, busy }: Props) {
+export default function BillDetailDrawer({ bill, onClose, onToggleStatus, busy, readOnly }: Props) {
   if (!bill) return null;
   const guestName = bill.customer?.name ?? bill.walkIn?.name ?? '—';
   const guestPhone = bill.customer?.phone ?? bill.walkIn?.phone ?? '—';
@@ -83,18 +84,20 @@ export default function BillDetailDrawer({ bill, onClose, onToggleStatus, busy }
         </div>
 
         <div className="flex gap-2">
-          <Button variant="outline" icon={<Printer size={14} />} onClick={() => printLaundryReceipt(bill)}>
+          <Button variant="outline" fullWidth={readOnly} icon={<Printer size={14} />} onClick={() => printLaundryReceipt(bill)}>
             Print Receipt
           </Button>
-          <Button
-            variant={bill.status === 'paid' ? 'outline' : 'default'}
-            fullWidth
-            icon={bill.status === 'paid' ? <Undo2 size={14} /> : <CheckCircle2 size={14} />}
-            loading={busy}
-            onClick={() => onToggleStatus(bill._id, bill.status === 'paid' ? 'pending' : 'paid')}
-          >
-            {bill.status === 'paid' ? 'Mark as Pending' : 'Mark as Paid'}
-          </Button>
+          {!readOnly && (
+            <Button
+              variant={bill.status === 'paid' ? 'outline' : 'default'}
+              fullWidth
+              icon={bill.status === 'paid' ? <Undo2 size={14} /> : <CheckCircle2 size={14} />}
+              loading={busy}
+              onClick={() => onToggleStatus(bill._id, bill.status === 'paid' ? 'pending' : 'paid')}
+            >
+              {bill.status === 'paid' ? 'Mark as Pending' : 'Mark as Paid'}
+            </Button>
+          )}
         </div>
       </div>
     </Drawer>

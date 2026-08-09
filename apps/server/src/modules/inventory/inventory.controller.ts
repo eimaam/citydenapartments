@@ -21,7 +21,7 @@ export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
 
   @Get('items')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER, UserRoleEnum.ACCOUNTANT)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER, UserRoleEnum.ACCOUNTANT, UserRoleEnum.FACILITY_MANAGER)
   findAllItems(
     @ActiveUser() user: any,
     @Query() query: QueryInventoryItemsDto,
@@ -37,7 +37,7 @@ export class InventoryController {
   }
 
   @Get('items/:id')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER, UserRoleEnum.ACCOUNTANT)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER, UserRoleEnum.ACCOUNTANT, UserRoleEnum.FACILITY_MANAGER)
   findOneItem(@Param('id') id: string, @ActiveUser() user: any) {
     return this.inventoryService.findOneItem(id, user.activeBranchId);
   }
@@ -67,7 +67,7 @@ export class InventoryController {
   }
 
   @Get('transactions')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER, UserRoleEnum.ACCOUNTANT)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER, UserRoleEnum.ACCOUNTANT, UserRoleEnum.FACILITY_MANAGER)
   findTransactions(
     @ActiveUser() user: any,
     @Query() query: QueryTransactionsDto,
@@ -90,7 +90,7 @@ export class InventoryController {
   }
 
   @Get('spoilage')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.ACCOUNTANT)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.ACCOUNTANT, UserRoleEnum.FACILITY_MANAGER)
   findSpoilageReports(@ActiveUser() user: any, @Query() query: QuerySpoilageDto) {
     return this.inventoryService.findSpoilageReports({
       branchId: user.activeBranchId,
@@ -104,7 +104,7 @@ export class InventoryController {
   }
 
   @Get('spoilage/:id')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.ACCOUNTANT)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.ACCOUNTANT, UserRoleEnum.FACILITY_MANAGER)
   findOneSpoilage(@Param('id') id: string, @ActiveUser() user: any) {
     return this.inventoryService.findOneSpoilage(id, user.activeBranchId);
   }
@@ -122,7 +122,7 @@ export class InventoryController {
   }
 
   @Get('snapshots')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.ACCOUNTANT)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.STORE_MANAGER, UserRoleEnum.ACCOUNTANT, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.IT)
   findSnapshots(
     @ActiveUser() user: any,
     @Query() query: QuerySnapshotsDto,

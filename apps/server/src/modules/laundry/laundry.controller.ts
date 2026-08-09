@@ -17,6 +17,7 @@ const BILL_ROLES = [
   UserRoleEnum.RECEPTION,
   UserRoleEnum.FRONT_OFFICE_MANAGER,
 ];
+const BILL_READ_ROLES = [...BILL_ROLES, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.IT];
 const ITEM_ROLES = [UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT];
 
 @Controller('laundry')
@@ -26,7 +27,7 @@ export class LaundryController {
 
   // ── catalog (price list) ─────────────────────────────────────
   @Get('catalog/items')
-  @Roles(...BILL_ROLES)
+  @Roles(...BILL_READ_ROLES)
   getItems(@Query() query: { search?: string; category?: string; page?: number; limit?: number }) {
     return this.laundryService.getItems({
       search: query.search,
@@ -37,7 +38,7 @@ export class LaundryController {
   }
 
   @Get('catalog')
-  @Roles(...BILL_ROLES)
+  @Roles(...BILL_READ_ROLES)
   getCatalog(@Query() query: { summary?: string }) {
     return this.laundryService.getCatalog(query.summary === 'true');
   }
@@ -74,7 +75,7 @@ export class LaundryController {
 
   // ── bills ────────────────────────────────────────────────────
   @Get('bills')
-  @Roles(...BILL_ROLES)
+  @Roles(...BILL_READ_ROLES)
   findAll(@ActiveUser() user: any, @Query() query: PaginatedQueryDto & { status?: string; from?: string; to?: string }) {
     return this.laundryService.findAll({
       branchId: user.activeBranchId,
@@ -88,7 +89,7 @@ export class LaundryController {
   }
 
   @Get('bills/:id')
-  @Roles(...BILL_ROLES)
+  @Roles(...BILL_READ_ROLES)
   findOne(@Param('id') id: string, @ActiveUser() user: any) {
     return this.laundryService.findOne(id, user.activeBranchId);
   }

@@ -53,12 +53,12 @@ export default function App() {
                 <Route path="staff" element={<StaffPage />} />
               </Route>
 
-              <Route element={<RoleGuard roles={[UserRole.StoreKeeper, UserRole.StoreManager, UserRole.Accountant]} />}>
+              <Route element={<RoleGuard roles={[UserRole.StoreKeeper, UserRole.StoreManager, UserRole.Accountant, UserRole.FacilityManager]} />}>
                 <Route path="inventory" element={<InventoryPage />} />
                 <Route path="inventory/transactions" element={<TransactionsPage />} />
               </Route>
 
-              <Route element={<RoleGuard roles={[UserRole.SuperAdmin, UserRole.GroupGM, UserRole.StoreManager, UserRole.Accountant]} />}>
+              <Route element={<RoleGuard roles={[UserRole.SuperAdmin, UserRole.GroupGM, UserRole.StoreManager, UserRole.Accountant, UserRole.FacilityManager, UserRole.IT]} />}>
                 <Route path="inventory/spoilage" element={<SpoilagePage />} />
                 <Route path="inventory/book" element={<InventoryBookPage />} />
               </Route>
@@ -67,7 +67,7 @@ export default function App() {
                 <Route path="customers" element={<CustomersPage />} />
               </Route>
 
-              <Route element={<RoleGuard roles={[UserRole.Reception, UserRole.FrontOfficeManager]} />}>
+              <Route element={<RoleGuard roles={[UserRole.Reception, UserRole.FrontOfficeManager, UserRole.FacilityManager, UserRole.IT]} />}>
                 <Route path="laundry" element={<LaundryPage />} />
               </Route>
 
@@ -75,7 +75,7 @@ export default function App() {
                 <Route path="discount-codes" element={<DiscountCodesPage />} />
               </Route>
 
-              <Route element={<RoleGuard roles={[UserRole.Accountant, UserRole.SuperAdmin, UserRole.GroupGM]} />}>
+              <Route element={<RoleGuard roles={[UserRole.Accountant, UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager]} />}>
                 <Route path="department-expenses" element={<DepartmentExpensesPage />} />
               </Route>
             </Route>

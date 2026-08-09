@@ -147,6 +147,10 @@ const menuConfig: MenuConfig = {
     { heading: 'Overview', items: [
       { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
     ]},
+    { heading: 'Logistics', items: [
+      { label: 'Inventory', icon: Package, path: '/inventory' },
+      { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
+    ]},
     { heading: 'Monitoring', items: [
       { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
     ]},

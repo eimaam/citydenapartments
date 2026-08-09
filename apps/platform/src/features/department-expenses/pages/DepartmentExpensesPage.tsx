@@ -7,6 +7,7 @@ import { useAuth } from '../../../contexts/auth';
 import { useToast } from '../../../components/ui/Toast';
 import { UserRole } from '@citydenapartments/shared';
 import { expensesApi, departmentsApi, type DepartmentExpenseEntry, type ExpenseGroup } from '../api/department-expenses.api';
+import { can } from '../../../components/ui/Can';
 
 const LIMIT = 25;
 
@@ -60,6 +61,7 @@ function DetailDrawer({ entry, open, onClose }: { entry: DepartmentExpenseEntry 
 export default function DepartmentExpensesPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const canWrite = can(user, [UserRole.Accountant, UserRole.SuperAdmin, UserRole.GroupGM]);
 
   const [items, setItems] = useState<DepartmentExpenseEntry[]>([]);
   const [total, setTotal] = useState(0);
@@ -211,13 +213,15 @@ export default function DepartmentExpensesPage() {
           >
             <Eye size={14} />
           </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); openEdit(r); }}
-            className="p-1.5 rounded text-outline hover:text-on-surface hover:bg-surface-container cursor-pointer bg-transparent border-none transition-colors text-xs"
-            title="Edit"
-          >
-            Edit
-          </button>
+          {canWrite && (
+            <button
+              onClick={(e) => { e.stopPropagation(); openEdit(r); }}
+              className="p-1.5 rounded text-outline hover:text-on-surface hover:bg-surface-container cursor-pointer bg-transparent border-none transition-colors text-xs"
+              title="Edit"
+            >
+              Edit
+            </button>
+          )}
         </div>
       ),
     },
@@ -235,9 +239,11 @@ export default function DepartmentExpensesPage() {
           <Receipt size={22} className="text-outline" />
           <h1 className="font-serif text-2xl sm:text-3xl text-on-surface">Department Expenses</h1>
         </div>
-        <Button variant="default" size="sm" onClick={() => setShowCreate(true)} icon={<Plus size={14} />}>
-          Log Expense
-        </Button>
+        {canWrite && (
+          <Button variant="default" size="sm" onClick={() => setShowCreate(true)} icon={<Plus size={14} />}>
+            Log Expense
+          </Button>
+        )}
       </div>
 
       {groups.length > 0 && (

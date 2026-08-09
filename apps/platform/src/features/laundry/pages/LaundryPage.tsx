@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import { Shirt, Plus } from 'lucide-react';
-import { Button, Input, Table, Pagination, Badge } from '@citydenapartments/shared';
+import { Button, Input, Table, Pagination, Badge, UserRole } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
 import type { LaundryBillResponse, LaundryStatusType } from '@citydenapartments/shared';
+import { useAuth } from '../../../contexts/auth';
+import { can } from '../../../components/ui/Can';
 import { useToast } from '../../../components/ui/Toast';
 import { laundryApi } from '../api/laundry.api';
 import NewLaundryBill from '../components/NewLaundryBill';
@@ -30,8 +32,16 @@ interface Paginated {
 }
 
 export default function LaundryPage() {
+  const { user } = useAuth();
   const { toast } = useToast();
-  const [tab, setTab] = useState<'new' | 'bills'>('new');
+  const canManage = can(user, [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.Reception, UserRole.FrontOfficeManager]);
+  const [tab, setTab] = useState<'new' | 'bills'>(canManage ? 'new' : 'bills');
+
+  useEffect(() => {
+    if (!canManage && tab === 'new') {
+      setTab('bills');
+    }
+  }, [canManage, tab]);
 
   const [data, setData] = useState<Paginated>({ items: [], total: 0, page: 1, limit: LIMIT });
   const [loading, setLoading] = useState(false);
@@ -144,16 +154,20 @@ export default function LaundryPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="font-serif text-2xl sm:text-3xl text-on-surface">Laundry &amp; Pressing</h1>
-          <p className="text-sm text-on-surface-variant">Create laundry bills for guests, track payments and print receipts.</p>
+          <p className="text-sm text-on-surface-variant">
+            {canManage ? 'Create laundry bills for guests, track payments and print receipts.' : 'View laundry bills and print receipts.'}
+          </p>
         </div>
       </div>
 
-      <div className="flex gap-2 mb-6">
-        <Button variant={tab === 'new' ? 'default' : 'outline'} icon={<Plus size={14} />} onClick={() => setTab('new')}>New Bill</Button>
-        <Button variant={tab === 'bills' ? 'default' : 'outline'} icon={<Shirt size={14} />} onClick={() => setTab('bills')}>Bills</Button>
-      </div>
+      {canManage && (
+        <div className="flex gap-2 mb-6">
+          <Button variant={tab === 'new' ? 'default' : 'outline'} icon={<Plus size={14} />} onClick={() => setTab('new')}>New Bill</Button>
+          <Button variant={tab === 'bills' ? 'default' : 'outline'} icon={<Shirt size={14} />} onClick={() => setTab('bills')}>Bills</Button>
+        </div>
+      )}
 
-      {tab === 'new' ? (
+      {tab === 'new' && canManage ? (
         <NewLaundryBill onCreated={handleCreated} />
       ) : (
         <div className="space-y-4">
@@ -192,7 +206,7 @@ export default function LaundryPage() {
         </div>
       )}
 
-      <BillDetailDrawer bill={detail} onClose={() => setDetail(null)} onToggleStatus={toggleStatus} busy={statusBusy} />
+      <BillDetailDrawer bill={detail} onClose={() => setDetail(null)} onToggleStatus={toggleStatus} busy={statusBusy} readOnly={!canManage} />
     </div>
   );
 }
