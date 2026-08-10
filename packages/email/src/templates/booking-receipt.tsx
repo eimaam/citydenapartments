@@ -163,10 +163,16 @@ export function BookingReceiptEmail(props: BookingReceiptProps) {
         </Row>
 
         {props.discount > 0 && (
-          <Row style={{ marginBottom: 4 }}>
-            <Column style={col}><Text style={label}>Discount ({props.discountPercentage}%)</Text></Column>
-            <Column style={{ ...col, textAlign: 'right' }}><Text style={{ ...value, color: '#10b981' }}>-{formatN(props.discount)}</Text></Column>
-          </Row>
+          <>
+            <Row style={{ marginBottom: 4 }}>
+              <Column style={col}><Text style={label}>Discount ({props.discountPercentage}%)</Text></Column>
+              <Column style={{ ...col, textAlign: 'right' }}><Text style={{ ...value, color: '#10b981' }}>-{formatN(props.discount)}</Text></Column>
+            </Row>
+            <Row style={{ marginBottom: 4 }}>
+              <Column style={col}><Text style={{ ...label, fontWeight: 600 }}>Net Subtotal</Text></Column>
+              <Column style={{ ...col, textAlign: 'right' }}><Text style={{ ...value, fontWeight: 600 }}>{formatN(props.subtotal - props.discount)}</Text></Column>
+            </Row>
+          </>
         )}
 
         {props.vatAmount > 0 && (

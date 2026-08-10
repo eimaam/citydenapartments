@@ -1,12 +1,12 @@
 import { useState, useMemo, useEffect, useCallback, useRef, type FormEvent } from 'react';
 import { differenceInDays, addDays, format } from 'date-fns';
-import { Calendar, Users, X, ChevronDown, ChevronRight, Search } from 'lucide-react';
+import { Users, X, ChevronDown, ChevronRight, Search } from 'lucide-react';
 import { Drawer } from './Drawer';
 import { Input } from './Input';
 import { Select, Option } from './Select';
 import { Button } from './Button';
-import { BookingStatus, BookingSource, PaymentMethod, UserRole } from '../../types';
-import type { PaymentMethodType, BookingSourceType } from '../../types';
+import { BookingStatus, BookingSource, PaymentMethod, UserRole, DiscountType } from '../../types';
+import type { PaymentMethodType, BookingSourceType, DiscountTypeType } from '../../types';
 import { getMaxManualDiscount } from '../../utils/discounts';
 
 // ── Types ───────────────────────────────────────────────────
@@ -82,6 +82,8 @@ export interface BookingPayload {
   numberOfGuests: number;
   checkInDate: string;
   checkOutDate: string;
+  discountType?: DiscountTypeType;
+  discountAmount?: number;
   discountPercentage: number;
   discountCode?: string;
   includeVat: boolean;
@@ -203,7 +205,7 @@ export function BookingFormDrawer({
     guestNextDestination: '', guestGender: '', guestReligion: '',
     numberOfGuests: 1,
     checkInDate: todayStr(), nights: 1, checkOutDate: tomorrowStr(), useNights: true,
-    actualPricePerNight: 0, discountPercentage: 0,
+    actualPricePerNight: 0, discountType: DiscountType.Percentage as DiscountTypeType, discountAmount: 0, discountPercentage: 0,
     includeVat: false, includeServiceCharge: false,
     paymentMethod: PaymentMethod.Cash as PaymentMethodType,
     bookingSource: BookingSource.WalkIn as BookingSourceType,
@@ -239,7 +241,7 @@ export function BookingFormDrawer({
       guestNextDestination: '', guestGender: '', guestReligion: '',
       numberOfGuests: 1,
       checkInDate: checkIn, nights: 1, checkOutDate: checkOut, useNights: true,
-      actualPricePerNight: 0, discountPercentage: 0,
+      actualPricePerNight: 0, discountType: DiscountType.Percentage, discountAmount: 0, discountPercentage: 0,
       includeVat: false, includeServiceCharge: false,
       paymentMethod: PaymentMethod.Cash, bookingSource: BookingSource.WalkIn,
     });
@@ -318,13 +320,21 @@ export function BookingFormDrawer({
         return sum + price * n;
       }, 0);
     }
-    const vat = form.includeVat ? Math.round(sub * 7.5 / 100) : 0;
-    const sc = form.includeServiceCharge ? Math.round(sub * 10 / 100) : 0;
-    const gross = sub + vat + sc;
-    const pct = form.discountPercentage || 0;
-    const disc = Math.round((gross * pct) / 100);
-    return { nights: n, subtotal: sub, grossTotal: gross, discountAmt: disc, vatAmt: vat, scAmt: sc, total: Math.max(0, gross - disc) };
-  }, [form.rooms, form.discountPercentage, form.includeVat, form.includeServiceCharge, form.nights, form.useNights, computedNights, rooms, roomTypes, roomSelection, form.actualPricePerNight, selectedRoom]);
+    let discAmt = 0;
+    let effectivePct = 0;
+    if (form.discountType === DiscountType.Fixed) {
+      discAmt = Math.min(sub, form.discountAmount || 0);
+      effectivePct = sub > 0 ? Math.min(100, Math.round((discAmt / sub) * 100)) : 0;
+    } else {
+      effectivePct = form.discountPercentage || 0;
+      discAmt = Math.round((sub * effectivePct) / 100);
+    }
+    const netSub = Math.max(0, sub - discAmt);
+    const vat = form.includeVat ? Math.round((netSub * 7.5) / 100) : 0;
+    const sc = form.includeServiceCharge ? Math.round((netSub * 10) / 100) : 0;
+    const total = netSub + vat + sc;
+    return { nights: n, subtotal: sub, discountAmt: discAmt, effectivePct, netSubtotal: netSub, vatAmt: vat, scAmt: sc, total };
+  }, [form.rooms, form.discountType, form.discountAmount, form.discountPercentage, form.includeVat, form.includeServiceCharge, form.nights, form.useNights, computedNights, rooms, roomTypes, roomSelection, form.actualPricePerNight, selectedRoom]);
 
   // ── Room management (multi-room) ────────────────────────────
   const addRoom = () => {
@@ -521,7 +531,9 @@ export function BookingFormDrawer({
         numberOfGuests: Number(form.numberOfGuests) || 1,
         checkInDate: form.checkInDate,
         checkOutDate: form.checkOutDate,
-        discountPercentage: Number(form.discountPercentage) || 0,
+        discountType: form.discountType,
+        discountAmount: pricing.discountAmt,
+        discountPercentage: pricing.effectivePct,
         discountCode: appliedDiscountCode?.code,
         includeVat: form.includeVat,
         includeServiceCharge: form.includeServiceCharge,
@@ -743,15 +755,25 @@ export function BookingFormDrawer({
                   <div><span className="text-[10px] text-outline uppercase tracking-wide">Price / Night<span className="text-error ml-0.5">*</span></span><Input size="sm" type="number" min={0} value={form.actualPricePerNight || ''} onChange={(e) => onPriceChange(Number(e.target.value))} /></div>
                 )}
                 <div className={allowPriceOverride ? '' : 'col-span-3'}>
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] text-outline uppercase tracking-wide">Discount (%)</span>
+                  <div className="flex justify-between items-center mb-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-outline uppercase tracking-wide">Discount</span>
+                      <div className="flex rounded border border-outline-variant overflow-hidden text-[10px]">
+                        <button type="button" onClick={() => updateField('discountType', DiscountType.Percentage)} className={`px-1.5 py-0.5 ${form.discountType === DiscountType.Percentage ? 'bg-primary text-on-primary font-bold' : 'bg-surface text-outline'}`}>%</button>
+                        <button type="button" onClick={() => updateField('discountType', DiscountType.Fixed)} className={`px-1.5 py-0.5 ${form.discountType === DiscountType.Fixed ? 'bg-primary text-on-primary font-bold' : 'bg-surface text-outline'}`}>₦</button>
+                      </div>
+                    </div>
                     <span className="text-[9px] text-outline">
                       {appliedDiscountCode ? 'Code Applied' : selectedCustomerVipDiscount > 0 ? `VIP ${selectedCustomerVipDiscount}%` : `Max ${maxManualDiscount}%`}
                     </span>
                   </div>
-                  <Input size="sm" type="number" min={0} max={appliedDiscountCode ? 100 : Math.max(maxManualDiscount, selectedCustomerVipDiscount)} step={1} value={form.discountPercentage || ''} onChange={(e) => onDiscountPctChange(Number(e.target.value))} disabled={!appliedDiscountCode && selectedCustomerVipDiscount > 0} />
-                  {!appliedDiscountCode && form.discountPercentage > Math.max(maxManualDiscount, selectedCustomerVipDiscount) && (
-                    <p className="text-[10px] text-error mt-0.5">Max {Math.max(maxManualDiscount, selectedCustomerVipDiscount)}% for your role / guest VIP tier.</p>
+                  {form.discountType === DiscountType.Percentage ? (
+                    <Input size="sm" type="number" min={0} max={appliedDiscountCode ? 100 : Math.max(maxManualDiscount, selectedCustomerVipDiscount)} step={1} value={form.discountPercentage || ''} onChange={(e) => onDiscountPctChange(Number(e.target.value))} disabled={!appliedDiscountCode && selectedCustomerVipDiscount > 0} placeholder="%" />
+                  ) : (
+                    <Input size="sm" type="number" min={0} value={form.discountAmount || ''} onChange={(e) => updateField('discountAmount', Number(e.target.value))} disabled={!appliedDiscountCode && selectedCustomerVipDiscount > 0} placeholder="₦ Amount" />
+                  )}
+                  {!appliedDiscountCode && pricing.effectivePct > Math.max(maxManualDiscount, selectedCustomerVipDiscount) && (
+                    <p className="text-[10px] text-error mt-0.5">Max {Math.max(maxManualDiscount, selectedCustomerVipDiscount)}% ({form.discountType === DiscountType.Fixed ? `approx ₦${Math.round((pricing.subtotal * Math.max(maxManualDiscount, selectedCustomerVipDiscount)) / 100).toLocaleString()}` : ''}) allowed.</p>
                   )}
                 </div>
                 <div><span className="text-[10px] text-outline uppercase tracking-wide">Total Paid</span><p className="text-sm font-bold mt-1.5">₦{pricing.total.toLocaleString()}</p></div>
@@ -781,9 +803,20 @@ export function BookingFormDrawer({
               </div>
               <div className="mt-3 p-3 bg-surface-container-lowest rounded border border-outline-variant space-y-1 text-xs">
                 <div className="flex justify-between"><span>Subtotal ({pricing.nights} night{pricing.nights > 1 ? 's' : ''})</span><span>₦{pricing.subtotal.toLocaleString()}</span></div>
-                {pricing.discountAmt > 0 && <div className="flex justify-between text-error"><span>Discount ({form.discountPercentage}%)</span><span>-₦{pricing.discountAmt.toLocaleString()}</span></div>}
-                {pricing.vatAmt > 0 && <div className="flex justify-between text-amber-600"><span>VAT (7.5%)</span><span>+₦{pricing.vatAmt.toLocaleString()}</span></div>}
-                {pricing.scAmt > 0 && <div className="flex justify-between text-blue-600"><span>Service Charge (10%)</span><span>+₦{pricing.scAmt.toLocaleString()}</span></div>}
+                {pricing.discountAmt > 0 && (
+                  <>
+                    <div className="flex justify-between text-error">
+                      <span>Discount ({form.discountType === DiscountType.Fixed ? `Fixed ₦${form.discountAmount?.toLocaleString()}` : `${form.discountPercentage}%`})</span>
+                      <span>-₦{pricing.discountAmt.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-outline text-[11px] font-medium pt-0.5 border-t border-dashed border-outline-variant/60">
+                      <span>Net Room Subtotal</span>
+                      <span>₦{pricing.netSubtotal.toLocaleString()}</span>
+                    </div>
+                  </>
+                )}
+                {pricing.vatAmt > 0 && <div className="flex justify-between text-amber-600"><span>VAT (7.5% of Net)</span><span>+₦{pricing.vatAmt.toLocaleString()}</span></div>}
+                {pricing.scAmt > 0 && <div className="flex justify-between text-blue-600"><span>Service Charge (10% of Net)</span><span>+₦{pricing.scAmt.toLocaleString()}</span></div>}
                 <div className="flex justify-between font-bold text-on-surface pt-1 border-t border-outline-variant"><span>Total</span><span>₦{pricing.total.toLocaleString()}</span></div>
               </div>
               {roomSelection === 'multiple' && form.rooms.map((r, idx) => {

@@ -97,6 +97,9 @@ export class Booking extends Document {
   @Prop({ default: 0 })
   discount: number;
 
+  @Prop({ type: String, enum: ['percentage', 'fixed'], default: 'percentage' })
+  discountType: string;
+
   @Prop({ default: 0 })
   discountPercentage: number;
 

@@ -403,12 +403,12 @@ export default function CalendarPage() {
     const roomType = allRoomTypes.find((rt) => rt._id === selectedRoom?.roomTypeId?._id);
     const price = form.actualPricePerNight || roomType?.basePrice || 0;
     const sub = price * n;
-    const vat = form.includeVat ? Math.round(sub * 7.5 / 100) : 0;
-    const sc = form.includeServiceCharge ? Math.round(sub * 10 / 100) : 0;
-    const gross = sub + vat + sc;
     const pct = form.discountPercentage || 0;
-    const disc = Math.round((gross * pct) / 100);
-    return { nights: n, subtotal: sub, grossTotal: gross, discountAmt: disc, vatAmt: vat, scAmt: sc, total: Math.max(0, gross - disc) };
+    const disc = Math.round((sub * pct) / 100);
+    const netSub = Math.max(0, sub - disc);
+    const vat = form.includeVat ? Math.round(netSub * 7.5 / 100) : 0;
+    const sc = form.includeServiceCharge ? Math.round(netSub * 10 / 100) : 0;
+    return { nights: n, subtotal: sub, discountAmt: disc, netSubtotal: netSub, vatAmt: vat, scAmt: sc, total: netSub + vat + sc };
   }, [form.actualPricePerNight, form.discountPercentage, form.includeVat, form.includeServiceCharge, form.nights, form.useNights, computedNights, selectedRoom, allRoomTypes]);
 
   const onRoomChange = (roomId: string) => {
@@ -924,9 +924,14 @@ export default function CalendarPage() {
             </div>
             <div className="mt-3 p-3 bg-surface-container-lowest rounded border border-outline-variant space-y-1 text-xs">
               <div className="flex justify-between"><span>Subtotal ({pricing.nights} night{pricing.nights > 1 ? 's' : ''})</span><span>₦{pricing.subtotal.toLocaleString()}</span></div>
-              {pricing.discountAmt > 0 && <div className="flex justify-between text-error"><span>Discount ({form.discountPercentage}%)</span><span>-₦{pricing.discountAmt.toLocaleString()}</span></div>}
-              {pricing.vatAmt > 0 && <div className="flex justify-between text-amber-600"><span>VAT (7.5%)</span><span>+₦{pricing.vatAmt.toLocaleString()}</span></div>}
-              {pricing.scAmt > 0 && <div className="flex justify-between text-blue-600"><span>Service Charge (10%)</span><span>+₦{pricing.scAmt.toLocaleString()}</span></div>}
+              {pricing.discountAmt > 0 && (
+                <>
+                  <div className="flex justify-between text-error"><span>Discount ({form.discountPercentage}%)</span><span>-₦{pricing.discountAmt.toLocaleString()}</span></div>
+                  <div className="flex justify-between text-outline text-[11px] font-medium pt-0.5 border-t border-dashed border-outline-variant/60"><span>Net Room Subtotal</span><span>₦{pricing.netSubtotal.toLocaleString()}</span></div>
+                </>
+              )}
+              {pricing.vatAmt > 0 && <div className="flex justify-between text-amber-600"><span>VAT (7.5% of Net)</span><span>+₦{pricing.vatAmt.toLocaleString()}</span></div>}
+              {pricing.scAmt > 0 && <div className="flex justify-between text-blue-600"><span>Service Charge (10% of Net)</span><span>+₦{pricing.scAmt.toLocaleString()}</span></div>}
               <div className="flex justify-between font-bold text-on-surface pt-1 border-t border-outline-variant"><span>Total</span><span>₦{pricing.total.toLocaleString()}</span></div>
             </div>
   <div className="flex items-center gap-2 mt-3 pt-3 border-t border-outline-variant/60">

@@ -15,7 +15,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaymentMethod, BookingStatus, BookingSource } from '../booking.schema';
-import { Gender, BookingStatus as BookingStatusEnum, PaymentMethod as PaymentMethodEnum, BookingSource as BookingSourceEnum } from '@citydenapartments/shared';
+import { Gender, BookingStatus as BookingStatusEnum, PaymentMethod as PaymentMethodEnum, BookingSource as BookingSourceEnum, DiscountType as DiscountTypeEnum, DiscountTypeType as DiscountType } from '@citydenapartments/shared';
 
 export class CreateRoomBookingDto {
   @IsMongoId()
@@ -105,6 +105,15 @@ export class CreateBookingDto {
 
   @IsDateString()
   checkOutDate: string;
+
+  @IsOptional()
+  @IsEnum(DiscountTypeEnum)
+  discountType?: DiscountType;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  discountAmount?: number;
 
   @IsOptional()
   @IsNumber()

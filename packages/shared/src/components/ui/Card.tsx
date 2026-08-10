@@ -5,6 +5,8 @@ import { cva } from 'class-variance-authority';
 import { MotionDiv } from './MotionComponents';
 import { cn } from '../../lib/utils';
 
+const AntCardComponent = AntCard as any;
+
 type CardVariant = 'default' | 'outlined' | 'elevated';
 type CardRounded = 'none' | 'sm' | 'md' | 'lg' | 'xl';
 type CardPadding = 'none' | 'sm' | 'md' | 'lg' | 'xl';
@@ -93,7 +95,7 @@ export const Card = ({
   });
 
   const cardContent = (
-    <AntCard
+    <AntCardComponent
       className={cn(cardStyles)}
       title={
         null
@@ -117,7 +119,7 @@ export const Card = ({
       </div>
       }
       {children}
-    </AntCard>
+    </AntCardComponent>
   );
 
   if (animate) {

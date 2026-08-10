@@ -280,31 +280,39 @@ export class BookingsService {
 
       const subtotal = roomEntries.reduce((sum, r) => sum + r.totalForRoom, 0);
 
+      let effectiveDiscountAmount = 0;
+      if (dto.discountType === 'fixed' || (dto.discountAmount !== undefined && dto.discountAmount > 0 && !dto.discountPercentage)) {
+        effectiveDiscountAmount = Math.min(subtotal, dto.discountAmount || 0);
+        pct = subtotal > 0 ? Math.min(100, Math.round((effectiveDiscountAmount / subtotal) * 100)) : 0;
+      } else {
+        effectiveDiscountAmount = Math.round((subtotal * pct) / 100);
+      }
+
+      const netSubtotal = Math.max(0, subtotal - effectiveDiscountAmount);
+
       const includeVat = dto.includeVat || false;
       const includeServiceCharge = dto.includeServiceCharge || false;
       const vatRate = 7.5;
       const scRate = 10;
-      const computedVat = includeVat ? Math.round((subtotal * vatRate) / 100) : 0;
-      const computedSc = includeServiceCharge ? Math.round((subtotal * scRate) / 100) : 0;
+      const computedVat = includeVat ? Math.round((netSubtotal * vatRate) / 100) : 0;
+      const computedSc = includeServiceCharge ? Math.round((netSubtotal * scRate) / 100) : 0;
 
-      const grossTotal = subtotal + computedVat + computedSc;
-      const computedDiscount = Math.round((grossTotal * pct) / 100);
-      const computedTotal = Math.max(0, grossTotal - computedDiscount);
+      const computedTotal = netSubtotal + computedVat + computedSc;
 
       if (includeVat && Math.abs((dto.vatAmount || 0) - computedVat) > 1) {
         throw new BadRequestException(
-          `VAT mismatch. Expected ₦${computedVat} (${vatRate}% of ₦${subtotal}), got ₦${dto.vatAmount}`,
+          `VAT mismatch. Expected ₦${computedVat} (${vatRate}% of net subtotal ₦${netSubtotal}), got ₦${dto.vatAmount}`,
         );
       }
       if (includeServiceCharge && Math.abs((dto.serviceChargeAmount || 0) - computedSc) > 1) {
         throw new BadRequestException(
-          `Service charge mismatch. Expected ₦${computedSc} (${scRate}% of ₦${subtotal}), got ₦${dto.serviceChargeAmount}`,
+          `Service charge mismatch. Expected ₦${computedSc} (${scRate}% of net subtotal ₦${netSubtotal}), got ₦${dto.serviceChargeAmount}`,
         );
       }
 
       if (Math.abs(dto.totalAmountPaid - computedTotal) > 1) {
         throw new BadRequestException(
-          `Price mismatch. Expected ₦${computedTotal} (₦${subtotal}${includeVat ? ` + ₦${computedVat} VAT` : ''}${includeServiceCharge ? ` + ₦${computedSc} service charge` : ''}${pct > 0 ? ` − ${pct}% discount` : ''}), got ₦${dto.totalAmountPaid}`,
+          `Price mismatch. Expected ₦${computedTotal} (subtotal ₦${subtotal}${effectiveDiscountAmount > 0 ? ` − ₦${effectiveDiscountAmount} discount` : ''}${includeVat ? ` + ₦${computedVat} VAT` : ''}${includeServiceCharge ? ` + ₦${computedSc} service charge` : ''}), got ₦${dto.totalAmountPaid}`,
         );
       }
 
@@ -404,7 +412,8 @@ export class BookingsService {
             numberOfGuests: dto.numberOfGuests || 1,
             checkInDate: new Date(dto.checkInDate),
             checkOutDate: new Date(dto.checkOutDate),
-            discount: computedDiscount,
+            discount: effectiveDiscountAmount,
+            discountType: dto.discountType || (dto.discountAmount ? 'fixed' : 'percentage'),
             discountPercentage: pct,
             discountReason: dto.discountReason,
             totalAmountPaid: dto.totalAmountPaid,
@@ -505,7 +514,7 @@ export class BookingsService {
               }),
               numberOfGuests: newBooking.numberOfGuests,
               subtotal,
-              discount: computedDiscount,
+              discount: effectiveDiscountAmount,
               discountPercentage: pct,
               vatAmount: computedVat,
               serviceChargeAmount: computedSc,
