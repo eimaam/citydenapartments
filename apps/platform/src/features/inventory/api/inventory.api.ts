@@ -3,7 +3,8 @@ import { api } from '../../../lib/api';
 export interface InventoryItem {
   _id: string;
   name: string;
-  department: string;
+  departmentId?: { _id: string; name: string } | string;
+  department?: string;
   category: string;
   description?: string;
   unit: string;
@@ -92,20 +93,21 @@ export interface PaginatedTransactions {
 }
 
 export const inventoryApi = {
-  listItems: (params: { page?: number; limit?: number; search?: string; department?: string; category?: string; lowStock?: string }) => {
+  listItems: (params: { page?: number; limit?: number; search?: string; departmentId?: string; department?: string; category?: string; lowStock?: string }) => {
     const qs = new URLSearchParams();
     if (params.page) qs.set('page', String(params.page));
     if (params.limit) qs.set('limit', String(params.limit));
     if (params.search) qs.set('search', params.search);
+    if (params.departmentId) qs.set('departmentId', params.departmentId);
     if (params.department) qs.set('department', params.department);
     if (params.category) qs.set('category', params.category);
     if (params.lowStock) qs.set('lowStock', params.lowStock);
     return api.get<PaginatedItems>(`/inventory/items?${qs}`);
   },
   getItem: (id: string) => api.get<InventoryItem>(`/inventory/items/${id}`),
-  createItem: (data: { name: string; department: string; category: string; description?: string; unit: string; currentStock: number; reorderLevel: number; unitPrice: number; expiryDate?: string }) =>
+  createItem: (data: { name: string; departmentId: string; department?: string; category: string; description?: string; unit: string; currentStock: number; reorderLevel: number; unitPrice: number; expiryDate?: string }) =>
     api.post<InventoryItem>('/inventory/items', data),
-  updateItem: (id: string, data: { name?: string; department?: string; category?: string; description?: string; unit?: string; reorderLevel?: number; unitPrice?: number; expiryDate?: string; isActive?: boolean }) =>
+  updateItem: (id: string, data: { name?: string; departmentId?: string; department?: string; category?: string; description?: string; unit?: string; reorderLevel?: number; unitPrice?: number; expiryDate?: string; isActive?: boolean }) =>
     api.patch<InventoryItem>(`/inventory/items/${id}`, data),
   restock: (id: string, data: { quantity: number; unitPrice?: number; notes?: string }) =>
     api.post<InventoryItem>(`/inventory/items/${id}/restock`, data),

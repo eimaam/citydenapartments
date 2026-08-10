@@ -7,6 +7,7 @@ import { useAuth } from '../../../contexts/auth';
 import { useToast } from '../../../components/ui/Toast';
 import { Input, Select, Option, Drawer, Button, UserRole, Departments, INVENTORY_UNITS } from '@citydenapartments/shared';
 import { inventoryApi, type InventoryItem } from '../api/inventory.api';
+import { departmentsApi } from '../../departments/api/departments.api';
 import { format, isBefore, differenceInDays } from 'date-fns';
 
 const LIMIT = 20;
@@ -34,7 +35,8 @@ export default function InventoryPage() {
   const canAdd = can(user, [UserRole.StoreManager, UserRole.SuperAdmin, UserRole.StoreKeeper]);
   const canIssue = can(user, [UserRole.StoreKeeper, UserRole.StoreManager, UserRole.SuperAdmin]);
 
-  const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
+  const [dbDepartments, setDbDepartments] = useState<Array<{ _id: string; name: string }>>([]);
+  const [selectedDepartment, setSelectedDepartment] = useState<{ _id: string; name: string } | null>(null);
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [allItemsForSummary, setAllItemsForSummary] = useState<InventoryItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -56,7 +58,7 @@ export default function InventoryPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState({
     name: '',
-    department: '',
+    departmentId: '',
     category: '',
     description: '',
     unit: 'pcs',
@@ -81,6 +83,23 @@ export default function InventoryPage() {
     { value: 'other', label: 'Other' },
   ];
 
+  const getItemDeptId = (item: InventoryItem): string => {
+    if (typeof item.departmentId === 'object' && item.departmentId?._id) return item.departmentId._id;
+    if (typeof item.departmentId === 'string') return item.departmentId;
+    return item.department || '';
+  };
+
+  const getItemDeptName = (item: InventoryItem): string => {
+    if (typeof item.departmentId === 'object' && item.departmentId?.name) return item.departmentId.name;
+    return item.department || 'Unassigned';
+  };
+
+  useEffect(() => {
+    if (user?.activeBranchId) {
+      departmentsApi.list(user.activeBranchId).then((depts) => setDbDepartments(depts)).catch(() => {});
+    }
+  }, [user?.activeBranchId]);
+
   const fetchItems = useCallback(async () => {
     setLoading(true);
     try {
@@ -88,7 +107,7 @@ export default function InventoryPage() {
         page,
         limit: LIMIT,
         search: search || undefined,
-        department: selectedDepartment || undefined,
+        departmentId: selectedDepartment?._id || undefined,
       });
       setItems(res.items);
       setTotal(res.total);
@@ -178,7 +197,7 @@ export default function InventoryPage() {
   const openCreateModal = () => {
     setCreateForm({
       name: '',
-      department: selectedDepartment || '',
+      departmentId: selectedDepartment?._id || (dbDepartments[0]?._id ?? ''),
       category: '',
       description: '',
       unit: 'pcs',
@@ -191,7 +210,7 @@ export default function InventoryPage() {
   };
 
   const createItem = async () => {
-    if (!createForm.name || !createForm.department || !createForm.category || !createForm.unit) {
+    if (!createForm.name || !createForm.departmentId || !createForm.category || !createForm.unit) {
       toast('error', 'Name, Department, Category, and Unit are required.');
       return;
     }
@@ -201,19 +220,21 @@ export default function InventoryPage() {
     }
     setSubmitting(true);
     try {
+      const deptObj = dbDepartments.find((d) => d._id === createForm.departmentId);
       await inventoryApi.createItem({
         name: createForm.name,
-        department: createForm.department,
+        departmentId: createForm.departmentId,
+        department: deptObj?.name,
         category: createForm.category,
         description: createForm.description || undefined,
         unit: createForm.unit,
         currentStock: Number(createForm.currentStock) || 0,
         reorderLevel: Number(createForm.reorderLevel) || 0,
-        unitPrice: Number(createForm.unitPrice),
+        unitPrice: Number(createForm.unitPrice) || 0,
         expiryDate: createForm.expiryDate || undefined,
       });
+      toast('success', `Created inventory item ${createForm.name}.`);
       setShowCreate(false);
-      toast('success', 'Inventory item created successfully.');
       fetchItems();
       fetchSummaryItems();
     } catch (e: any) {
@@ -278,24 +299,26 @@ export default function InventoryPage() {
   };
 
   const deptSummaries = useMemo(() => {
-    const summaryMap: Record<string, { count: number; value: number; lowStockCount: number }> = {};
-    for (const d of Departments) {
-      summaryMap[d] = { count: 0, value: 0, lowStockCount: 0 };
+    const summaryMap: Record<string, { id: string; name: string; count: number; value: number; lowStockCount: number }> = {};
+    for (const d of dbDepartments) {
+      summaryMap[d._id] = { id: d._id, name: d.name, count: 0, value: 0, lowStockCount: 0 };
     }
     for (const item of allItemsForSummary) {
-      const d = item.department || 'Admin';
-      if (!summaryMap[d]) {
-        summaryMap[d] = { count: 0, value: 0, lowStockCount: 0 };
+      const dId = getItemDeptId(item);
+      const dName = getItemDeptName(item);
+      const key = dId || dName;
+      if (!summaryMap[key]) {
+        summaryMap[key] = { id: dId || key, name: dName, count: 0, value: 0, lowStockCount: 0 };
       }
-      summaryMap[d].count += 1;
+      summaryMap[key].count += 1;
       const price = item.unitPrice ?? item.costPrice ?? 0;
-      summaryMap[d].value += item.currentStock * price;
+      summaryMap[key].value += item.currentStock * price;
       if (item.currentStock <= item.reorderLevel) {
-        summaryMap[d].lowStockCount += 1;
+        summaryMap[key].lowStockCount += 1;
       }
     }
     return summaryMap;
-  }, [allItemsForSummary]);
+  }, [dbDepartments, allItemsForSummary]);
 
   const createFormTotalCost = useMemo(() => {
     const qty = Number(createForm.currentStock) || 0;
@@ -320,7 +343,7 @@ export default function InventoryPage() {
         <div className="flex items-center gap-3">
           <span className="w-8 h-px bg-primary" />
           <span className="text-xs font-bold tracking-[0.15em] uppercase text-outline">
-            Store {selectedDepartment ? `· ${selectedDepartment}` : ''}
+            Store {selectedDepartment ? `· ${selectedDepartment.name}` : ''}
           </span>
         </div>
         {selectedDepartment && (
@@ -336,11 +359,11 @@ export default function InventoryPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="font-serif text-2xl sm:text-3xl text-on-surface">
-            {selectedDepartment ? `${selectedDepartment} Inventory` : 'Inventory Departments'}
+            {selectedDepartment ? `${selectedDepartment.name} Inventory` : 'Inventory Departments'}
           </h1>
           <p className="text-xs text-outline mt-1">
             {selectedDepartment
-              ? `Manage items, stock levels, and issue requests for ${selectedDepartment}.`
+              ? `Manage items, stock levels, and issue requests for ${selectedDepartment.name}.`
               : 'Select a department to view and manage assigned inventory items.'}
           </p>
         </div>
@@ -375,12 +398,12 @@ export default function InventoryPage() {
         >
           All Departments Overview
         </button>
-        {Departments.map((dept) => {
-          const info = deptSummaries[dept] || { count: 0 };
-          const isSelected = selectedDepartment === dept;
+        {dbDepartments.map((dept) => {
+          const info = deptSummaries[dept._id] || { count: 0 };
+          const isSelected = selectedDepartment?._id === dept._id;
           return (
             <button
-              key={dept}
+              key={dept._id}
               onClick={() => setSelectedDepartment(dept)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors border flex items-center gap-1.5 cursor-pointer ${
                 isSelected
@@ -388,7 +411,7 @@ export default function InventoryPage() {
                   : 'bg-surface-container-lowest text-on-surface-variant border-outline-variant hover:bg-surface-container'
               }`}
             >
-              <span>{dept}</span>
+              <span>{dept.name}</span>
               <span
                 className={`px-1.5 py-0.2 text-[10px] rounded-full font-bold ${
                   isSelected ? 'bg-white/20 text-white' : 'bg-surface-container-high text-outline'
@@ -403,13 +426,13 @@ export default function InventoryPage() {
 
       {selectedDepartment === null && !search && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
-          {Departments.map((dept) => {
-            const IconComp = DEPT_ICONS[dept] || Building2;
-            const summary = deptSummaries[dept] || { count: 0, value: 0, lowStockCount: 0 };
+          {dbDepartments.map((dept) => {
+            const IconComp = DEPT_ICONS[dept.name] || Building2;
+            const summary = deptSummaries[dept._id] || { count: 0, value: 0, lowStockCount: 0 };
 
             return (
               <div
-                key={dept}
+                key={dept._id}
                 onClick={() => setSelectedDepartment(dept)}
                 className="p-5 rounded-xl border border-outline-variant bg-surface-container-lowest hover:border-primary hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
               >
@@ -425,7 +448,7 @@ export default function InventoryPage() {
                     )}
                   </div>
                   <h3 className="font-serif text-lg font-bold text-on-surface group-hover:text-primary transition-colors">
-                    {dept}
+                    {dept.name}
                   </h3>
                   <p className="text-xs text-outline mt-0.5">{summary.count} inventory items</p>
                 </div>
@@ -817,13 +840,13 @@ export default function InventoryPage() {
             <Select
               size="lg"
               className="w-full mt-1"
-              value={createForm.department}
-              onChange={(v) => setCreateForm({ ...createForm, department: v })}
+              value={createForm.departmentId}
+              onChange={(v) => setCreateForm({ ...createForm, departmentId: v })}
             >
               <Option value="">Select Department</Option>
-              {Departments.map((d) => (
-                <Option key={d} value={d}>
-                  {d}
+              {dbDepartments.map((d) => (
+                <Option key={d._id} value={d._id}>
+                  {d.name}
                 </Option>
               ))}
             </Select>

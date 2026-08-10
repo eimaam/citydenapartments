@@ -27,8 +27,11 @@ export class InventoryItem extends Document {
   @Prop()
   expiryDate?: Date;
 
-  @Prop({ required: true, trim: true })
-  department: string;
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Department' })
+  departmentId?: MongooseSchema.Types.ObjectId;
+
+  @Prop({ trim: true })
+  department?: string;
 
   @Prop({ required: true, default: 0 })
   unitPrice: number;

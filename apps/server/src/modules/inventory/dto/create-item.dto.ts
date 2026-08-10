@@ -1,13 +1,17 @@
-import { IsString, IsNumber, IsOptional, Min, IsDateString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNumber, IsOptional, Min, IsDateString, IsNotEmpty, IsMongoId } from 'class-validator';
 
 export class CreateItemDto {
   @IsString()
   @IsNotEmpty()
   name: string;
 
-  @IsString()
+  @IsMongoId()
   @IsNotEmpty()
-  department: string;
+  departmentId: string;
+
+  @IsOptional()
+  @IsString()
+  department?: string;
 
   @IsString()
   @IsNotEmpty()

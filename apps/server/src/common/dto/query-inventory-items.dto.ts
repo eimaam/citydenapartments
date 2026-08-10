@@ -4,6 +4,10 @@ import { PaginatedQueryDto } from './paginated-query.dto';
 export class QueryInventoryItemsDto extends PaginatedQueryDto {
   @IsOptional()
   @IsString()
+  departmentId?: string;
+
+  @IsOptional()
+  @IsString()
   department?: string;
 
   @IsOptional()

@@ -6,6 +6,7 @@ import { InventoryTransaction } from './inventory-transaction.schema';
 import { DailySnapshot } from './daily-snapshot.schema';
 import { SpoilageReport, SpoilageStatusEnum, type SpoilageStatus } from './spoilage-report.schema';
 import { Employee } from '../employees/employee.schema';
+import { Department } from '../departments/department.schema';
 import { CreateItemDto } from './dto/create-item.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
 import { RestockDto } from './dto/restock.dto';
@@ -26,6 +27,7 @@ export class InventoryService {
     @InjectModel(DailySnapshot.name) private snapshotModel: Model<DailySnapshot>,
     @InjectModel(SpoilageReport.name) private spoilageModel: Model<SpoilageReport>,
     @InjectModel(Employee.name) private employeeModel: Model<Employee>,
+    @InjectModel(Department.name) private departmentModel: Model<Department>,
     private readonly redis: RedisService,
     private readonly auditLog: AuditLogService,
   ) {}
@@ -35,14 +37,16 @@ export class InventoryService {
     page?: number;
     limit?: number;
     search?: string;
+    departmentId?: string;
     department?: string;
     category?: string;
     lowStock?: boolean;
   }) {
-    const { branchId, page = 1, limit = 20, search, department, category, lowStock } = params;
+    const { branchId, page = 1, limit = 20, search, departmentId, department, category, lowStock } = params;
     const filter: any = { branchId: new Types.ObjectId(branchId), isActive: true };
 
-    if (department) filter.department = department;
+    if (departmentId) filter.departmentId = new Types.ObjectId(departmentId);
+    else if (department) filter.department = department;
     if (category) filter.category = category;
     if (lowStock) {
       filter.$expr = { $lte: ['$currentStock', '$reorderLevel'] };
@@ -58,7 +62,7 @@ export class InventoryService {
 
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([
-      this.itemModel.find(filter).sort({ name: 1 }).skip(skip).limit(limit).lean(),
+      this.itemModel.find(filter).populate('departmentId', 'name').sort({ name: 1 }).skip(skip).limit(limit).lean(),
       this.itemModel.countDocuments(filter),
     ]);
 
@@ -66,14 +70,21 @@ export class InventoryService {
   }
 
   async findOneItem(id: string, branchId: string) {
-    const item = await this.itemModel.findOne({ _id: id, branchId, isActive: true }).lean();
+    const item = await this.itemModel.findOne({ _id: id, branchId, isActive: true }).populate('departmentId', 'name').lean();
     if (!item) throw new NotFoundException('Item not found.');
     return item;
   }
 
   async createItem(dto: CreateItemDto, userId: string, branchId: string) {
+    let departmentName = dto.department;
+    if (dto.departmentId) {
+      const dept = await this.departmentModel.findById(dto.departmentId).lean();
+      if (dept) departmentName = dept.name;
+    }
+
     const item = await this.itemModel.create({
       ...dto,
+      department: departmentName,
       branchId,
       createdBy: userId,
       updatedBy: userId,
@@ -103,7 +114,7 @@ export class InventoryService {
       description: `Inventory item created: ${dto.name}`,
       performedBy: userId,
       branchId,
-      details: { name: dto.name, department: dto.department, category: dto.category, currentStock: dto.currentStock, unit: dto.unit, unitPrice: dto.unitPrice },
+      details: { name: dto.name, departmentId: dto.departmentId, department: departmentName, category: dto.category, currentStock: dto.currentStock, unit: dto.unit, unitPrice: dto.unitPrice },
     });
     return item;
   }
@@ -111,6 +122,11 @@ export class InventoryService {
   async updateItem(id: string, dto: UpdateItemDto, userId: string, branchId: string) {
     const item = await this.itemModel.findOne({ _id: id, branchId });
     if (!item) throw new NotFoundException('Item not found.');
+
+    if (dto.departmentId) {
+      const dept = await this.departmentModel.findById(dto.departmentId).lean();
+      if (dept) dto.department = dept.name;
+    }
 
     Object.assign(item, dto, { updatedBy: userId });
     await item.save();

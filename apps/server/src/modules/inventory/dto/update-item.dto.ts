@@ -1,9 +1,13 @@
-import { IsString, IsNumber, IsOptional, Min, IsBoolean, IsDateString } from 'class-validator';
+import { IsString, IsNumber, IsOptional, Min, IsBoolean, IsDateString, IsMongoId } from 'class-validator';
 
 export class UpdateItemDto {
   @IsOptional()
   @IsString()
   name?: string;
+
+  @IsOptional()
+  @IsMongoId()
+  departmentId?: string;
 
   @IsOptional()
   @IsString()

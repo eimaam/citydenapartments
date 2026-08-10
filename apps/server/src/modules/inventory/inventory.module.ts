@@ -6,6 +6,7 @@ import { InventoryTransaction, InventoryTransactionSchema } from './inventory-tr
 import { DailySnapshot, DailySnapshotSchema } from './daily-snapshot.schema';
 import { SpoilageReport, SpoilageReportSchema } from './spoilage-report.schema';
 import { Employee, EmployeeSchema } from '../employees/employee.schema';
+import { Department, DepartmentSchema } from '../departments/department.schema';
 import { InventoryService } from './inventory.service';
 import { InventoryController } from './inventory.controller';
 import { InventoryCron } from './inventory.cron';
@@ -20,6 +21,7 @@ import { RedisModule } from '../redis/redis.module';
       { name: DailySnapshot.name, schema: DailySnapshotSchema },
       { name: SpoilageReport.name, schema: SpoilageReportSchema },
       { name: Employee.name, schema: EmployeeSchema },
+      { name: Department.name, schema: DepartmentSchema },
     ]),
     RedisModule,
   ],
