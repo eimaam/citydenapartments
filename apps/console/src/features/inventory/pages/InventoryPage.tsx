@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  Search, Package, AlertTriangle, ArrowDownCircle, ArrowUpCircle, Plus, Clock, Trash2,
+  Search, Package, AlertTriangle, ArrowDownCircle, ArrowUpCircle, Plus, Clock, Trash2, Pencil,
   ChevronRight, ArrowLeft, Building2, Utensils, Sparkles, Wrench, Shirt, Shield, Headphones
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/auth';
@@ -73,6 +73,18 @@ export default function InventoryPage() {
   const [spoilType, setSpoilType] = useState('expired');
   const [spoilReason, setSpoilReason] = useState('');
   const [spoilNotes, setSpoilNotes] = useState('');
+
+  const [editItem, setEditItem] = useState<InventoryItem | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    departmentId: '',
+    category: '',
+    description: '',
+    unit: 'pcs',
+    reorderLevel: '' as string | number,
+    unitPrice: '' as string | number,
+    expiryDate: '',
+  });
 
   const spoilTypes = [
     { value: 'expired', label: 'Expired' },
@@ -232,6 +244,53 @@ export default function InventoryPage() {
       });
       toast('success', `Created inventory item ${createForm.name}.`);
       setShowCreate(false);
+      fetchItems();
+      fetchDepartmentSummaries();
+    } catch (e: any) {
+      toast('error', e.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const openEditModal = (item: InventoryItem) => {
+    setEditItem(item);
+    setEditForm({
+      name: item.name,
+      departmentId: getItemDeptId(item),
+      category: item.category,
+      description: item.description || '',
+      unit: item.unit,
+      reorderLevel: item.reorderLevel ?? 0,
+      unitPrice: item.unitPrice ?? item.costPrice ?? '',
+      expiryDate: item.expiryDate ? item.expiryDate.split('T')[0] : '',
+    });
+  };
+
+  const submitEdit = async () => {
+    if (!editItem) return;
+    if (!editForm.name.trim() || !editForm.departmentId || !editForm.category.trim() || !editForm.unit) {
+      toast('error', 'Name, Department, Category, and Unit are required.');
+      return;
+    }
+    if (editForm.unitPrice === '' || Number(editForm.unitPrice) < 0) {
+      toast('error', 'Unit price must be 0 or greater.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await inventoryApi.updateItem(editItem._id, {
+        name: editForm.name,
+        departmentId: editForm.departmentId,
+        category: editForm.category,
+        description: editForm.description || undefined,
+        unit: editForm.unit,
+        reorderLevel: Number(editForm.reorderLevel) || 0,
+        unitPrice: Number(editForm.unitPrice) || 0,
+        expiryDate: editForm.expiryDate || undefined,
+      });
+      toast('success', `Updated inventory item ${editForm.name}.`);
+      setEditItem(null);
       fetchItems();
       fetchDepartmentSummaries();
     } catch (e: any) {
@@ -516,6 +575,11 @@ export default function InventoryPage() {
                           Low Stock
                         </span>
                       )}
+                      {item.pendingSpoilageQuantity && item.pendingSpoilageQuantity > 0 ? (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-700">
+                          ({item.pendingSpoilageQuantity} Pending Write-off)
+                        </span>
+                      ) : null}
                     </div>
                   </div>
                 </div>
@@ -533,6 +597,14 @@ export default function InventoryPage() {
                     <AlertTriangle size={16} className="text-red-500" />
                   )}
                   <div className="flex gap-2">
+                    {isManager && (
+                      <button
+                        onClick={() => openEditModal(item)}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded border border-outline-variant hover:bg-surface-container cursor-pointer bg-transparent text-on-surface-variant hover:text-on-surface"
+                      >
+                        <Pencil size={12} /> Edit
+                      </button>
+                    )}
                     {canIssue && (
                       <button
                         onClick={() => openAction(item, 'issue')}
@@ -940,6 +1012,140 @@ export default function InventoryPage() {
           <div className="p-3 rounded-lg bg-surface-container-lowest border border-outline-variant flex items-center justify-between text-xs">
             <span className="text-outline font-medium">Initial Total Stock Value:</span>
             <span className="font-bold text-sm text-primary">₦{createFormTotalCost.toLocaleString()}</span>
+          </div>
+        </div>
+      </Drawer>
+
+      {/* Edit Item Drawer */}
+      <Drawer
+        open={!!editItem}
+        onClose={() => setEditItem(null)}
+        title="Edit Inventory Item"
+        size="md"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" onClick={() => setEditItem(null)}>
+              Cancel
+            </Button>
+            <Button loading={submitting} onClick={submitEdit}>
+              Save Changes
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">
+              Item Name <span className="text-red-500">*</span>
+            </label>
+            <Input
+              size="lg"
+              placeholder="e.g. Toilet Roll 2-ply"
+              value={editForm.name}
+              onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+              className="mt-1"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">
+              Department <span className="text-red-500">*</span>
+            </label>
+            <Select
+              size="lg"
+              className="w-full mt-1"
+              value={editForm.departmentId}
+              onChange={(v) => setEditForm({ ...editForm, departmentId: v })}
+            >
+              <Option value="">Select Department</Option>
+              {dbDepartments.map((d) => (
+                <Option key={d._id} value={d._id}>
+                  {d.name}
+                </Option>
+              ))}
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">
+                Category <span className="text-red-500">*</span>
+              </label>
+              <Input
+                size="lg"
+                placeholder="e.g. Cleaning Supplies"
+                value={editForm.category}
+                onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">
+                Unit <span className="text-red-500">*</span>
+              </label>
+              <Select
+                size="lg"
+                className="w-full mt-1"
+                value={editForm.unit}
+                onChange={(v) => setEditForm({ ...editForm, unit: v })}
+              >
+                {INVENTORY_UNITS.map((u) => (
+                  <Option key={u.value} value={u.value}>
+                    {u.label}
+                  </Option>
+                ))}
+              </Select>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Description</label>
+            <Input
+              size="lg"
+              placeholder="Optional notes or description"
+              value={editForm.description}
+              onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+              className="mt-1"
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Reorder Level</label>
+              <Input
+                size="lg"
+                type="number"
+                min={0}
+                placeholder="e.g. 5"
+                value={editForm.reorderLevel}
+                onChange={(e) => setEditForm({ ...editForm, reorderLevel: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">
+                Unit Price (₦) <span className="text-red-500">*</span>
+              </label>
+              <Input
+                size="lg"
+                type="number"
+                min={0}
+                placeholder="e.g. 1500"
+                value={editForm.unitPrice}
+                onChange={(e) => setEditForm({ ...editForm, unitPrice: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Expiry Date</label>
+              <Input
+                size="lg"
+                type="date"
+                value={editForm.expiryDate}
+                onChange={(e) => setEditForm({ ...editForm, expiryDate: e.target.value })}
+                className="mt-1"
+              />
+            </div>
           </div>
         </div>
       </Drawer>

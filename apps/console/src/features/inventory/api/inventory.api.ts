@@ -12,6 +12,8 @@ export interface InventoryItem {
   unitPrice: number;
   costPrice?: number;
   expiryDate?: string;
+  pendingSpoilageQuantity?: number;
+  availableStock?: number;
   isActive: boolean;
 }
 

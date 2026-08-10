@@ -25,7 +25,7 @@ export class InventoryController {
   findAllItems(
     @ActiveUser() user: any,
     @Query() query: QueryInventoryItemsDto,
-  ) {
+  ): Promise<{ items: Record<string, any>[]; total: number; page: number; limit: number }> {
     return this.inventoryService.findAllItems({
       branchId: user.activeBranchId,
       page: query.page,
@@ -45,7 +45,7 @@ export class InventoryController {
 
   @Get('items/:id')
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER, UserRoleEnum.ACCOUNTANT, UserRoleEnum.FACILITY_MANAGER)
-  findOneItem(@Param('id') id: string, @ActiveUser() user: any) {
+  findOneItem(@Param('id') id: string, @ActiveUser() user: any): Promise<Record<string, any>> {
     return this.inventoryService.findOneItem(id, user.activeBranchId);
   }
 
@@ -56,7 +56,7 @@ export class InventoryController {
   }
 
   @Patch('items/:id')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.ACCOUNTANT)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER, UserRoleEnum.ACCOUNTANT)
   updateItem(@Param('id') id: string, @Body() dto: UpdateItemDto, @ActiveUser() user: any) {
     return this.inventoryService.updateItem(id, dto, user.id, user.activeBranchId);
   }

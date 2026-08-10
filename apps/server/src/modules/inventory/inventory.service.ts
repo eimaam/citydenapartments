@@ -30,7 +30,7 @@ export class InventoryService {
     @InjectModel(Department.name) private departmentModel: Model<Department>,
     private readonly redis: RedisService,
     private readonly auditLog: AuditLogService,
-  ) {}
+  ) { }
 
   async findAllItems(params: {
     branchId: string;
@@ -40,7 +40,7 @@ export class InventoryService {
     departmentId?: string;
     category?: string;
     lowStock?: boolean;
-  }) {
+  }): Promise<{ items: Record<string, any>[]; total: number; page: number; limit: number }> {
     const { branchId, page = 1, limit = 20, search, departmentId, category, lowStock } = params;
     const filter: any = { branchId: new Types.ObjectId(branchId), isActive: true };
 
@@ -63,7 +63,38 @@ export class InventoryService {
       this.itemModel.countDocuments(filter),
     ]);
 
-    return { items, total, page, limit };
+    const itemIds = items.map((i) => i._id);
+    const pendingAgg = await this.spoilageModel.aggregate([
+      {
+        $match: {
+          itemId: { $in: itemIds },
+          status: SpoilageStatusEnum.Pending,
+        },
+      },
+      {
+        $group: {
+          _id: '$itemId',
+          totalPending: { $sum: '$quantity' },
+        },
+      },
+    ]);
+
+    const pendingMap = new Map<string, number>();
+    for (const p of pendingAgg) {
+      pendingMap.set(p._id.toString(), p.totalPending);
+    }
+
+    const itemsWithPending = items.map((item) => {
+      const pendingSpoilageQuantity = pendingMap.get(item._id.toString()) || 0;
+      const availableStock = Math.max(0, item.currentStock - pendingSpoilageQuantity);
+      return {
+        ...item,
+        pendingSpoilageQuantity,
+        availableStock,
+      };
+    });
+
+    return { items: itemsWithPending, total, page, limit };
   }
 
   async getDepartmentSummaries(branchId: string) {
@@ -100,10 +131,34 @@ export class InventoryService {
     }));
   }
 
-  async findOneItem(id: string, branchId: string) {
+  private async getPendingSpoilageQty(itemId: string | Types.ObjectId): Promise<number> {
+    const raw = await this.spoilageModel.aggregate([
+      {
+        $match: {
+          itemId: new Types.ObjectId(itemId.toString()),
+          status: SpoilageStatusEnum.Pending,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalPending: { $sum: '$quantity' },
+        },
+      },
+    ]);
+    return raw[0]?.totalPending || 0;
+  }
+
+  async findOneItem(id: string, branchId: string): Promise<Record<string, any>> {
     const item = await this.itemModel.findOne({ _id: id, branchId, isActive: true }).populate('departmentId', 'name').lean();
     if (!item) throw new NotFoundException('Item not found.');
-    return item;
+    const pendingSpoilageQuantity = await this.getPendingSpoilageQty(item._id);
+    const availableStock = Math.max(0, item.currentStock - pendingSpoilageQuantity);
+    return {
+      ...item,
+      pendingSpoilageQuantity,
+      availableStock,
+    };
   }
 
   async createItem(dto: CreateItemDto, userId: string, branchId: string) {
@@ -227,9 +282,17 @@ export class InventoryService {
       );
     }
 
-    if (item.currentStock < dto.quantity) {
+    const pendingSpoilage = await this.getPendingSpoilageQty(item._id);
+    const availableToIssue = item.currentStock - pendingSpoilage;
+
+    if (availableToIssue < dto.quantity) {
+      if (pendingSpoilage > 0) {
+        throw new BadRequestException(
+          `Cannot issue ${dto.quantity} ${item.unit}. Total stock is ${item.currentStock} ${item.unit}, but ${pendingSpoilage} ${item.unit} is currently pending write-off approval. Available to issue: ${Math.max(0, availableToIssue)} ${item.unit}.`,
+        );
+      }
       throw new BadRequestException(
-        `Insufficient stock. Available: ${item.currentStock} ${item.unit}, requested: ${dto.quantity}.`,
+        `Insufficient stock. Available: ${item.currentStock} ${item.unit}, requested: ${dto.quantity} ${item.unit}.`,
       );
     }
 
@@ -285,9 +348,17 @@ export class InventoryService {
     const item = await this.itemModel.findOne({ _id: itemId, branchId, isActive: true });
     if (!item) throw new NotFoundException('Item not found.');
 
-    if (dto.quantity > item.currentStock) {
+    const pendingSpoilage = await this.getPendingSpoilageQty(item._id);
+    const availableForSpoilage = item.currentStock - pendingSpoilage;
+
+    if (dto.quantity > availableForSpoilage) {
+      if (pendingSpoilage > 0) {
+        throw new BadRequestException(
+          `Cannot submit write-off request of ${dto.quantity} ${item.unit}. Total stock is ${item.currentStock} ${item.unit}, but ${pendingSpoilage} ${item.unit} is already in another pending write-off request. Available for write-off: ${Math.max(0, availableForSpoilage)} ${item.unit}.`,
+        );
+      }
       throw new BadRequestException(
-        `Insufficient stock. Available: ${item.currentStock} ${item.unit}, requested write-off: ${dto.quantity}.`,
+        `Insufficient stock. Total stock: ${item.currentStock} ${item.unit}, requested write-off: ${dto.quantity} ${item.unit}.`,
       );
     }
 
@@ -388,7 +459,7 @@ export class InventoryService {
       const item = report.itemId as any;
       if (report.quantity > item.currentStock) {
         throw new BadRequestException(
-          `Cannot approve — insufficient stock. Available: ${item.currentStock} ${item.unit}, write-off: ${report.quantity}. Restock first or reject.`,
+          `Cannot approve write-off — insufficient total stock. Total stock: ${item.currentStock} ${item.unit}, requested write-off: ${report.quantity} ${item.unit}. Restock first or reject this request.`,
         );
       }
     }
