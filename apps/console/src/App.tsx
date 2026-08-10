@@ -50,8 +50,8 @@ function DashboardSwitch() {
 const routeRoles: Record<string, UserRoleType[]> = {
   '/': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.Accountant, UserRole.Reception, UserRole.FacilityManager, UserRole.FrontOfficeManager],
   '/branches': [UserRole.SuperAdmin],
-  '/room-types': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
-  '/rooms': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
+  '/room-types': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.FrontOfficeManager],
+  '/rooms': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.FrontOfficeManager],
   '/bookings': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FrontOfficeManager],
   '/bookings/calendar': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FrontOfficeManager],
   '/bookings/status-history': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],

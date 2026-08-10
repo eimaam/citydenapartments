@@ -162,6 +162,7 @@ const menuConfig: MenuConfig = {
     { heading: 'Reservations', items: [
       { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
       { label: 'Calendar', icon: CalendarFold, path: '/bookings/calendar' },
+      { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
     ]},
     { heading: 'People', items: [
       { label: 'Customers', icon: BookUser, path: '/customers' },
