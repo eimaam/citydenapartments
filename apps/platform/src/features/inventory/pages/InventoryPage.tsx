@@ -222,7 +222,7 @@ export default function InventoryPage() {
       setActionItem(null);
       setActionType(null);
       fetchItems();
-      fetchSummaryItems();
+      fetchDepartmentSummaries();
     } catch (e: any) {
       toast('error', e.message);
     } finally {
