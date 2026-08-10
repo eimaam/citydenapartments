@@ -38,15 +38,13 @@ export class InventoryService {
     limit?: number;
     search?: string;
     departmentId?: string;
-    department?: string;
     category?: string;
     lowStock?: boolean;
   }) {
-    const { branchId, page = 1, limit = 20, search, departmentId, department, category, lowStock } = params;
+    const { branchId, page = 1, limit = 20, search, departmentId, category, lowStock } = params;
     const filter: any = { branchId: new Types.ObjectId(branchId), isActive: true };
 
     if (departmentId) filter.departmentId = new Types.ObjectId(departmentId);
-    else if (department) filter.department = department;
     if (category) filter.category = category;
     if (lowStock) {
       filter.$expr = { $lte: ['$currentStock', '$reorderLevel'] };
@@ -55,7 +53,6 @@ export class InventoryService {
       const escaped = escapeRegex(search);
       filter.$or = [
         { name: { $regex: escaped, $options: 'i' } },
-        { department: { $regex: escaped, $options: 'i' } },
         { category: { $regex: escaped, $options: 'i' } },
       ];
     }
@@ -76,15 +73,8 @@ export class InventoryService {
   }
 
   async createItem(dto: CreateItemDto, userId: string, branchId: string) {
-    let departmentName = dto.department;
-    if (dto.departmentId) {
-      const dept = await this.departmentModel.findById(dto.departmentId).lean();
-      if (dept) departmentName = dept.name;
-    }
-
     const item = await this.itemModel.create({
       ...dto,
-      department: departmentName,
       branchId,
       createdBy: userId,
       updatedBy: userId,
@@ -114,7 +104,7 @@ export class InventoryService {
       description: `Inventory item created: ${dto.name}`,
       performedBy: userId,
       branchId,
-      details: { name: dto.name, departmentId: dto.departmentId, department: departmentName, category: dto.category, currentStock: dto.currentStock, unit: dto.unit, unitPrice: dto.unitPrice },
+      details: { name: dto.name, departmentId: dto.departmentId, category: dto.category, currentStock: dto.currentStock, unit: dto.unit, unitPrice: dto.unitPrice },
     });
     return item;
   }
@@ -122,11 +112,6 @@ export class InventoryService {
   async updateItem(id: string, dto: UpdateItemDto, userId: string, branchId: string) {
     const item = await this.itemModel.findOne({ _id: id, branchId });
     if (!item) throw new NotFoundException('Item not found.');
-
-    if (dto.departmentId) {
-      const dept = await this.departmentModel.findById(dto.departmentId).lean();
-      if (dept) dto.department = dept.name;
-    }
 
     Object.assign(item, dto, { updatedBy: userId });
     await item.save();

@@ -8,10 +8,6 @@ export class QueryInventoryItemsDto extends PaginatedQueryDto {
 
   @IsOptional()
   @IsString()
-  department?: string;
-
-  @IsOptional()
-  @IsString()
   category?: string;
 
   @IsOptional()

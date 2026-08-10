@@ -9,10 +9,6 @@ export class CreateItemDto {
   @IsNotEmpty()
   departmentId: string;
 
-  @IsOptional()
-  @IsString()
-  department?: string;
-
   @IsString()
   @IsNotEmpty()
   category: string;

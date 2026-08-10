@@ -32,7 +32,6 @@ export class InventoryController {
       limit: query.limit,
       search: query.search,
       departmentId: query.departmentId,
-      department: query.department,
       category: query.category,
       lowStock: query.lowStock === 'true',
     });

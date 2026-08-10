@@ -88,13 +88,12 @@ export default function InventoryPage() {
 
   const getItemDeptId = (item: InventoryItem): string => {
     if (typeof item.departmentId === 'object' && item.departmentId?._id) return item.departmentId._id;
-    if (typeof item.departmentId === 'string') return item.departmentId;
-    return item.department || '';
+    return (item.departmentId as string) || '';
   };
 
   const getItemDeptName = (item: InventoryItem): string => {
     if (typeof item.departmentId === 'object' && item.departmentId?.name) return item.departmentId.name;
-    return item.department || 'Unassigned';
+    return 'Unassigned';
   };
 
   useEffect(() => {
@@ -257,11 +256,9 @@ export default function InventoryPage() {
     }
     setSubmitting(true);
     try {
-      const deptObj = dbDepartments.find((d) => d._id === createForm.departmentId);
       await inventoryApi.createItem({
         name: createForm.name,
         departmentId: createForm.departmentId,
-        department: deptObj?.name,
         category: createForm.category,
         description: createForm.description || undefined,
         unit: createForm.unit,
@@ -533,7 +530,7 @@ export default function InventoryPage() {
                     <div className="flex items-center gap-2">
                       <p className="font-medium text-sm text-on-surface truncate">{item.name}</p>
                       <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-surface-container-high text-on-surface-variant">
-                        {item.department || 'Admin'}
+                        {getItemDeptName(item)}
                       </span>
                     </div>
                     <p className="text-xs text-on-surface-variant mt-0.5">
@@ -674,7 +671,7 @@ export default function InventoryPage() {
             <div className="p-3 rounded-lg bg-surface-container border border-outline-variant">
               <p className="font-medium text-sm">{actionItem.name}</p>
               <p className="text-xs text-outline">
-                {actionItem.department} · {actionItem.category} · Current stock: <strong>{actionItem.currentStock}</strong>{' '}
+                {getItemDeptName(actionItem)} · {actionItem.category} · Current stock: <strong>{actionItem.currentStock}</strong>{' '}
                 {actionItem.unit}
               </p>
               <p className="text-xs font-semibold text-primary mt-1">
@@ -840,7 +837,7 @@ export default function InventoryPage() {
             <div className="p-3 rounded-lg bg-surface-container">
               <p className="font-medium text-sm">{spoilItem.name}</p>
               <p className="text-xs text-outline">
-                {spoilItem.department} · Current stock: <strong>{spoilItem.currentStock}</strong> {spoilItem.unit}
+                {getItemDeptName(spoilItem)} · Current stock: <strong>{spoilItem.currentStock}</strong> {spoilItem.unit}
               </p>
             </div>
             <div>
