@@ -37,6 +37,12 @@ export class InventoryController {
     });
   }
 
+  @Get('department-summaries')
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER, UserRoleEnum.ACCOUNTANT, UserRoleEnum.FACILITY_MANAGER)
+  getDepartmentSummaries(@ActiveUser() user: any) {
+    return this.inventoryService.getDepartmentSummaries(user.activeBranchId);
+  }
+
   @Get('items/:id')
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER, UserRoleEnum.ACCOUNTANT, UserRoleEnum.FACILITY_MANAGER)
   findOneItem(@Param('id') id: string, @ActiveUser() user: any) {

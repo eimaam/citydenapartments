@@ -66,6 +66,40 @@ export class InventoryService {
     return { items, total, page, limit };
   }
 
+  async getDepartmentSummaries(branchId: string) {
+    const raw = await this.itemModel.aggregate([
+      {
+        $match: {
+          branchId: new Types.ObjectId(branchId),
+          isActive: true,
+        },
+      },
+      {
+        $group: {
+          _id: '$departmentId',
+          count: { $sum: 1 },
+          totalValue: {
+            $sum: {
+              $multiply: ['$currentStock', { $ifNull: ['$unitPrice', { $ifNull: ['$costPrice', 0] }] }],
+            },
+          },
+          lowStockCount: {
+            $sum: {
+              $cond: [{ $lte: ['$currentStock', '$reorderLevel'] }, 1, 0],
+            },
+          },
+        },
+      },
+    ]);
+
+    return raw.map((r) => ({
+      departmentId: r._id ? r._id.toString() : null,
+      count: r.count,
+      totalValue: r.totalValue,
+      lowStockCount: r.lowStockCount,
+    }));
+  }
+
   async findOneItem(id: string, branchId: string) {
     const item = await this.itemModel.findOne({ _id: id, branchId, isActive: true }).populate('departmentId', 'name').lean();
     if (!item) throw new NotFoundException('Item not found.');

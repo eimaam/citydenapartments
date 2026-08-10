@@ -38,7 +38,7 @@ export default function InventoryPage() {
   const [dbDepartments, setDbDepartments] = useState<Array<{ _id: string; name: string }>>([]);
   const [selectedDepartment, setSelectedDepartment] = useState<{ _id: string; name: string } | null>(null);
   const [items, setItems] = useState<InventoryItem[]>([]);
-  const [allItemsForSummary, setAllItemsForSummary] = useState<InventoryItem[]>([]);
+  const [summaryData, setSummaryData] = useState<Array<{ departmentId: string | null; count: number; totalValue: number; lowStockCount: number }>>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -117,10 +117,10 @@ export default function InventoryPage() {
     }
   }, [page, search, selectedDepartment, toast]);
 
-  const fetchSummaryItems = useCallback(async () => {
+  const fetchDepartmentSummaries = useCallback(async () => {
     try {
-      const res = await inventoryApi.listItems({ limit: 500 });
-      setAllItemsForSummary(res.items);
+      const res = await inventoryApi.getDepartmentSummaries();
+      setSummaryData(res);
     } catch {
       /* ignore */
     }
@@ -131,8 +131,8 @@ export default function InventoryPage() {
   }, [fetchItems]);
 
   useEffect(() => {
-    fetchSummaryItems();
-  }, [fetchSummaryItems]);
+    fetchDepartmentSummaries();
+  }, [fetchDepartmentSummaries]);
 
   useEffect(() => {
     setPage(1);
@@ -233,7 +233,7 @@ export default function InventoryPage() {
       toast('success', `Created inventory item ${createForm.name}.`);
       setShowCreate(false);
       fetchItems();
-      fetchSummaryItems();
+      fetchDepartmentSummaries();
     } catch (e: any) {
       toast('error', e.message);
     } finally {
@@ -300,22 +300,15 @@ export default function InventoryPage() {
     for (const d of dbDepartments) {
       summaryMap[d._id] = { id: d._id, name: d.name, count: 0, value: 0, lowStockCount: 0 };
     }
-    for (const item of allItemsForSummary) {
-      const dId = getItemDeptId(item);
-      const dName = getItemDeptName(item);
-      const key = dId || dName;
-      if (!summaryMap[key]) {
-        summaryMap[key] = { id: dId || key, name: dName, count: 0, value: 0, lowStockCount: 0 };
-      }
-      summaryMap[key].count += 1;
-      const price = item.unitPrice ?? item.costPrice ?? 0;
-      summaryMap[key].value += item.currentStock * price;
-      if (item.currentStock <= item.reorderLevel) {
-        summaryMap[key].lowStockCount += 1;
+    for (const s of summaryData) {
+      if (s.departmentId && summaryMap[s.departmentId]) {
+        summaryMap[s.departmentId].count = s.count;
+        summaryMap[s.departmentId].value = s.totalValue;
+        summaryMap[s.departmentId].lowStockCount = s.lowStockCount;
       }
     }
     return summaryMap;
-  }, [dbDepartments, allItemsForSummary]);
+  }, [dbDepartments, summaryData]);
 
   const createFormTotalCost = useMemo(() => {
     const qty = Number(createForm.currentStock) || 0;

@@ -70,7 +70,15 @@ export interface PaginatedSpoilage {
   limit: number;
 }
 
+export interface DepartmentSummaryResponse {
+  departmentId: string | null;
+  count: number;
+  totalValue: number;
+  lowStockCount: number;
+}
+
 export const inventoryApi = {
+  getDepartmentSummaries: () => api.get<DepartmentSummaryResponse[]>('/inventory/department-summaries'),
   listItems: (params: { page?: number; limit?: number; search?: string; departmentId?: string; category?: string; lowStock?: string }) => {
     const qs = new URLSearchParams();
     if (params.page) qs.set('page', String(params.page));
