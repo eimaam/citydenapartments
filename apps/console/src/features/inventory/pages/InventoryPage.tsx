@@ -1,60 +1,127 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Package, AlertTriangle, ArrowDownCircle, ArrowUpCircle, Plus, Trash2 } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import {
+  Search, Package, AlertTriangle, ArrowDownCircle, ArrowUpCircle, Plus, Clock, Trash2,
+  ChevronRight, ArrowLeft, Building2, Utensils, Sparkles, Wrench, Shirt, Shield, Headphones
+} from 'lucide-react';
 import { useAuth } from '../../../contexts/auth';
 import { useToast } from '../../../components/ui/Toast';
-import { Input, Select, Option, Drawer, Button, Table, Badge, RoomStatus, UserRole } from '@citydenapartments/shared';
-import type { TableProps } from '@citydenapartments/shared';
+import { Input, Select, Option, Drawer, Button, UserRole, Departments, INVENTORY_UNITS } from '@citydenapartments/shared';
 import { inventoryApi, type InventoryItem } from '../api/inventory.api';
-import { Departments } from '@citydenapartments/shared';
+import { format, isBefore, differenceInDays } from 'date-fns';
 
 const LIMIT = 20;
+
+function can(user: any, roles: string[]) {
+  if (!user) return false;
+  if (user.role === UserRole.SuperAdmin || user.isSuperAdmin) return true;
+  return roles.includes(user.role);
+}
+
+const DEPT_ICONS: Record<string, any> = {
+  Kitchen: Utensils,
+  Housekeeping: Sparkles,
+  'Front Desk': Headphones,
+  Maintenance: Wrench,
+  Laundry: Shirt,
+  Security: Shield,
+  Admin: Building2,
+};
 
 export default function InventoryPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const canWrite = user ? [UserRole.SuperAdmin, UserRole.StoreManager, UserRole.Accountant].includes(user.role as any) : false;
-  const canAddItems = user ? [UserRole.SuperAdmin, UserRole.StoreManager].includes(user.role as any) : false;
+  const isManager = can(user, [UserRole.StoreManager, UserRole.SuperAdmin, UserRole.Accountant]);
+  const canAdd = can(user, [UserRole.StoreManager, UserRole.SuperAdmin, UserRole.StoreKeeper]);
+  const canIssue = can(user, [UserRole.StoreKeeper, UserRole.StoreManager, UserRole.SuperAdmin]);
 
+  const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
   const [items, setItems] = useState<InventoryItem[]>([]);
+  const [allItemsForSummary, setAllItemsForSummary] = useState<InventoryItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [actionItem, setActionItem] = useState<InventoryItem | null>(null);
   const [actionType, setActionType] = useState<'issue' | 'restock' | null>(null);
   const [qty, setQty] = useState(1);
   const [requestedBy, setRequestedBy] = useState('');
-  const [department, setDepartment] = useState('');
+  const [issueDepartment, setIssueDepartment] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [showCreate, setShowCreate] = useState(false);
-  const [createForm, setCreateForm] = useState({ name: '', category: '', description: '', unit: 'pcs', currentStock: 0, reorderLevel: 0 });
 
-  // spoilage state
-  const [spoilageItem, setSpoilageItem] = useState<InventoryItem | null>(null);
-  const [spoilageQty, setSpoilageQty] = useState<number>(1);
-  const [spoilageType, setSpoilageType] = useState<string>('damaged');
-  const [spoilageReason, setSpoilageReason] = useState<string>('');
-  const [spoilageNotes, setSpoilageNotes] = useState<string>('');
+  const [showCreate, setShowCreate] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    name: '',
+    department: '',
+    category: '',
+    description: '',
+    unit: 'pcs',
+    currentStock: 0,
+    reorderLevel: 0,
+    unitPrice: '' as string | number,
+    expiryDate: '',
+  });
+
+  const [spoilItem, setSpoilItem] = useState<InventoryItem | null>(null);
+  const [spoilQty, setSpoilQty] = useState(1);
+  const [spoilType, setSpoilType] = useState('expired');
+  const [spoilReason, setSpoilReason] = useState('');
+  const [spoilNotes, setSpoilNotes] = useState('');
+
+  const spoilTypes = [
+    { value: 'expired', label: 'Expired' },
+    { value: 'damaged', label: 'Damaged' },
+    { value: 'contaminated', label: 'Contaminated' },
+    { value: 'stolen', label: 'Stolen' },
+    { value: 'lost', label: 'Lost' },
+    { value: 'other', label: 'Other' },
+  ];
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await inventoryApi.listItems({ page, limit: LIMIT, search: search || undefined });
+      const res = await inventoryApi.listItems({
+        page,
+        limit: LIMIT,
+        search: search || undefined,
+        department: selectedDepartment || undefined,
+      });
       setItems(res.items);
       setTotal(res.total);
-    } catch { toast('error', 'Failed to load inventory.'); }
-    finally { setLoading(false); }
-  }, [page, search, toast]);
+    } catch {
+      toast('error', 'Failed to load inventory items.');
+    } finally {
+      setLoading(false);
+    }
+  }, [page, search, selectedDepartment, toast]);
 
-  useEffect(() => { fetchItems(); }, [fetchItems]);
-  useEffect(() => { setPage(1); }, [search]);
+  const fetchSummaryItems = useCallback(async () => {
+    try {
+      const res = await inventoryApi.listItems({ limit: 500 });
+      setAllItemsForSummary(res.items);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
+
+  useEffect(() => {
+    fetchSummaryItems();
+  }, [fetchSummaryItems]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, selectedDepartment]);
 
   const onSearchChange = (val: string) => {
     setSearchInput(val);
-    clearTimeout(searchTimer.current);
+    clearTimeout(searchTimer.current!);
     searchTimer.current = setTimeout(() => setSearch(val), 400);
   };
 
@@ -63,13 +130,16 @@ export default function InventoryPage() {
     setActionType(type);
     setQty(1);
     setRequestedBy('');
-    setDepartment('');
+    setIssueDepartment('');
     setNotes('');
   };
 
   const submitAction = async () => {
     if (!actionItem || !actionType) return;
-    if (qty < 1) { toast('error', 'Quantity must be at least 1.'); return; }
+    if (qty < 1) {
+      toast('error', 'Quantity must be at least 1.');
+      return;
+    }
     if (actionType === 'issue' && qty > actionItem.currentStock) {
       toast('error', `Only ${actionItem.currentStock} ${actionItem.unit} available.`);
       return;
@@ -77,7 +147,12 @@ export default function InventoryPage() {
     setSubmitting(true);
     try {
       if (actionType === 'issue') {
-        await inventoryApi.issue(actionItem._id, { quantity: qty, requestedBy: requestedBy || undefined, department: department || undefined, notes: notes || undefined });
+        await inventoryApi.issue(actionItem._id, {
+          quantity: qty,
+          requestedBy: requestedBy || undefined,
+          department: issueDepartment || undefined,
+          notes: notes || undefined,
+        });
         toast('success', `Issued ${qty} ${actionItem.unit} of ${actionItem.name}.`);
       } else {
         await inventoryApi.restock(actionItem._id, { quantity: qty, notes: notes || undefined });
@@ -86,223 +161,735 @@ export default function InventoryPage() {
       setActionItem(null);
       setActionType(null);
       fetchItems();
-    } catch (e: any) { toast('error', e.message); }
-    finally { setSubmitting(false); }
+      fetchSummaryItems();
+    } catch (e: any) {
+      toast('error', e.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const openCreateModal = () => {
+    setCreateForm({
+      name: '',
+      department: selectedDepartment || '',
+      category: '',
+      description: '',
+      unit: 'pcs',
+      currentStock: 0,
+      reorderLevel: 0,
+      unitPrice: '',
+      expiryDate: '',
+    });
+    setShowCreate(true);
   };
 
   const createItem = async () => {
-    if (!createForm.name || !createForm.category || !createForm.unit) {
-      toast('error', 'Name, category, and unit are required.');
+    if (!createForm.name || !createForm.department || !createForm.category || !createForm.unit) {
+      toast('error', 'Name, Department, Category, and Unit are required.');
+      return;
+    }
+    if (createForm.unitPrice === '' || Number(createForm.unitPrice) < 0) {
+      toast('error', 'Unit price is mandatory and must be 0 or greater.');
       return;
     }
     setSubmitting(true);
     try {
-      await inventoryApi.createItem(createForm);
+      await inventoryApi.createItem({
+        name: createForm.name,
+        department: createForm.department,
+        category: createForm.category,
+        description: createForm.description || undefined,
+        unit: createForm.unit,
+        currentStock: Number(createForm.currentStock) || 0,
+        reorderLevel: Number(createForm.reorderLevel) || 0,
+        unitPrice: Number(createForm.unitPrice),
+        expiryDate: createForm.expiryDate || undefined,
+      });
       setShowCreate(false);
-      setCreateForm({ name: '', category: '', description: '', unit: 'pcs', currentStock: 0, reorderLevel: 0 });
-      toast('success', 'Item created.');
+      toast('success', 'Inventory item created successfully.');
       fetchItems();
-    } catch (e: any) { toast('error', e.message); }
-    finally { setSubmitting(false); }
+      fetchSummaryItems();
+    } catch (e: any) {
+      toast('error', e.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const openSpoilage = (item: InventoryItem) => {
-    setSpoilageItem(item);
-    setSpoilageQty(1);
-    setSpoilageType('damaged');
-    setSpoilageReason('');
-    setSpoilageNotes('');
+    setSpoilItem(item);
+    setSpoilQty(1);
+    setSpoilType('expired');
+    setSpoilReason('');
+    setSpoilNotes('');
   };
 
   const submitSpoilage = async () => {
-    if (!spoilageItem) return;
-    if (spoilageQty < 1) { toast('error', 'Quantity must be at least 1.'); return; }
-    if (spoilageQty > spoilageItem.currentStock) {
-      toast('error', `Only ${spoilageItem.currentStock} ${spoilageItem.unit} available.`);
+    if (!spoilItem) return;
+    if (spoilQty < 1) {
+      toast('error', 'Quantity must be at least 1.');
       return;
     }
-    if (!spoilageReason.trim()) { toast('error', 'Reason is required.'); return; }
+    if (spoilQty > spoilItem.currentStock) {
+      toast('error', `Only ${spoilItem.currentStock} ${spoilItem.unit} available.`);
+      return;
+    }
+    if (!spoilReason.trim()) {
+      toast('error', 'Reason is required.');
+      return;
+    }
     setSubmitting(true);
     try {
-      await inventoryApi.reportSpoilage(spoilageItem._id, {
-        quantity: spoilageQty,
-        spoilageType,
-        reason: spoilageReason,
-        notes: spoilageNotes || undefined,
+      await inventoryApi.reportSpoilage(spoilItem._id, {
+        quantity: spoilQty,
+        spoilageType: spoilType,
+        reason: spoilReason,
+        notes: spoilNotes || undefined,
       });
-      toast('success', 'Write-off reported. Awaiting approval.');
-      setSpoilageItem(null);
+      toast('success', 'Spoilage reported. Awaiting approval.');
+      setSpoilItem(null);
       fetchItems();
-    } catch (e: any) { toast('error', e.message); }
-    finally { setSubmitting(false); }
+    } catch (e: any) {
+      toast('error', e.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const isLowStock = (item: InventoryItem) => item.currentStock <= item.reorderLevel;
+  const isExpired = (item: InventoryItem) => item.expiryDate && isBefore(new Date(item.expiryDate), new Date());
+  const isExpiringSoon = (item: InventoryItem) => {
+    if (!item.expiryDate || isExpired(item)) return false;
+    return differenceInDays(new Date(item.expiryDate), new Date()) <= 30;
+  };
 
-  const columns: TableProps<InventoryItem>['columns'] = [
-    { title: 'Item', key: 'item', render: (_: unknown, r: InventoryItem) => (
-      <div className="flex items-center gap-2">
-        <Package size={14} className={isLowStock(r) ? 'text-amber-500' : 'text-primary'} />
-        <div><p className="font-medium">{r.name}</p><p className="text-xs text-outline">{r.category} · {r.unit}</p></div>
-      </div>
-    )},
-    { title: 'Stock', dataIndex: 'currentStock', key: 'stock', width: 100, align: 'right' as const,
-      render: (v: number, r: InventoryItem) => (
-        <span className={`font-bold font-mono ${v === 0 ? 'text-red-500' : isLowStock(r) ? 'text-amber-500' : 'text-emerald-500'}`}>
-          {v}
-          {isLowStock(r) && <AlertTriangle size={12} className="inline ml-1" />}
-        </span>
-      )},
-    { title: 'Reorder At', dataIndex: 'reorderLevel', key: 'reorder', width: 100, align: 'right' as const,
-      render: (v: number) => <span className="font-mono text-outline">{v}</span> },
-    { title: 'Actions', key: 'action', width: 280,
-      render: (_: unknown, r: InventoryItem) => (
-        <div className="flex gap-2">
-          {canWrite && (
-            <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); openAction(r, 'issue'); }}>Issue</Button>
-          )}
-          {canWrite && (
-            <Button size="sm" variant="default" onClick={(e) => { e.stopPropagation(); openAction(r, 'restock'); }}>Restock</Button>
-          )}
-          {canWrite && (
-            <Button size="sm" variant="destructive" onClick={(e) => { e.stopPropagation(); openSpoilage(r); }}>Write Off</Button>
-          )}
-        </div>
-      )},
-  ];
+  const stockColor = (item: InventoryItem) => {
+    if (isExpired(item)) return 'text-red-500';
+    if (item.currentStock === 0) return 'text-red-500';
+    if (isLowStock(item)) return 'text-amber-500';
+    return 'text-emerald-500';
+  };
+
+  const deptSummaries = useMemo(() => {
+    const summaryMap: Record<string, { count: number; value: number; lowStockCount: number }> = {};
+    for (const d of Departments) {
+      summaryMap[d] = { count: 0, value: 0, lowStockCount: 0 };
+    }
+    for (const item of allItemsForSummary) {
+      const d = item.department || 'Admin';
+      if (!summaryMap[d]) {
+        summaryMap[d] = { count: 0, value: 0, lowStockCount: 0 };
+      }
+      summaryMap[d].count += 1;
+      const price = item.unitPrice ?? item.costPrice ?? 0;
+      summaryMap[d].value += item.currentStock * price;
+      if (item.currentStock <= item.reorderLevel) {
+        summaryMap[d].lowStockCount += 1;
+      }
+    }
+    return summaryMap;
+  }, [allItemsForSummary]);
+
+  const createFormTotalCost = useMemo(() => {
+    const qty = Number(createForm.currentStock) || 0;
+    const price = Number(createForm.unitPrice) || 0;
+    return qty * price;
+  }, [createForm.currentStock, createForm.unitPrice]);
+
+  const actionRestockTotalCost = useMemo(() => {
+    if (!actionItem) return 0;
+    const price = actionItem.unitPrice ?? actionItem.costPrice ?? 0;
+    return qty * price;
+  }, [actionItem, qty]);
 
   return (
     <div className="p-6 md:p-8">
-      <div className="flex items-center gap-3 mb-6"><span className="w-8 h-px bg-primary" /><span className="text-xs font-bold tracking-[0.15em] uppercase text-outline">Store</span></div>
-
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="font-serif text-2xl sm:text-3xl text-on-surface">Inventory</h1>
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <Input size="sm" placeholder="Search items..." prefix={<Search size={14} className="text-outline" />}
-            value={searchInput} onChange={(e) => onSearchChange(e.target.value)} className="!w-64" />
-          {canAddItems && <Button size="sm" icon={<Plus size={14} />} onClick={() => setShowCreate(true)}>Add Item</Button>}
+          <span className="w-8 h-px bg-primary" />
+          <span className="text-xs font-bold tracking-[0.15em] uppercase text-outline">
+            Store {selectedDepartment ? `· ${selectedDepartment}` : ''}
+          </span>
+        </div>
+        {selectedDepartment && (
+          <button
+            onClick={() => setSelectedDepartment(null)}
+            className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline cursor-pointer bg-transparent border-0"
+          >
+            <ArrowLeft size={14} /> Back to All Departments
+          </button>
+        )}
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+          <h1 className="font-serif text-2xl sm:text-3xl text-on-surface">
+            {selectedDepartment ? `${selectedDepartment} Inventory` : 'Inventory Departments'}
+          </h1>
+          <p className="text-xs text-outline mt-1">
+            {selectedDepartment
+              ? `Manage items, stock levels, and issue requests for ${selectedDepartment}.`
+              : 'Select a department to view and manage assigned inventory items.'}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {selectedDepartment && (
+            <Input
+              size="sm"
+              placeholder="Search items..."
+              prefix={<Search size={14} className="text-outline" />}
+              value={searchInput}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="!w-56"
+            />
+          )}
+          {canAdd && (
+            <Button size="sm" icon={<Plus size={14} />} onClick={openCreateModal}>
+              Add Item
+            </Button>
+          )}
         </div>
       </div>
 
-      <div className="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden">
-        <Table<InventoryItem>
-          columns={columns}
-          dataSource={items}
-          rowKey="_id"
-          loading={loading}
-          pagination={{
-            current: page, pageSize: LIMIT, total,
-            showSizeChanger: true,
-            onChange: (p) => setPage(p),
-          }}
-        />
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-6 border-b border-outline-variant/60">
+        <button
+          onClick={() => setSelectedDepartment(null)}
+          className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors border cursor-pointer ${
+            selectedDepartment === null
+              ? 'bg-primary text-on-primary border-primary'
+              : 'bg-surface-container-lowest text-on-surface-variant border-outline-variant hover:bg-surface-container'
+          }`}
+        >
+          All Departments Overview
+        </button>
+        {Departments.map((dept) => {
+          const info = deptSummaries[dept] || { count: 0 };
+          const isSelected = selectedDepartment === dept;
+          return (
+            <button
+              key={dept}
+              onClick={() => setSelectedDepartment(dept)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors border flex items-center gap-1.5 cursor-pointer ${
+                isSelected
+                  ? 'bg-primary text-on-primary border-primary'
+                  : 'bg-surface-container-lowest text-on-surface-variant border-outline-variant hover:bg-surface-container'
+              }`}
+            >
+              <span>{dept}</span>
+              <span
+                className={`px-1.5 py-0.2 text-[10px] rounded-full font-bold ${
+                  isSelected ? 'bg-white/20 text-white' : 'bg-surface-container-high text-outline'
+                }`}
+              >
+                {info.count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
-      <Drawer open={!!actionItem} onClose={() => { setActionItem(null); setActionType(null); }}
-        title={actionType === 'issue' ? 'Issue Item' : 'Restock Item'} size="sm"
-        footer={<div className="flex justify-end gap-3"><Button variant="secondary" onClick={() => { setActionItem(null); setActionType(null); }}>Cancel</Button>
-          <Button loading={submitting} onClick={submitAction}>
-            {actionType === 'issue' ? 'Issue' : 'Restock'}
-          </Button></div>}>
+      {selectedDepartment === null && !search && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+          {Departments.map((dept) => {
+            const IconComp = DEPT_ICONS[dept] || Building2;
+            const summary = deptSummaries[dept] || { count: 0, value: 0, lowStockCount: 0 };
+
+            return (
+              <div
+                key={dept}
+                onClick={() => setSelectedDepartment(dept)}
+                className="p-5 rounded-xl border border-outline-variant bg-surface-container-lowest hover:border-primary hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-on-primary transition-colors">
+                      <IconComp size={20} />
+                    </div>
+                    {summary.lowStockCount > 0 && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                        <AlertTriangle size={10} /> {summary.lowStockCount} Low
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="font-serif text-lg font-bold text-on-surface group-hover:text-primary transition-colors">
+                    {dept}
+                  </h3>
+                  <p className="text-xs text-outline mt-0.5">{summary.count} inventory items</p>
+                </div>
+
+                <div className="mt-6 pt-3 border-t border-outline-variant/60 flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-bold tracking-[0.1em] uppercase text-outline">Total Value</p>
+                    <p className="text-sm font-bold text-on-surface">₦{summary.value.toLocaleString()}</p>
+                  </div>
+                  <span className="text-xs font-semibold text-primary group-hover:translate-x-1 transition-transform flex items-center gap-0.5">
+                    Open <ChevronRight size={14} />
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {(selectedDepartment !== null || search) && (
+        <div className="grid gap-3">
+          {items.map((item) => {
+            const price = item.unitPrice ?? item.costPrice ?? 0;
+            return (
+              <div
+                key={item._id}
+                className="p-4 rounded-lg border border-outline-variant bg-surface-container-lowest flex items-center justify-between hover:border-outline transition-colors"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div
+                    className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                      isLowStock(item) ? 'bg-amber-50' : 'bg-surface-container'
+                    }`}
+                  >
+                    <Package size={16} className={stockColor(item)} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-sm text-on-surface truncate">{item.name}</p>
+                      <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-surface-container-high text-on-surface-variant">
+                        {item.department || 'Admin'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-on-surface-variant mt-0.5">
+                      Category: {item.category} · Unit: {item.unit}
+                    </p>
+                    <p className="text-[11px] text-outline font-medium">
+                      Unit Price: ₦{price.toLocaleString()} | Stock Value: ₦
+                      {(item.currentStock * price).toLocaleString()}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      {item.expiryDate && (
+                        <span
+                          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
+                            isExpired(item)
+                              ? 'bg-red-50 text-red-600'
+                              : isExpiringSoon(item)
+                              ? 'bg-amber-50 text-amber-600'
+                              : 'bg-green-50 text-green-600'
+                          }`}
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              isExpired(item) || isExpiringSoon(item) ? 'animate-pulse bg-current' : 'bg-current'
+                            }`}
+                          />
+                          {isExpired(item)
+                            ? `Expired ${format(new Date(item.expiryDate), 'MMM d, yyyy')}`
+                            : `Exp ${format(new Date(item.expiryDate), 'MMM d, yyyy')}`}
+                        </span>
+                      )}
+                      {isLowStock(item) && item.currentStock > 0 && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-600">
+                          <AlertTriangle size={10} className="animate-pulse" />
+                          Low Stock
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 flex-shrink-0">
+                  <div className="text-right">
+                    <p className={`text-lg font-bold ${stockColor(item)}`}>{item.currentStock}</p>
+                    <p className="text-[10px] text-outline">Reorder at {item.reorderLevel}</p>
+                  </div>
+                  {isExpired(item) && <Clock size={16} className="text-red-500" />}
+                  {!isExpired(item) && isLowStock(item) && item.currentStock > 0 && (
+                    <AlertTriangle size={16} className="text-amber-500" />
+                  )}
+                  {!isExpired(item) && item.currentStock === 0 && (
+                    <AlertTriangle size={16} className="text-red-500" />
+                  )}
+                  <div className="flex gap-2">
+                    {canIssue && (
+                      <button
+                        onClick={() => openAction(item, 'issue')}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded border border-outline-variant hover:bg-surface-container cursor-pointer bg-transparent text-on-surface-variant hover:text-on-surface"
+                      >
+                        <ArrowDownCircle size={12} /> Issue
+                      </button>
+                    )}
+                    {isManager && (
+                      <button
+                        onClick={() => openAction(item, 'restock')}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded border border-outline-variant hover:bg-surface-container cursor-pointer bg-transparent text-on-surface-variant hover:text-on-surface"
+                      >
+                        <ArrowUpCircle size={12} /> Restock
+                      </button>
+                    )}
+                    {isManager && (
+                      <button
+                        onClick={() => openSpoilage(item)}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded border border-red-200 hover:bg-red-50 cursor-pointer bg-transparent text-red-500 hover:text-red-600"
+                      >
+                        <Trash2 size={12} /> Write Off
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          {!loading && items.length === 0 && (
+            <p className="text-center text-sm text-outline py-12">No inventory items found.</p>
+          )}
+          {total > LIMIT && (
+            <div className="flex justify-center gap-2 mt-4">
+              <button
+                disabled={page <= 1}
+                onClick={() => setPage((p) => p - 1)}
+                className="px-3 py-1 text-xs rounded border border-outline-variant disabled:opacity-30 cursor-pointer disabled:cursor-default"
+              >
+                Previous
+              </button>
+              <span className="px-3 py-1 text-xs text-outline">
+                Page {page} of {Math.ceil(total / LIMIT)}
+              </span>
+              <button
+                disabled={page >= Math.ceil(total / LIMIT)}
+                onClick={() => setPage((p) => p + 1)}
+                className="px-3 py-1 text-xs rounded border border-outline-variant disabled:opacity-30 cursor-pointer disabled:cursor-default"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <Drawer
+        open={!!actionItem}
+        onClose={() => {
+          setActionItem(null);
+          setActionType(null);
+        }}
+        title={actionType === 'issue' ? 'Issue Item' : 'Restock Item'}
+        size="sm"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setActionItem(null);
+                setActionType(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button loading={submitting} onClick={submitAction}>
+              {actionType === 'issue' ? 'Issue' : 'Restock'}
+            </Button>
+          </div>
+        }
+      >
         {actionItem && (
           <div className="space-y-4">
-            <div className="p-3 rounded-lg bg-surface-container">
+            <div className="p-3 rounded-lg bg-surface-container border border-outline-variant">
               <p className="font-medium text-sm">{actionItem.name}</p>
-              <p className="text-xs text-outline">{actionItem.category} · Current stock: <strong>{actionItem.currentStock}</strong> {actionItem.unit}</p>
+              <p className="text-xs text-outline">
+                {actionItem.department} · {actionItem.category} · Current stock: <strong>{actionItem.currentStock}</strong>{' '}
+                {actionItem.unit}
+              </p>
+              <p className="text-xs font-semibold text-primary mt-1">
+                Unit Price: ₦{(actionItem.unitPrice ?? actionItem.costPrice ?? 0).toLocaleString()}
+              </p>
             </div>
+
             <div>
               <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Quantity</label>
-              <Input size="lg" type="number" min={1} max={actionType === 'issue' ? actionItem.currentStock : undefined}
-                value={qty} onChange={(e) => setQty(Number(e.target.value))} className="mt-1" />
+              <Input
+                size="lg"
+                type="number"
+                min={1}
+                max={actionType === 'issue' ? actionItem.currentStock : undefined}
+                value={qty}
+                onChange={(e) => setQty(Number(e.target.value))}
+                className="mt-1"
+              />
             </div>
+
+            {actionType === 'restock' && (
+              <div className="p-3 rounded-lg bg-surface-container-lowest border border-outline-variant flex items-center justify-between text-xs">
+                <span className="text-outline font-medium">Total Restock Cost:</span>
+                <span className="font-bold text-sm text-primary">₦{actionRestockTotalCost.toLocaleString()}</span>
+              </div>
+            )}
+
             {actionType === 'issue' && (
               <>
                 <div>
-                  <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Requested By (Individual)</label>
-                  <Input size="lg" placeholder="Person's name" value={requestedBy} onChange={(e) => setRequestedBy(e.target.value)} className="mt-1" />
+                  <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Requested By</label>
+                  <Input
+                    size="lg"
+                    placeholder="Enter name of person requesting item"
+                    value={requestedBy}
+                    onChange={(e) => setRequestedBy(e.target.value)}
+                    className="mt-1"
+                  />
                 </div>
+
                 <div>
-                  <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Or Department</label>
-                  <Select size="lg" className="w-full mt-1" value={department} onChange={(v) => setDepartment(v)}>
+                  <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Destination Department</label>
+                  <Select
+                    size="lg"
+                    className="w-full mt-1"
+                    value={issueDepartment}
+                    onChange={(v) => setIssueDepartment(v)}
+                  >
                     <Option value="">None</Option>
-                    {Departments.map((d) => <Option key={d} value={d}>{d}</Option>)}
+                    {Departments.map((d) => (
+                      <Option key={d} value={d}>
+                        {d}
+                      </Option>
+                    ))}
                   </Select>
                 </div>
               </>
             )}
+
             <div>
               <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Notes</label>
-              <Input size="lg" placeholder="Optional notes" value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-1" />
+              <Input
+                size="lg"
+                placeholder="Optional notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="mt-1"
+              />
             </div>
           </div>
         )}
       </Drawer>
 
-      <Drawer open={showCreate} onClose={() => setShowCreate(false)} title="Add Inventory Item" size="sm"
-        footer={<div className="flex justify-end gap-3"><Button variant="secondary" onClick={() => setShowCreate(false)}>Cancel</Button>
-          <Button loading={submitting} onClick={createItem}>Create</Button></div>}>
-        <div className="space-y-4">
-          <Input size="lg" placeholder="Item Name" value={createForm.name} onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })} />
-          <Input size="lg" placeholder="Category" value={createForm.category} onChange={(e) => setCreateForm({ ...createForm, category: e.target.value })} />
-          <Input size="lg" placeholder="Description (optional)" value={createForm.description} onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })} />
-          <Select size="lg" className="w-full" value={createForm.unit} onChange={(v) => setCreateForm({ ...createForm, unit: v })}>
-            <Option value="pcs">Pieces (pcs)</Option>
-            <Option value="kg">Kilograms (kg)</Option>
-            <Option value="litres">Litres</Option>
-            <Option value="packs">Packs</Option>
-            <Option value="rolls">Rolls</Option>
-            <Option value="bottles">Bottles</Option>
-            <Option value="bags">Bags</Option>
-            <Option value="cartons">Cartons</Option>
-          </Select>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Initial Stock</label>
-              <Input size="lg" type="number" min={0} value={createForm.currentStock} onChange={(e) => setCreateForm({ ...createForm, currentStock: Number(e.target.value) })} className="mt-1" />
-            </div>
-            <div>
-              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Reorder Level</label>
-              <Input size="lg" type="number" min={0} value={createForm.reorderLevel} onChange={(e) => setCreateForm({ ...createForm, reorderLevel: Number(e.target.value) })} className="mt-1" />
-            </div>
+      <Drawer
+        open={!!spoilItem}
+        onClose={() => setSpoilItem(null)}
+        title="Report Spoilage / Write-Off"
+        size="sm"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" onClick={() => setSpoilItem(null)}>
+              Cancel
+            </Button>
+            <Button loading={submitting} onClick={submitSpoilage} variant="destructive">
+              Submit for Approval
+            </Button>
           </div>
-        </div>
-      </Drawer>
-
-      <Drawer open={!!spoilageItem} onClose={() => setSpoilageItem(null)} title="Report Write-Off" size="sm"
-        footer={<div className="flex justify-end gap-3"><Button variant="secondary" onClick={() => setSpoilageItem(null)}>Cancel</Button>
-          <Button loading={submitting} onClick={submitSpoilage}>Report Write-Off</Button></div>}>
-        {spoilageItem && (
+        }
+      >
+        {spoilItem && (
           <div className="space-y-4">
             <div className="p-3 rounded-lg bg-surface-container">
-              <p className="font-medium text-sm">{spoilageItem.name}</p>
-              <p className="text-xs text-outline">{spoilageItem.category} · Current stock: <strong>{spoilageItem.currentStock}</strong> {spoilageItem.unit}</p>
+              <p className="font-medium text-sm">{spoilItem.name}</p>
+              <p className="text-xs text-outline">
+                {spoilItem.department} · Current stock: <strong>{spoilItem.currentStock}</strong> {spoilItem.unit}
+              </p>
             </div>
             <div>
               <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Quantity</label>
-              <Input size="lg" type="number" min={1} max={spoilageItem.currentStock}
-                value={spoilageQty} onChange={(e) => setSpoilageQty(Number(e.target.value))} className="mt-1" />
+              <Input
+                size="lg"
+                type="number"
+                min={1}
+                max={spoilItem.currentStock}
+                value={spoilQty}
+                onChange={(e) => setSpoilQty(Number(e.target.value))}
+                className="mt-1"
+              />
             </div>
             <div>
-              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Type</label>
-              <Select size="lg" className="w-full mt-1" value={spoilageType} onChange={(v) => setSpoilageType(v)}>
-                <Option value="expired">Expired</Option>
-                <Option value="damaged">Damaged</Option>
-                <Option value="contaminated">Contaminated</Option>
-                <Option value="stolen">Stolen</Option>
-                <Option value="lost">Lost</Option>
-                <Option value="other">Other</Option>
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Spoilage Type</label>
+              <Select size="lg" className="w-full mt-1" value={spoilType} onChange={(v) => setSpoilType(v)}>
+                {spoilTypes.map((t) => (
+                  <Option key={t.value} value={t.value}>
+                    {t.label}
+                  </Option>
+                ))}
               </Select>
             </div>
             <div>
-              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Reason *</label>
-              <Input size="lg" placeholder="Why is this being written off?" value={spoilageReason} onChange={(e) => setSpoilageReason(e.target.value)} className="mt-1" />
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">
+                Reason <span className="text-red-500">*</span>
+              </label>
+              <Input
+                size="lg"
+                placeholder="Explain why this is being written off"
+                value={spoilReason}
+                onChange={(e) => setSpoilReason(e.target.value)}
+                className="mt-1"
+              />
             </div>
             <div>
-              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Notes (optional)</label>
-              <Input size="lg" placeholder="Additional notes" value={spoilageNotes} onChange={(e) => setSpoilageNotes(e.target.value)} className="mt-1" />
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Additional Notes</label>
+              <Input
+                size="lg"
+                placeholder="Optional details"
+                value={spoilNotes}
+                onChange={(e) => setSpoilNotes(e.target.value)}
+                className="mt-1"
+              />
             </div>
           </div>
         )}
+      </Drawer>
+
+      <Drawer
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        title="Add Inventory Item"
+        size="sm"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" onClick={() => setShowCreate(false)}>
+              Cancel
+            </Button>
+            <Button loading={submitting} onClick={createItem}>
+              Create Item
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">
+              Item Name <span className="text-red-500">*</span>
+            </label>
+            <Input
+              size="lg"
+              placeholder="e.g. Toilet Roll 2-ply"
+              value={createForm.name}
+              onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+              className="mt-1"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">
+              Department <span className="text-red-500">*</span>
+            </label>
+            <Select
+              size="lg"
+              className="w-full mt-1"
+              value={createForm.department}
+              onChange={(v) => setCreateForm({ ...createForm, department: v })}
+            >
+              <Option value="">Select Department</Option>
+              {Departments.map((d) => (
+                <Option key={d} value={d}>
+                  {d}
+                </Option>
+              ))}
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">
+                Category <span className="text-red-500">*</span>
+              </label>
+              <Input
+                size="lg"
+                placeholder="e.g. Cleaning Supplies"
+                value={createForm.category}
+                onChange={(e) => setCreateForm({ ...createForm, category: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">
+                Unit <span className="text-red-500">*</span>
+              </label>
+              <Select
+                size="lg"
+                className="w-full mt-1"
+                value={createForm.unit}
+                onChange={(v) => setCreateForm({ ...createForm, unit: v })}
+              >
+                {INVENTORY_UNITS.map((u) => (
+                  <Option key={u.value} value={u.value}>
+                    {u.label}
+                  </Option>
+                ))}
+              </Select>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Description</label>
+            <Input
+              size="lg"
+              placeholder="Optional item description"
+              value={createForm.description}
+              onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+              className="mt-1"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Initial Stock</label>
+              <Input
+                size="lg"
+                type="number"
+                min={0}
+                value={createForm.currentStock}
+                onChange={(e) => setCreateForm({ ...createForm, currentStock: Number(e.target.value) })}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Reorder Level</label>
+              <Input
+                size="lg"
+                type="number"
+                min={0}
+                value={createForm.reorderLevel}
+                onChange={(e) => setCreateForm({ ...createForm, reorderLevel: Number(e.target.value) })}
+                className="mt-1"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">
+                Unit Price (₦) <span className="text-red-500">*</span>
+              </label>
+              <Input
+                size="lg"
+                type="number"
+                min={0}
+                placeholder="e.g. 1500"
+                value={createForm.unitPrice}
+                onChange={(e) => setCreateForm({ ...createForm, unitPrice: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Expiry Date</label>
+              <Input
+                size="lg"
+                type="date"
+                value={createForm.expiryDate}
+                onChange={(e) => setCreateForm({ ...createForm, expiryDate: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+          </div>
+
+          <div className="p-3 rounded-lg bg-surface-container-lowest border border-outline-variant flex items-center justify-between text-xs">
+            <span className="text-outline font-medium">Initial Total Stock Value:</span>
+            <span className="font-bold text-sm text-primary">₦{createFormTotalCost.toLocaleString()}</span>
+          </div>
+        </div>
       </Drawer>
     </div>
   );

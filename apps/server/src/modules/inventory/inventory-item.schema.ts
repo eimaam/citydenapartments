@@ -27,8 +27,11 @@ export class InventoryItem extends Document {
   @Prop()
   expiryDate?: Date;
 
-  @Prop()
-  costPrice?: number;
+  @Prop({ required: true, trim: true })
+  department: string;
+
+  @Prop({ required: true, default: 0 })
+  unitPrice: number;
 
   @Prop({ default: true })
   isActive: boolean;

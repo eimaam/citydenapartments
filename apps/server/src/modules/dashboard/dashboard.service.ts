@@ -367,7 +367,7 @@ export class DashboardService {
         {
           $group: {
             _id: null,
-            totalValue: { $sum: { $multiply: ['$currentStock', { $ifNull: ['$costPrice', 0] }] } },
+            totalValue: { $sum: { $multiply: ['$currentStock', { $ifNull: ['$unitPrice', { $ifNull: ['$costPrice', 0] }] }] } },
             expiringCount: {
               $sum: {
                 $cond: [

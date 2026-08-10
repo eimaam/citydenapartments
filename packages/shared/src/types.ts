@@ -175,3 +175,21 @@ export interface CustomerResponse {
   createdAt: string;
   branchLifetimeDiscounts?: BranchLifetimeDiscount[];
 }
+
+export const INVENTORY_UNITS = [
+  { value: 'pcs', label: 'Pieces (pcs)' },
+  { value: 'kg', label: 'Kilograms (kg)' },
+  { value: 'g', label: 'Grams (g)' },
+  { value: 'litres', label: 'Litres (L)' },
+  { value: 'ml', label: 'Millilitres (ml)' },
+  { value: 'packs', label: 'Packs' },
+  { value: 'bags', label: 'Bags' },
+  { value: 'cups', label: 'Cups' },
+  { value: 'boxes', label: 'Boxes' },
+  { value: 'cartons', label: 'Cartons' },
+  { value: 'bottles', label: 'Bottles' },
+  { value: 'rolls', label: 'Rolls' },
+  { value: 'pairs', label: 'Pairs' },
+  { value: 'sets', label: 'Sets' },
+  { value: 'units', label: 'Units' },
+] as const;

@@ -7,6 +7,10 @@ export class UpdateItemDto {
 
   @IsOptional()
   @IsString()
+  department?: string;
+
+  @IsOptional()
+  @IsString()
   category?: string;
 
   @IsOptional()
@@ -29,7 +33,7 @@ export class UpdateItemDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
-  costPrice?: number;
+  unitPrice?: number;
 
   @IsOptional()
   @IsDateString()

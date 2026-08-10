@@ -35,12 +35,14 @@ export class InventoryService {
     page?: number;
     limit?: number;
     search?: string;
+    department?: string;
     category?: string;
     lowStock?: boolean;
   }) {
-    const { branchId, page = 1, limit = 20, search, category, lowStock } = params;
+    const { branchId, page = 1, limit = 20, search, department, category, lowStock } = params;
     const filter: any = { branchId: new Types.ObjectId(branchId), isActive: true };
 
+    if (department) filter.department = department;
     if (category) filter.category = category;
     if (lowStock) {
       filter.$expr = { $lte: ['$currentStock', '$reorderLevel'] };
@@ -49,6 +51,7 @@ export class InventoryService {
       const escaped = escapeRegex(search);
       filter.$or = [
         { name: { $regex: escaped, $options: 'i' } },
+        { department: { $regex: escaped, $options: 'i' } },
         { category: { $regex: escaped, $options: 'i' } },
       ];
     }
@@ -96,7 +99,7 @@ export class InventoryService {
       description: `Inventory item created: ${dto.name}`,
       performedBy: userId,
       branchId,
-      details: { name: dto.name, category: dto.category, currentStock: dto.currentStock, unit: dto.unit },
+      details: { name: dto.name, department: dto.department, category: dto.category, currentStock: dto.currentStock, unit: dto.unit, unitPrice: dto.unitPrice },
     });
     return item;
   }
