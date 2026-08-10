@@ -80,7 +80,7 @@ export class InventoryService {
           count: { $sum: 1 },
           totalValue: {
             $sum: {
-              $multiply: ['$currentStock', { $ifNull: ['$unitPrice', { $ifNull: ['$costPrice', 0] }] }],
+              $multiply: ['$currentStock', '$unitPrice'],
             },
           },
           lowStockCount: {
