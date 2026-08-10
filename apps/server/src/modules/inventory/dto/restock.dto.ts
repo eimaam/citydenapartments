@@ -6,6 +6,11 @@ export class RestockDto {
   quantity: number;
 
   @IsOptional()
+  @IsNumber()
+  @Min(0)
+  unitPrice?: number;
+
+  @IsOptional()
   @IsString()
   notes?: string;
 }

@@ -47,6 +47,7 @@ export default function InventoryPage() {
   const [actionItem, setActionItem] = useState<InventoryItem | null>(null);
   const [actionType, setActionType] = useState<'issue' | 'restock' | null>(null);
   const [qty, setQty] = useState(1);
+  const [restockUnitPrice, setRestockUnitPrice] = useState<string | number>('');
   const [requestedBy, setRequestedBy] = useState('');
   const [issueDepartment, setIssueDepartment] = useState('');
   const [notes, setNotes] = useState('');
@@ -129,6 +130,7 @@ export default function InventoryPage() {
     setActionItem(item);
     setActionType(type);
     setQty(1);
+    setRestockUnitPrice(item.unitPrice ?? item.costPrice ?? '');
     setRequestedBy('');
     setIssueDepartment('');
     setNotes('');
@@ -155,7 +157,11 @@ export default function InventoryPage() {
         });
         toast('success', `Issued ${qty} ${actionItem.unit} of ${actionItem.name}.`);
       } else {
-        await inventoryApi.restock(actionItem._id, { quantity: qty, notes: notes || undefined });
+        await inventoryApi.restock(actionItem._id, {
+          quantity: qty,
+          unitPrice: restockUnitPrice !== '' ? Number(restockUnitPrice) : undefined,
+          notes: notes || undefined,
+        });
         toast('success', `Restocked ${qty} ${actionItem.unit} of ${actionItem.name}.`);
       }
       setActionItem(null);
@@ -297,11 +303,16 @@ export default function InventoryPage() {
     return qty * price;
   }, [createForm.currentStock, createForm.unitPrice]);
 
-  const actionRestockTotalCost = useMemo(() => {
-    if (!actionItem) return 0;
-    const price = actionItem.unitPrice ?? actionItem.costPrice ?? 0;
-    return qty * price;
-  }, [actionItem, qty]);
+  const actionRestockCalculations = useMemo(() => {
+    if (!actionItem) return { batchTotalCost: 0, batchUnitPrice: 0, newAvgUnitPrice: 0, currentPrice: 0 };
+    const currentPrice = actionItem.unitPrice ?? actionItem.costPrice ?? 0;
+    const batchUnitPrice = restockUnitPrice !== '' ? Number(restockUnitPrice) : currentPrice;
+    const batchTotalCost = qty * batchUnitPrice;
+    const newStock = actionItem.currentStock + qty;
+    const existingValue = actionItem.currentStock * currentPrice;
+    const newAvgUnitPrice = newStock > 0 ? Math.round((existingValue + batchTotalCost) / newStock) : batchUnitPrice;
+    return { batchTotalCost, batchUnitPrice, newAvgUnitPrice, currentPrice };
+  }, [actionItem, qty, restockUnitPrice]);
 
   return (
     <div className="p-6 md:p-8">
@@ -617,10 +628,38 @@ export default function InventoryPage() {
             </div>
 
             {actionType === 'restock' && (
-              <div className="p-3 rounded-lg bg-surface-container-lowest border border-outline-variant flex items-center justify-between text-xs">
-                <span className="text-outline font-medium">Total Restock Cost:</span>
-                <span className="font-bold text-sm text-primary">₦{actionRestockTotalCost.toLocaleString()}</span>
-              </div>
+              <>
+                <div>
+                  <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">
+                    Restock Unit Price (₦) <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    size="lg"
+                    type="number"
+                    min={0}
+                    placeholder="Enter unit price for this purchase"
+                    value={restockUnitPrice}
+                    onChange={(e) => setRestockUnitPrice(e.target.value)}
+                    className="mt-1"
+                  />
+                  <p className="text-[11px] text-outline mt-1">
+                    Current price in system: ₦{actionRestockCalculations.currentPrice.toLocaleString()}
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-lg bg-surface-container-lowest border border-outline-variant space-y-1.5 text-xs">
+                  <div className="flex justify-between items-center text-on-surface-variant">
+                    <span>Batch Purchase Cost ({qty} × ₦{actionRestockCalculations.batchUnitPrice.toLocaleString()}):</span>
+                    <span className="font-semibold text-on-surface">₦{actionRestockCalculations.batchTotalCost.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-1 border-t border-dashed border-outline-variant/60 font-medium">
+                    <span className="text-primary">New Weighted Avg Unit Price:</span>
+                    <span className="font-bold text-sm text-primary">
+                      ₦{actionRestockCalculations.newAvgUnitPrice.toLocaleString()} / {actionItem.unit}
+                    </span>
+                  </div>
+                </div>
+              </>
             )}
 
             {actionType === 'issue' && (

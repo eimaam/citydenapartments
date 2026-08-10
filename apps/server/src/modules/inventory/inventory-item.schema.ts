@@ -33,6 +33,9 @@ export class InventoryItem extends Document {
   @Prop({ required: true, default: 0 })
   unitPrice: number;
 
+  @Prop()
+  costPrice?: number;
+
   @Prop({ default: true })
   isActive: boolean;
 

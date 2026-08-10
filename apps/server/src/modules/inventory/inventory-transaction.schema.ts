@@ -39,6 +39,18 @@ export class InventoryTransaction extends Document {
   @Prop()
   notes: string;
 
+  @Prop()
+  unitPrice?: number;
+
+  @Prop()
+  totalCost?: number;
+
+  @Prop()
+  previousUnitPrice?: number;
+
+  @Prop()
+  newUnitPrice?: number;
+
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
   performedBy: MongooseSchema.Types.ObjectId;
 

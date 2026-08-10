@@ -263,7 +263,7 @@ export default function LaundryItemsPage() {
       <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Confirm Delete" footer={
         <div className="flex gap-2 justify-end">
           <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
-          <Button variant="danger" loading={busy} onClick={doDelete}>Delete</Button>
+          <Button variant="destructive" loading={busy} onClick={doDelete}>Delete</Button>
         </div>
       }>
         <p className="text-sm">

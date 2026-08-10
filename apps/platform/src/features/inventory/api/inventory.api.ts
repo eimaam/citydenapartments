@@ -107,7 +107,7 @@ export const inventoryApi = {
     api.post<InventoryItem>('/inventory/items', data),
   updateItem: (id: string, data: { name?: string; department?: string; category?: string; description?: string; unit?: string; reorderLevel?: number; unitPrice?: number; expiryDate?: string; isActive?: boolean }) =>
     api.patch<InventoryItem>(`/inventory/items/${id}`, data),
-  restock: (id: string, data: { quantity: number; notes?: string }) =>
+  restock: (id: string, data: { quantity: number; unitPrice?: number; notes?: string }) =>
     api.post<InventoryItem>(`/inventory/items/${id}/restock`, data),
   issue: (id: string, data: { quantity: number; requestedBy?: string; requestedEmployeeId?: string; department?: string; notes?: string }) =>
     api.post<InventoryItem>(`/inventory/items/${id}/issue`, data),

@@ -85,6 +85,10 @@ export class InventoryService {
       quantity: dto.currentStock,
       previousStock: 0,
       newStock: dto.currentStock,
+      unitPrice: dto.unitPrice,
+      totalCost: dto.currentStock * dto.unitPrice,
+      previousUnitPrice: 0,
+      newUnitPrice: dto.unitPrice,
       notes: 'Initial stock',
       performedBy: userId,
       branchId,
@@ -130,31 +134,50 @@ export class InventoryService {
     if (!item) throw new NotFoundException('Item not found.');
 
     const previousStock = item.currentStock;
-    item.currentStock += dto.quantity;
+    const currentUnitPrice = item.unitPrice ?? item.costPrice ?? 0;
+    const batchUnitPrice = dto.unitPrice != null ? dto.unitPrice : currentUnitPrice;
+    const batchQuantity = dto.quantity;
+    const batchTotalCost = batchQuantity * batchUnitPrice;
+
+    const newStock = previousStock + batchQuantity;
+    let newUnitPrice = batchUnitPrice;
+
+    if (newStock > 0) {
+      const existingValue = previousStock * currentUnitPrice;
+      newUnitPrice = Math.round((existingValue + batchTotalCost) / newStock);
+    }
+
+    item.currentStock = newStock;
+    item.unitPrice = newUnitPrice;
+    item.costPrice = newUnitPrice;
     item.updatedBy = userId as any;
     await item.save();
 
     await this.txModel.create({
       itemId: item._id,
       type: 'restock',
-      quantity: dto.quantity,
+      quantity: batchQuantity,
       previousStock,
-      newStock: item.currentStock,
+      newStock,
+      unitPrice: batchUnitPrice,
+      totalCost: batchTotalCost,
+      previousUnitPrice: currentUnitPrice,
+      newUnitPrice,
       notes: dto.notes,
       performedBy: userId,
       branchId,
     });
 
     await this.redis.del(`inventory:items:${branchId}`);
-    this.logger.log(`Inventory restock — ${item.name} | +${dto.quantity} | by ${userId}`);
+    this.logger.log(`Inventory restock — ${item.name} | +${batchQuantity} @ ₦${batchUnitPrice} (New Avg: ₦${newUnitPrice}) | by ${userId}`);
     await this.auditLog.log({
       entityType: 'inventory_item',
       entityId: id,
       action: 'restock',
-      description: `Inventory restock: ${item.name} (+${dto.quantity} ${item.unit})`,
+      description: `Inventory restock: ${item.name} (+${batchQuantity} ${item.unit} @ ₦${batchUnitPrice}). New average unit price: ₦${newUnitPrice}`,
       performedBy: userId,
       branchId,
-      details: { itemName: item.name, quantity: dto.quantity, unit: item.unit, notes: dto.notes },
+      details: { itemName: item.name, quantity: batchQuantity, batchUnitPrice, previousUnitPrice: currentUnitPrice, newUnitPrice, unit: item.unit, notes: dto.notes },
     });
     return item;
   }
