@@ -2,7 +2,7 @@ import { IsNumber, Min, IsOptional, IsString, IsMongoId } from 'class-validator'
 
 export class IssueDto {
   @IsNumber()
-  @Min(1)
+  @Min(0.001)
   quantity: number;
 
   @IsOptional()

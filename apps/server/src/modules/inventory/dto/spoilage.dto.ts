@@ -4,7 +4,7 @@ import { SpoilageTypeEnum } from '../spoilage-report.schema';
 
 export class ReportSpoilageDto {
   @IsNumber()
-  @Min(1)
+  @Min(0.001)
   quantity: number;
 
   @IsEnum(SpoilageTypeEnum)

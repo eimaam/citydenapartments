@@ -704,7 +704,8 @@ export default function InventoryPage() {
               <Input
                 size="lg"
                 type="number"
-                min={1}
+                step="any"
+                min={0.001}
                 max={actionType === 'issue' ? actionItem.currentStock : undefined}
                 value={qty}
                 onChange={(e) => setQty(Number(e.target.value))}
@@ -822,7 +823,8 @@ export default function InventoryPage() {
               <Input
                 size="lg"
                 type="number"
-                min={1}
+                step="any"
+                min={0.001}
                 max={spoilItem.currentStock}
                 value={spoilQty}
                 onChange={(e) => setSpoilQty(Number(e.target.value))}
