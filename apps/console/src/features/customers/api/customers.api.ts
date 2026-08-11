@@ -34,4 +34,3 @@ export const customersApi = {
   creditWallet: (id: string, data: { branchId: string; amount: number; reason: string }) =>
     api.post<{ walletBalance: number }>(`/customers/${id}/credit-wallet`, data),
 };
-

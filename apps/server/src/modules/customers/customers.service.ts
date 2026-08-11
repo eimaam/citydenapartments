@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, ClientSession } from 'mongoose';
 import { Customer } from './customer.schema';
+import { CustomerWalletLog } from './customer-wallet-log.schema';
 import { Booking } from '../bookings/booking.schema';
 import { LaundryBill } from '../laundry/laundry-bill.schema';
 import { Branch } from '../branches/branch.schema';
@@ -17,6 +18,7 @@ export class CustomersService {
 
   constructor(
     @InjectModel(Customer.name) private customerModel: Model<Customer>,
+    @InjectModel(CustomerWalletLog.name) private walletLogModel: Model<CustomerWalletLog>,
     @InjectModel(Booking.name) private bookingModel: Model<Booking>,
     @InjectModel(LaundryBill.name) private laundryBillModel: Model<LaundryBill>,
     @InjectModel(Branch.name) private branchModel: Model<Branch>,
@@ -444,6 +446,135 @@ export class CustomersService {
         totalEvents: filteredEvents.length,
       },
     };
+  }
+
+  async creditWallet(params: {
+    customerId: string;
+    branchId: string;
+    bookingId?: string;
+    amount: number;
+    reason: string;
+    performedBy: string;
+    session?: ClientSession;
+  }) {
+    const { customerId, branchId, bookingId, amount, reason, performedBy, session } = params;
+    if (amount <= 0) throw new BadRequestException('Credit amount must be greater than zero.');
+
+    const customer = session
+      ? await this.customerModel.findById(customerId).session(session)
+      : await this.customerModel.findById(customerId);
+    if (!customer) throw new NotFoundException('Customer not found.');
+
+    const balanceBefore = customer.walletBalance || 0;
+
+    const updatedCustomer = session
+      ? await this.customerModel.findOneAndUpdate(
+          { _id: customerId },
+          { $inc: { walletBalance: amount } },
+          { new: true, session },
+        )
+      : await this.customerModel.findOneAndUpdate(
+          { _id: customerId },
+          { $inc: { walletBalance: amount } },
+          { new: true },
+        );
+
+    if (!updatedCustomer) throw new NotFoundException('Customer update failed.');
+
+    const logEntry = {
+      customerId,
+      branchId,
+      bookingId,
+      type: 'credit' as const,
+      amount,
+      balanceBefore,
+      balanceAfter: updatedCustomer.walletBalance,
+      reason,
+      performedBy,
+    };
+
+    if (session) {
+      await this.walletLogModel.create([logEntry], { session });
+    } else {
+      await this.walletLogModel.create(logEntry);
+    }
+
+    this.logger.log(`Wallet credited — Customer ${updatedCustomer.name} | Amount: ₦${amount} | New Balance: ₦${updatedCustomer.walletBalance}`);
+    return { walletBalance: updatedCustomer.walletBalance };
+  }
+
+  async debitWallet(params: {
+    customerId: string;
+    branchId: string;
+    bookingId?: string;
+    amount: number;
+    reason: string;
+    performedBy: string;
+    session?: ClientSession;
+  }) {
+    const { customerId, branchId, bookingId, amount, reason, performedBy, session } = params;
+    if (amount <= 0) throw new BadRequestException('Debit amount must be greater than zero.');
+
+    const customer = session
+      ? await this.customerModel.findById(customerId).session(session)
+      : await this.customerModel.findById(customerId);
+    if (!customer) throw new NotFoundException('Customer not found.');
+
+    const balanceBefore = customer.walletBalance || 0;
+    if (balanceBefore < amount) {
+      throw new BadRequestException(
+        `Insufficient customer wallet balance. Available: ₦${balanceBefore.toLocaleString()}, Required: ₦${amount.toLocaleString()}`,
+      );
+    }
+
+    const updatedCustomer = session
+      ? await this.customerModel.findOneAndUpdate(
+          { _id: customerId, walletBalance: { $gte: amount } },
+          { $inc: { walletBalance: -amount } },
+          { new: true, session },
+        )
+      : await this.customerModel.findOneAndUpdate(
+          { _id: customerId, walletBalance: { $gte: amount } },
+          { $inc: { walletBalance: -amount } },
+          { new: true },
+        );
+
+    if (!updatedCustomer) {
+      throw new BadRequestException(
+        `Concurrent modification or insufficient wallet balance for ${customer.name}.`,
+      );
+    }
+
+    const logEntry = {
+      customerId,
+      branchId,
+      bookingId,
+      type: 'debit' as const,
+      amount,
+      balanceBefore,
+      balanceAfter: updatedCustomer.walletBalance,
+      reason,
+      performedBy,
+    };
+
+    if (session) {
+      await this.walletLogModel.create([logEntry], { session });
+    } else {
+      await this.walletLogModel.create(logEntry);
+    }
+
+    this.logger.log(`Wallet debited — Customer ${updatedCustomer.name} | Amount: ₦${amount} | New Balance: ₦${updatedCustomer.walletBalance}`);
+    return { walletBalance: updatedCustomer.walletBalance };
+  }
+
+  async getWalletLogs(customerId: string) {
+    return this.walletLogModel
+      .find({ customerId })
+      .sort({ createdAt: -1 })
+      .populate('branchId', 'name')
+      .populate('bookingId', 'bookingReference')
+      .populate('performedBy', 'name email')
+      .lean();
   }
 }
 

@@ -49,6 +49,9 @@ export class Customer extends Document {
   @Prop({ default: 0 })
   totalSpent: number;
 
+  @Prop({ default: 0 })
+  walletBalance: number;
+
   @Prop()
   lastVisitDate?: Date;
 

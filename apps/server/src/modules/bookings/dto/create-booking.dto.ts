@@ -117,6 +117,15 @@ export class CreateBookingDto {
 
   @IsOptional()
   @IsNumber()
+  manualDiscountAmount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  walletAmountApplied?: number;
+
+  @IsOptional()
+  @IsNumber()
   @Min(0)
   @Max(100)
   discountPercentage?: number;

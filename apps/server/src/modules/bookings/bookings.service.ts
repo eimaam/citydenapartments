@@ -19,6 +19,7 @@ import { BookingStatus, BookingSource, Gender, getMaxManualDiscount } from '@cit
 import { BreakfastLog } from '../breakfast/breakfast-log.schema';
 import { isPastBreakfastCutoff } from '../breakfast/breakfast.constants';
 import { DiscountCodesService } from '../discount-codes/discount-codes.service';
+import { CustomersService } from '../customers/customers.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { EmailService } from '../email/email.service';
 import { BookingReceiptEmail } from '@citydenapartments/email';
@@ -36,6 +37,7 @@ export class BookingsService {
     @InjectConnection() private readonly connection: Connection,
     private readonly redis: RedisService,
     private readonly discountCodesService: DiscountCodesService,
+    private readonly customersService: CustomersService,
     private readonly auditLog: AuditLogService,
     private readonly emailService: EmailService,
   ) {}
@@ -562,13 +564,26 @@ export class BookingsService {
         }
       }
 
+      const netFreshSpent = Math.max(0, dto.totalAmountPaid - (dto.walletAmountApplied || 0));
       await this.customerModel.updateOne(
         { _id: customerId },
         {
-          $inc: { totalVisits: 1, totalSpent: dto.totalAmountPaid },
+          $inc: { totalVisits: 1, totalSpent: netFreshSpent },
           $set: { lastVisitDate: new Date() },
         },
       ).session(session);
+
+      if (dto.walletAmountApplied && dto.walletAmountApplied > 0 && customerId) {
+        await this.customersService.debitWallet({
+          customerId: customerId.toString(),
+          branchId,
+          bookingId: newBooking._id.toString(),
+          amount: dto.walletAmountApplied,
+          reason: `Applied wallet balance to Booking #${newBooking.bookingReference}`,
+          performedBy: actorId,
+          session,
+        });
+      }
 
       await session.commitTransaction();
       await this.redis.invalidateDashboardCache(branchId);
@@ -760,15 +775,32 @@ export class BookingsService {
     session.startTransaction();
 
     try {
+      const now = new Date();
+      const schedCheckIn = new Date(booking.checkInDate).getTime();
+      const schedCheckOut = new Date(booking.checkOutDate).getTime();
+      const msPerDay = 86400000;
+
+      const scheduledNights = Math.max(1, Math.ceil((schedCheckOut - schedCheckIn) / msPerDay));
+      const actualNights = Math.max(1, Math.min(scheduledNights, Math.ceil((now.getTime() - schedCheckIn) / msPerDay)));
+
+      let unusedCredit = 0;
+      let unusedNights = 0;
+      if (actualNights < scheduledNights && booking.totalAmountPaid > 0) {
+        unusedNights = scheduledNights - actualNights;
+        const dailyRate = booking.totalAmountPaid / scheduledNights;
+        unusedCredit = Math.max(0, Math.floor(unusedNights * dailyRate));
+        booking.checkOutDate = now;
+      }
+
       booking.statusHistory.push({
         fromStatus: booking.bookingStatus,
         toStatus: BookingStatus.Checked_Out,
         changedBy: actorId as any,
-        changedAt: new Date(),
+        changedAt: now,
       });
       booking.bookingStatus = BookingStatus.Checked_Out;
       booking.checkedOutBy = actorId as any;
-      booking.checkedOutAt = new Date();
+      booking.checkedOutAt = now;
       await booking.save({ session });
 
       for (const room of rooms) {
@@ -777,17 +809,29 @@ export class BookingsService {
         await room.save({ session });
       }
 
+      if (unusedCredit > 0 && booking.customerId) {
+        await this.customersService.creditWallet({
+          customerId: booking.customerId.toString(),
+          branchId,
+          bookingId: id,
+          amount: unusedCredit,
+          reason: `Early check-out credit (${unusedNights} unused night(s)) for Booking #${booking.bookingReference}`,
+          performedBy: actorId,
+          session,
+        });
+      }
+
       await session.commitTransaction();
       await this.redis.invalidateDashboardCache(branchId);
-      this.logger.log(`Check-out — #${booking.bookingReference} | ${rooms.length} room(s) | Guest ${booking.guestDetails.name} | by ${actorId}`);
+      this.logger.log(`Check-out — #${booking.bookingReference} | ${rooms.length} room(s) | Guest ${booking.guestDetails.name} | Early Credit: ₦${unusedCredit} | by ${actorId}`);
       await this.auditLog.log({
         entityType: 'booking',
         entityId: id,
         action: 'check_out',
-        description: `Check-out: #${booking.bookingReference} — ${booking.guestDetails.name}`,
+        description: `Check-out: #${booking.bookingReference} — ${booking.guestDetails.name}${unusedCredit > 0 ? ` (Wallet credited: ₦${unusedCredit.toLocaleString()})` : ''}`,
         performedBy: actorId,
         branchId,
-        details: { bookingReference: booking.bookingReference, rooms: rooms.length },
+        details: { bookingReference: booking.bookingReference, rooms: rooms.length, unusedCredit },
         persistForever: true,
       });
       return booking;

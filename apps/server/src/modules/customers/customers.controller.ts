@@ -72,4 +72,26 @@ export class CustomersController {
       performedBy: user.id,
     });
   }
+
+  @Get(':id/wallet-logs')
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.ACCOUNTANT, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.RECEPTION, UserRoleEnum.FACILITY_MANAGER)
+  getWalletLogs(@Param('id') id: string) {
+    return this.customersService.getWalletLogs(id);
+  }
+
+  @Post(':id/credit-wallet')
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.ACCOUNTANT)
+  creditWallet(
+    @Param('id') id: string,
+    @Body() dto: { branchId: string; amount: number; reason: string },
+    @ActiveUser() user: any,
+  ) {
+    return this.customersService.creditWallet({
+      customerId: id,
+      branchId: dto.branchId,
+      amount: dto.amount,
+      reason: dto.reason,
+      performedBy: user.id,
+    });
+  }
 }

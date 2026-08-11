@@ -9,6 +9,7 @@ import { BreakfastLog, BreakfastLogSchema } from '../breakfast/breakfast-log.sch
 import { Branch, BranchSchema } from '../branches/branch.schema';
 import { Customer, CustomerSchema } from '../customers/customer.schema';
 import { DiscountCodesModule } from '../discount-codes/discount-codes.module';
+import { CustomersModule } from '../customers/customers.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { DiscountCodesModule } from '../discount-codes/discount-codes.module';
       { name: Customer.name, schema: CustomerSchema },
     ]),
     DiscountCodesModule,
+    CustomersModule,
   ],
   controllers: [BookingsController],
   providers: [BookingsService],

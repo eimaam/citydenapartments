@@ -171,9 +171,24 @@ export interface CustomerResponse {
   religion?: string;
   totalVisits: number;
   totalSpent: number;
+  walletBalance?: number;
   lastVisitDate?: string;
   createdAt: string;
   branchLifetimeDiscounts?: BranchLifetimeDiscount[];
+}
+
+export interface CustomerWalletLogResponse {
+  _id: string;
+  customerId: string;
+  branchId: { _id: string; name: string } | string;
+  bookingId?: { _id: string; bookingReference: string } | string;
+  type: 'credit' | 'debit';
+  amount: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  reason: string;
+  performedBy?: { _id: string; name: string; email: string };
+  createdAt: string;
 }
 
 export type CustomerTimelineEventType =
