@@ -19,6 +19,7 @@ import {
   BookOpen,
   Receipt,
   Shirt,
+  DollarSign,
 } from 'lucide-react';
 import type { UserRoleType } from '../../lib/types';
 import { cn } from '../../lib/utils';
@@ -44,6 +45,7 @@ const menuConfig: MenuConfig = {
     ]},
     { heading: 'Monitoring', items: [
       { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
+      { label: 'Revenue Logs', icon: DollarSign, path: '/revenue-logs' },
     ]},
     { heading: 'Logistics', items: [
       { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
@@ -59,6 +61,7 @@ const menuConfig: MenuConfig = {
   GroupGM: [
     { heading: 'Monitoring', items: [
       { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
+      { label: 'Revenue Logs', icon: DollarSign, path: '/revenue-logs' },
     ]},
     { heading: 'Logistics', items: [
       { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
@@ -88,6 +91,7 @@ const menuConfig: MenuConfig = {
     ]},
     { heading: 'Monitoring', items: [
       { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
+      { label: 'Revenue Logs', icon: DollarSign, path: '/revenue-logs' },
     ]},
     { heading: 'Logistics', items: [
       { label: 'Inventory', icon: Package, path: '/inventory' },
@@ -138,6 +142,7 @@ const menuConfig: MenuConfig = {
     ]},
     { heading: 'Monitoring', items: [
       { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
+      { label: 'Revenue Logs', icon: DollarSign, path: '/revenue-logs' },
     ]},
     { heading: 'Logistics', items: [
       { label: 'Inventory', icon: Package, path: '/inventory' },

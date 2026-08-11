@@ -28,6 +28,7 @@ import { PublicModule } from './modules/public/public.module';
 import { AuditLogModule } from './modules/audit-log/audit-log.module';
 import { EmailModule } from './modules/email/email.module';
 import { LaundryModule } from './modules/laundry/laundry.module';
+import { RevenueLogsModule } from './modules/revenue-logs/revenue-logs.module';
 import mongoose from 'mongoose';
 
 if (AppConfig.NODE_ENV === 'development') {
@@ -78,6 +79,7 @@ if (AppConfig.NODE_ENV === 'development') {
     AuditLogModule,
     EmailModule,
     LaundryModule,
+    RevenueLogsModule,
   ],
   
   providers: [

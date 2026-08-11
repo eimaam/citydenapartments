@@ -21,6 +21,7 @@ import CustomersPage from './features/customers/pages/CustomersPage';
 import LaundryPage from './features/laundry/pages/LaundryPage';
 import DiscountCodesPage from './features/discount-codes/pages/DiscountCodesPage';
 import DepartmentExpensesPage from './features/department-expenses/pages/DepartmentExpensesPage';
+import RevenueLogsPage from './features/revenue-logs/pages/RevenueLogsPage';
 
 export default function App() {
   return (
@@ -77,6 +78,7 @@ export default function App() {
 
               <Route element={<RoleGuard roles={[UserRole.Accountant, UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager]} />}>
                 <Route path="department-expenses" element={<DepartmentExpensesPage />} />
+                <Route path="revenue-logs" element={<RevenueLogsPage />} />
               </Route>
             </Route>
           </Route>

@@ -9,6 +9,7 @@ import { BreakfastLog } from '../breakfast/breakfast-log.schema';
 import { User } from '../users/user.schema';
 import { InventoryItem } from '../inventory/inventory-item.schema';
 import { DepartmentExpense } from '../department-expenses/department-expense.schema';
+import { RevenueLog } from '../revenue-logs/revenue-log.schema';
 import { RedisService } from '../redis/redis.service';
 import { CACHE_KEYS, CACHE_TTL } from '../../config/cache.constants';
 import { startOfDay, endOfDay, format, subDays, startOfMonth, subMonths } from 'date-fns';
@@ -25,6 +26,7 @@ export class DashboardService {
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(InventoryItem.name) private inventoryModel: Model<InventoryItem>,
     @InjectModel(DepartmentExpense.name) private expenseModel: Model<DepartmentExpense>,
+    @InjectModel(RevenueLog.name) private revenueLogModel: Model<RevenueLog>,
     private readonly redis: RedisService,
   ) {}
 
@@ -384,6 +386,20 @@ export class DashboardService {
           },
         },
       ]),
+
+      this.revenueLogModel.aggregate([
+        { $match: branchMatch },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: '$totalAmount' },
+            cash: { $sum: '$cashAmount' },
+            pos: { $sum: '$posAmount' },
+            transfer: { $sum: '$transferAmount' },
+            other: { $sum: '$otherAmount' },
+          },
+        },
+      ]),
     ]);
 
     const byPayment: Record<string, number> = {};
@@ -394,6 +410,21 @@ export class DashboardService {
       totalRevenue += r.total;
       totalCount += r.count;
     }
+
+    const extRev = (inventoryAggResult as any)[1]?.[0] || (dailyRevenueResult as any)[8]?.[0] || {};
+    const extAgg = (await this.revenueLogModel.aggregate([
+      { $match: branchMatch },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: '$totalAmount' },
+          cash: { $sum: '$cashAmount' },
+          pos: { $sum: '$posAmount' },
+          transfer: { $sum: '$transferAmount' },
+          other: { $sum: '$otherAmount' },
+        },
+      },
+    ]))[0] || { total: 0, cash: 0, pos: 0, transfer: 0, other: 0 };
 
     const todayRev = todayRevenueResult[0]?.revenue || 0;
     const monthData = monthRevenueResult[0] || { revenue: 0, count: 0, discountSum: 0, discountCount: 0, discountPctSum: 0 };
@@ -415,6 +446,14 @@ export class DashboardService {
         today: todayRev,
         thisMonth: monthData.revenue,
         averagePerBooking: totalCount > 0 ? Math.round(totalRevenue / totalCount) : 0,
+        externalRevenue: {
+          total: extAgg.total,
+          cash: extAgg.cash,
+          pos: extAgg.pos,
+          transfer: extAgg.transfer,
+          other: extAgg.other,
+        },
+        combinedGrossRevenue: totalRevenue + extAgg.total,
       },
       discounts: {
         totalGiven: discData.totalDiscount,

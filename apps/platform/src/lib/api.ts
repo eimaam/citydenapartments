@@ -1,4 +1,4 @@
-import axios, { type AxiosError, type AxiosResponse } from 'axios';
+import axios, { type AxiosError, type AxiosRequestConfig, type AxiosResponse } from 'axios';
 
 export class ApiError extends Error {
   status: number;
@@ -62,9 +62,9 @@ async function request<T>(req: Promise<AxiosResponse<{ success: boolean; message
 }
 
 export const api = {
-  get: <T>(url: string) => request<T>(client.get(url)),
-  post: <T>(url: string, body?: unknown) => request<T>(client.post(url, body)),
-  put: <T>(url: string, body?: unknown) => request<T>(client.put(url, body)),
-  patch: <T>(url: string, body?: unknown) => request<T>(client.patch(url, body)),
-  delete: <T>(url: string) => request<T>(client.delete(url)),
+  get: <T>(url: string, config?: AxiosRequestConfig) => request<T>(client.get(url, config)),
+  post: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) => request<T>(client.post(url, body, config)),
+  put: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) => request<T>(client.put(url, body, config)),
+  patch: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) => request<T>(client.patch(url, body, config)),
+  delete: <T>(url: string, config?: AxiosRequestConfig) => request<T>(client.delete(url, config)),
 };

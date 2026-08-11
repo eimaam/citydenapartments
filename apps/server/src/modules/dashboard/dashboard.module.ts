@@ -9,6 +9,7 @@ import { BreakfastLog, BreakfastLogSchema } from '../breakfast/breakfast-log.sch
 import { User, UserSchema } from '../users/user.schema';
 import { InventoryItem, InventoryItemSchema } from '../inventory/inventory-item.schema';
 import { DepartmentExpense, DepartmentExpenseSchema } from '../department-expenses/department-expense.schema';
+import { RevenueLog, RevenueLogSchema } from '../revenue-logs/revenue-log.schema';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { DepartmentExpense, DepartmentExpenseSchema } from '../department-expens
       { name: User.name, schema: UserSchema },
       { name: InventoryItem.name, schema: InventoryItemSchema },
       { name: DepartmentExpense.name, schema: DepartmentExpenseSchema },
+      { name: RevenueLog.name, schema: RevenueLogSchema },
     ]),
   ],
   controllers: [DashboardController],

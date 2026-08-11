@@ -19,6 +19,7 @@ import {
   Receipt,
   BookUser,
   Shirt,
+  DollarSign,
 } from 'lucide-react';
 import type { UserRoleType } from '../../lib/types';
 import { cn } from '../../lib/utils';
@@ -61,6 +62,7 @@ const menuConfig: MenuConfig = {
     { heading: 'Monitoring', items: [
       { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
       { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
+      { label: 'Revenue Logs', icon: DollarSign, path: '/revenue-logs' },
     ]},
     { heading: 'Services', items: [
       { label: 'Laundry Price List', icon: Shirt, path: '/laundry-items' },
@@ -99,6 +101,7 @@ const menuConfig: MenuConfig = {
     { heading: 'Monitoring', items: [
       { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
       { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
+      { label: 'Revenue Logs', icon: DollarSign, path: '/revenue-logs' },
     ]},
     { heading: 'Services', items: [
       { label: 'Laundry Price List', icon: Shirt, path: '/laundry-items' },
@@ -135,6 +138,7 @@ const menuConfig: MenuConfig = {
     ]},
     { heading: 'Monitoring', items: [
       { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
+      { label: 'Revenue Logs', icon: DollarSign, path: '/revenue-logs' },
     ]},
     { heading: 'Services', items: [
       { label: 'Laundry Price List', icon: Shirt, path: '/laundry-items' },
@@ -153,6 +157,7 @@ const menuConfig: MenuConfig = {
     ]},
     { heading: 'Monitoring', items: [
       { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
+      { label: 'Revenue Logs', icon: DollarSign, path: '/revenue-logs' },
     ]},
   ],
   FrontOfficeManager: [
@@ -178,6 +183,7 @@ const menuConfig: MenuConfig = {
     ]},
     { heading: 'Monitoring', items: [
       { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
+      { label: 'Revenue Logs', icon: DollarSign, path: '/revenue-logs' },
     ]},
   ],
   StoreManager: [],

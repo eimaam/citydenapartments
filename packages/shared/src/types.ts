@@ -193,3 +193,43 @@ export const INVENTORY_UNITS = [
   { value: 'sets', label: 'Sets' },
   { value: 'units', label: 'Units' },
 ] as const;
+
+export interface RevenueLogResponse {
+  _id: string;
+  branchId: string;
+  departmentId: { _id: string; name: string; code?: string } | string;
+  revenueDate: string;
+  cashAmount: number;
+  posAmount: number;
+  transferAmount: number;
+  otherAmount: number;
+  totalAmount: number;
+  notes?: string;
+  loggedBy: { _id: string; name: string; email: string; role: string } | string;
+  loggedAt: string;
+  createdAt: string;
+}
+
+export interface DepartmentRevenueCard {
+  departmentId: string;
+  departmentName: string;
+  departmentCode?: string;
+  totalRevenue: number;
+  cashAmount: number;
+  posAmount: number;
+  transferAmount: number;
+  otherAmount: number;
+  logCount: number;
+}
+
+export interface RevenueLogSummaryResponse {
+  overall: {
+    totalRevenue: number;
+    totalCash: number;
+    totalPos: number;
+    totalTransfer: number;
+    totalOther: number;
+    totalEntries: number;
+  };
+  departmentCards: DepartmentRevenueCard[];
+}
