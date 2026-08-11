@@ -11,9 +11,9 @@ import type { TableProps } from '@citydenapartments/shared';
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  if (can(user, [UserRole.Reception, UserRole.FrontOfficeManager, UserRole.FacilityManager])) return <ReceptionDashboard />;
+  if (can(user, [UserRole.Accountant, UserRole.FacilityManager])) return <AccountantDashboard />;
+  if (can(user, [UserRole.Reception, UserRole.FrontOfficeManager])) return <ReceptionDashboard />;
   if (can(user, [UserRole.KitchenStaff])) return <KitchenDashboard />;
-  if (can(user, [UserRole.Accountant])) return <AccountantDashboard />;
   return <DefaultDashboard />;
 }
 

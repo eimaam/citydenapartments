@@ -53,7 +53,7 @@ export function PrintableLetterhead<T>({
   const handlePrint = () => {
     if (!printRef.current) return;
     const printContent = printRef.current.innerHTML;
-    const printWindow = window.open('', '_blank', 'width=900,height=700');
+    const printWindow = window.open('', '_blank', 'width=950,height=750');
     if (!printWindow) return;
 
     printWindow.document.write(`
@@ -64,7 +64,10 @@ export function PrintableLetterhead<T>({
           <style>
             @page {
               size: A4 portrait;
-              margin: 12mm 10mm 15mm 10mm;
+              margin: 10mm 10mm 12mm 10mm;
+            }
+            * {
+              box-sizing: border-box;
             }
             body {
               font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -79,144 +82,168 @@ export function PrintableLetterhead<T>({
               width: 100%;
               max-width: 210mm;
               margin: 0 auto;
+              padding: 4px;
             }
-            /* Header Letterhead */
+            /* Letterhead Header */
             .letterhead-header {
-              display: flex;
-              align-items: flex-start;
-              justify-content: space-between;
-              border-bottom: 2px solid #0f172a;
-              padding-bottom: 12px;
-              margin-bottom: 16px;
+              display: flex !important;
+              align-items: flex-start !important;
+              justify-content: space-between !important;
+              border-bottom: 2px solid #0f172a !important;
+              padding-bottom: 12px !important;
+              margin-bottom: 16px !important;
             }
             .brand-left {
-              display: flex;
-              align-items: center;
-              gap: 12px;
+              display: flex !important;
+              align-items: center !important;
+              gap: 12px !important;
             }
-            .logo-img {
-              width: 48px;
-              height: 48px;
-              object-fit: contain;
+            .logo-img, img {
+              width: 52px !important;
+              height: 52px !important;
+              max-width: 52px !important;
+              max-height: 52px !important;
+              object-fit: contain !important;
             }
             .brand-title {
-              font-size: 18px;
-              font-weight: 800;
-              letter-spacing: 0.15em;
-              color: #0f172a;
-              text-transform: uppercase;
-              margin: 0;
+              font-size: 16px !important;
+              font-weight: 800 !important;
+              letter-spacing: 0.12em !important;
+              color: #0f172a !important;
+              text-transform: uppercase !important;
+              margin: 0 !important;
+              line-height: 1.2 !important;
             }
             .brand-address {
-              font-size: 11px;
-              font-style: italic;
-              color: #475569;
-              margin-top: 2px;
+              font-size: 11px !important;
+              font-style: italic !important;
+              color: #475569 !important;
+              margin-top: 2px !important;
             }
             .report-title-box {
-              text-align: right;
+              text-align: right !important;
             }
             .report-title {
-              font-size: 15px;
-              font-weight: 800;
-              text-transform: uppercase;
-              letter-spacing: 0.05em;
-              color: #0f172a;
-              margin: 0;
+              font-size: 14px !important;
+              font-weight: 800 !important;
+              text-transform: uppercase !important;
+              letter-spacing: 0.05em !important;
+              color: #0f172a !important;
+              margin: 0 !important;
+            }
+            .report-subtitle {
+              font-size: 10px !important;
+              color: #475569 !important;
+              margin-top: 2px !important;
             }
             .report-date {
-              font-size: 11px;
-              font-weight: 700;
-              color: #0284c7;
-              margin-top: 4px;
+              font-size: 11px !important;
+              font-weight: 700 !important;
+              color: #0284c7 !important;
+              margin-top: 4px !important;
             }
-            /* Metrics Banner */
+            /* Metrics Banner Grid */
             .metrics-grid {
-              display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-              gap: 8px;
-              margin-bottom: 16px;
+              display: flex !important;
+              flex-wrap: nowrap !important;
+              gap: 10px !important;
+              margin-bottom: 16px !important;
+              width: 100% !important;
             }
             .metric-card {
-              border: 1px solid #e2e8f0;
-              background-color: #f8fafc;
-              padding: 8px 10px;
-              border-radius: 6px;
+              flex: 1 1 0px !important;
+              min-width: 0 !important;
+              border: 1px solid #cbd5e1 !important;
+              background-color: #f8fafc !important;
+              padding: 8px 10px !important;
+              border-radius: 6px !important;
+              box-sizing: border-box !important;
             }
             .metric-label {
-              font-size: 9px;
-              font-weight: 700;
-              text-transform: uppercase;
-              letter-spacing: 0.08em;
-              color: #64748b;
+              font-size: 9px !important;
+              font-weight: 700 !important;
+              text-transform: uppercase !important;
+              letter-spacing: 0.08em !important;
+              color: #64748b !important;
+              margin: 0 !important;
             }
             .metric-value {
-              font-size: 14px;
-              font-weight: 800;
-              color: #0f172a;
-              margin-top: 2px;
+              font-size: 13px !important;
+              font-weight: 800 !important;
+              color: #0f172a !important;
+              margin-top: 2px !important;
+              margin-bottom: 0 !important;
             }
             /* Table Styling */
             table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-bottom: 16px;
-              font-size: 11px;
+              width: 100% !important;
+              border-collapse: collapse !important;
+              margin-bottom: 16px !important;
+              font-size: 10.5px !important;
             }
             thead {
-              display: table-header-group;
+              display: table-header-group !important;
             }
             tr {
-              page-break-inside: avoid;
+              page-break-inside: avoid !important;
             }
             th {
-              background-color: #f1f5f9;
-              color: #0f172a;
-              font-weight: 700;
-              text-transform: uppercase;
-              font-size: 9px;
-              letter-spacing: 0.05em;
-              padding: 8px 6px;
-              border: 1px solid #cbd5e1;
+              background-color: #f1f5f9 !important;
+              color: #0f172a !important;
+              font-weight: 700 !important;
+              text-transform: uppercase !important;
+              font-size: 9px !important;
+              letter-spacing: 0.05em !important;
+              padding: 7px 6px !important;
+              border: 1px solid #cbd5e1 !important;
             }
             td {
-              padding: 6px;
-              border: 1px solid #e2e8f0;
-              color: #1e293b;
+              padding: 6px !important;
+              border: 1px solid #cbd5e1 !important;
+              color: #1e293b !important;
             }
             tr:nth-child(even) td {
-              background-color: #fafafa;
+              background-color: #f8fafc !important;
             }
             .totals-row td {
-              background-color: #f1f5f9 !important;
-              font-weight: 800;
-              color: #0f172a;
-              border-top: 2px solid #0f172a;
+              background-color: #e2e8f0 !important;
+              font-weight: 800 !important;
+              color: #0f172a !important;
+              border-top: 2px solid #0f172a !important;
             }
-            /* Signature & Footer */
+            /* Signature & Notes Section */
+            .notes-box {
+              margin-top: 10px !important;
+              padding: 8px 10px !important;
+              border-radius: 6px !important;
+              background-color: #f8fafc !important;
+              border: 1px solid #e2e8f0 !important;
+              font-size: 10px !important;
+              color: #334155 !important;
+            }
             .signature-section {
-              margin-top: 24px;
-              display: flex;
-              justify-content: space-between;
-              gap: 20px;
-              page-break-inside: avoid;
+              margin-top: 24px !important;
+              display: flex !important;
+              justify-content: space-between !important;
+              gap: 20px !important;
+              page-break-inside: avoid !important;
             }
             .sig-box {
-              flex: 1;
-              border-top: 1px solid #94a3b8;
-              padding-top: 6px;
-              font-size: 10px;
-              color: #475569;
+              flex: 1 !important;
+              border-top: 1px solid #94a3b8 !important;
+              padding-top: 6px !important;
+              font-size: 10px !important;
+              color: #475569 !important;
             }
             .footer-meta {
-              margin-top: 20px;
-              padding-top: 8px;
-              border-top: 1px solid #e2e8f0;
-              display: flex;
-              justify-content: space-between;
-              font-size: 9px;
-              color: #64748b;
-              page-break-inside: avoid;
+              margin-top: 20px !important;
+              padding-top: 8px !important;
+              border-top: 1px solid #e2e8f0 !important;
+              display: flex !important;
+              justify-content: space-between !important;
+              font-size: 9px !important;
+              color: #64748b !important;
+              page-break-inside: avoid !important;
             }
           </style>
         </head>
@@ -232,7 +259,7 @@ export function PrintableLetterhead<T>({
     setTimeout(() => {
       printWindow.print();
       printWindow.close();
-    }, 300);
+    }, 350);
   };
 
   const currentDateStr = date || new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -253,32 +280,37 @@ export function PrintableLetterhead<T>({
       </div>
 
       {/* Printable Area Container */}
-      <div ref={printRef} className="bg-white p-6 rounded-lg border border-outline-variant text-on-surface shadow-sm">
+      <div ref={printRef} className="bg-white p-6 rounded-lg border border-outline-variant text-on-surface shadow-sm max-w-full overflow-hidden">
         {/* Letterhead Header */}
         <div className="letterhead-header flex items-start justify-between border-b-2 border-on-surface pb-4 mb-4">
-          <div className="flex items-center gap-3">
-            <img src={cdLogo} alt="Logo" className="w-12 h-12 object-contain" />
+          <div className="brand-left flex items-center gap-3">
+            <img
+              src={cdLogo}
+              alt="Logo"
+              style={{ width: 52, height: 52, maxWidth: 52, maxHeight: 52, objectFit: 'contain' }}
+              className="logo-img shrink-0"
+            />
             <div>
-              <h2 className="text-base font-extrabold tracking-wider uppercase text-on-surface leading-tight">
+              <h2 className="brand-title text-base font-extrabold tracking-wider uppercase text-on-surface leading-tight">
                 {branchName}
               </h2>
-              <p className="text-xs italic text-on-surface-variant mt-0.5">{branchAddress}</p>
+              <p className="brand-address text-xs italic text-on-surface-variant mt-0.5">{branchAddress}</p>
             </div>
           </div>
-          <div className="text-right">
-            <h1 className="text-sm font-extrabold uppercase tracking-wide text-on-surface">{title}</h1>
-            {subtitle && <p className="text-xs text-on-surface-variant font-medium">{subtitle}</p>}
-            <p className="text-xs font-bold text-primary mt-1">DATE — {currentDateStr.toUpperCase()}</p>
+          <div className="report-title-box text-right">
+            <h1 className="report-title text-sm font-extrabold uppercase tracking-wide text-on-surface">{title}</h1>
+            {subtitle && <p className="report-subtitle text-xs text-on-surface-variant font-medium">{subtitle}</p>}
+            <p className="report-date text-xs font-bold text-primary mt-1">DATE — {currentDateStr.toUpperCase()}</p>
           </div>
         </div>
 
-        {/* Optional Summary Metrics Cards */}
+        {/* Summary Metrics Cards Grid */}
         {metrics && metrics.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+          <div className="metrics-grid flex flex-wrap sm:flex-nowrap gap-2.5 mb-4 w-full">
             {metrics.map((m, i) => (
-              <div key={i} className="p-2.5 rounded border border-outline-variant bg-surface-container-lowest">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-outline">{m.label}</p>
-                <p className="text-sm font-extrabold text-on-surface mt-0.5">{m.value}</p>
+              <div key={i} className="metric-card flex-1 min-w-[120px] p-2.5 rounded border border-outline-variant bg-surface-container-lowest">
+                <p className="metric-label text-[10px] font-bold uppercase tracking-wider text-outline">{m.label}</p>
+                <p className="metric-value text-sm font-extrabold text-on-surface mt-0.5">{m.value}</p>
               </div>
             ))}
           </div>
@@ -343,7 +375,7 @@ export function PrintableLetterhead<T>({
 
         {/* Optional Notes */}
         {notes && (
-          <div className="mt-3 p-2.5 rounded bg-surface-container-lowest border border-outline-variant text-xs text-on-surface-variant">
+          <div className="notes-box mt-3 p-2.5 rounded bg-surface-container-lowest border border-outline-variant text-xs text-on-surface-variant">
             <span className="font-bold text-on-surface uppercase text-[10px] tracking-wider block mb-1">Notes / Instructions:</span>
             {notes}
           </div>
@@ -351,16 +383,16 @@ export function PrintableLetterhead<T>({
 
         {/* Signature Verification Block */}
         {showSignatureBlock && (
-          <div className="mt-8 flex justify-between gap-6 pt-4 text-xs text-outline border-t border-dashed border-outline-variant">
-            <div className="flex-1 border-t border-outline-variant pt-1">
+          <div className="signature-section mt-8 flex justify-between gap-6 pt-4 text-xs text-outline border-t border-dashed border-outline-variant">
+            <div className="sig-box flex-1 border-t border-outline-variant pt-1">
               <p className="font-semibold text-on-surface">Inspected / Prepared By</p>
               <p className="text-[10px] text-outline mt-0.5">Name & Signature</p>
             </div>
-            <div className="flex-1 border-t border-outline-variant pt-1">
+            <div className="sig-box flex-1 border-t border-outline-variant pt-1">
               <p className="font-semibold text-on-surface">Verified / Manager Signoff</p>
               <p className="text-[10px] text-outline mt-0.5">Name & Signature</p>
             </div>
-            <div className="flex-1 border-t border-outline-variant pt-1">
+            <div className="sig-box flex-1 border-t border-outline-variant pt-1">
               <p className="font-semibold text-on-surface">Date</p>
               <p className="text-[10px] text-outline mt-0.5">DD / MM / YYYY</p>
             </div>
@@ -368,7 +400,7 @@ export function PrintableLetterhead<T>({
         )}
 
         {/* Footer Metadata */}
-        <div className="mt-6 pt-3 border-t border-outline-variant/60 flex items-center justify-between text-[10px] text-outline font-medium">
+        <div className="footer-meta mt-6 pt-3 border-t border-outline-variant/60 flex items-center justify-between text-[10px] text-outline font-medium">
           <span>Printed on {printTimestampStr} · Website: <strong>citydenapartments.com</strong></span>
           <span>City Den Apartments Operations System · Confidential</span>
         </div>
