@@ -104,8 +104,32 @@ export interface DepartmentSummaryResponse {
   lowStockCount: number;
 }
 
+export interface SpotCheckExportResponse {
+  departmentName: string;
+  metrics: {
+    totalItemsCount: number;
+    totalStockQuantity: number;
+    totalDepartmentStockValue: number;
+    lowStockCount: number;
+  };
+  items: Array<{
+    _id: string;
+    name: string;
+    departmentName: string;
+    category: string;
+    unit: string;
+    currentStock: number;
+    reorderLevel: number;
+    unitPrice: number;
+    stockValue: number;
+    expiryDate?: string;
+  }>;
+}
+
 export const inventoryApi = {
   getDepartmentSummaries: () => api.get<DepartmentSummaryResponse[]>('/inventory/department-summaries'),
+  exportSpotCheck: (departmentId?: string) =>
+    api.get<SpotCheckExportResponse>(`/inventory/export/spot-check${departmentId ? `?departmentId=${departmentId}` : ''}`),
   listItems: (params: { page?: number; limit?: number; search?: string; departmentId?: string; category?: string; lowStock?: string }) => {
     const qs = new URLSearchParams();
     if (params.page) qs.set('page', String(params.page));

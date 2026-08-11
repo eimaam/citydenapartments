@@ -21,6 +21,12 @@ export class BookingsController {
     return this.bookingsService.getCalendar(user.activeBranchId, query.year, query.month);
   }
 
+  @Get('export/occupancy')
+  @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.ACCOUNTANT, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM)
+  exportOccupancyReport(@ActiveUser() user: any, @Query('date') date?: string) {
+    return this.bookingsService.exportOccupancyReport(user.activeBranchId, date);
+  }
+
   @Get()
   @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.ACCOUNTANT, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM)
   findAll(

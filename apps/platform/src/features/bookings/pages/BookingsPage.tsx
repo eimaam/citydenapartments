@@ -3,7 +3,7 @@ import { Plus, Search, Copy, Check, Printer } from 'lucide-react';
 import { format } from 'date-fns';
 import {
   Button, Input, Table, Drawer, Modal, Badge,
-  BookingStatus, BookingReceipt, BookingFormDrawer,
+  BookingStatus, BookingReceipt, BookingFormDrawer, PrintableLetterhead,
   type BranchInfo, type ReceiptBooking,
 } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
@@ -11,7 +11,7 @@ import { Spinner } from '../../../components/ui/Spinner';
 import { useToast } from '../../../components/ui/Toast';
 import { useAuth } from '../../../contexts/auth';
 import { api } from '../../../lib/api';
-import { bookingsApi, type BookingResponse } from '../api/bookings.api';
+import { bookingsApi, type BookingResponse, type OccupancyReportResponse } from '../api/bookings.api';
 import { roomsApi } from '../../rooms/api/rooms.api';
 import { roomTypesApi } from '../../room-types/api/room-types.api';
 import { customersApi } from '../api/customers.api';
@@ -52,6 +52,38 @@ export default function BookingsPage() {
   const [receiptBooking, setReceiptBooking] = useState<ReceiptBooking | null>(null);
   const [receiptBranch, setReceiptBranch] = useState<BranchInfo | null>(null);
   const [loadingReceipt, setLoadingReceipt] = useState(false);
+
+  const [showOccupancyModal, setShowOccupancyModal] = useState(false);
+  const [occupancyDate, setOccupancyDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
+  const [occupancyReport, setOccupancyReport] = useState<OccupancyReportResponse | null>(null);
+  const [loadingOccupancy, setLoadingOccupancy] = useState(false);
+
+  const openOccupancyModal = async () => {
+    setLoadingOccupancy(true);
+    setShowOccupancyModal(true);
+    try {
+      const res = await bookingsApi.exportOccupancyReport(occupancyDate);
+      setOccupancyReport(res);
+    } catch {
+      toast('error', 'Failed to generate Occupancy Report.');
+      setShowOccupancyModal(false);
+    } finally {
+      setLoadingOccupancy(false);
+    }
+  };
+
+  const handleOccupancyDateChange = async (d: string) => {
+    setOccupancyDate(d);
+    setLoadingOccupancy(true);
+    try {
+      const res = await bookingsApi.exportOccupancyReport(d);
+      setOccupancyReport(res);
+    } catch {
+      toast('error', 'Failed to update Occupancy Report.');
+    } finally {
+      setLoadingOccupancy(false);
+    }
+  };
 
   // ── fetch ──────────────────────────────────────────────────────
   const fetchBookings = useCallback(async () => {
@@ -122,6 +154,9 @@ export default function BookingsPage() {
         <div className="flex items-center gap-3">
           <Input size="sm" placeholder="Search reference, guest, phone..." prefix={<Search size={14} className="text-outline" />}
             value={searchInput} onChange={(e) => onSearchChange(e.target.value)} className="!w-64" />
+          <Button variant="secondary" size="sm" icon={<Printer size={14} />} onClick={openOccupancyModal}>
+            Occupancy Report
+          </Button>
           <Button size="sm" icon={<Plus size={14} />} onClick={() => setShowCreate(true)}>New Booking</Button>
         </div>
       </div>
@@ -244,6 +279,60 @@ export default function BookingsPage() {
           <BookingReceipt booking={receiptBooking} branch={receiptBranch} receptionistName={user?.name} />
         ) : null}
       </Modal>
+      {showOccupancyModal && (
+        <Modal
+          isOpen={showOccupancyModal}
+          onClose={() => setShowOccupancyModal(false)}
+          title="Daily Room Occupancy Report"
+        >
+          <div className="mb-4 flex items-center justify-between gap-4 p-3 bg-surface-container-lowest border border-outline-variant rounded-lg print:hidden">
+            <span className="text-xs font-semibold text-on-surface">Select Occupancy Date:</span>
+            <input
+              type="date"
+              value={occupancyDate}
+              onChange={(e) => handleOccupancyDateChange(e.target.value)}
+              className="h-8 px-2 text-xs rounded border border-outline-variant bg-surface-container text-on-surface focus:outline-none focus:border-primary"
+            />
+          </div>
+
+          {loadingOccupancy || !occupancyReport ? (
+            <div className="p-12 text-center text-outline font-medium">Generating Occupancy Report...</div>
+          ) : (
+            <PrintableLetterhead
+              title="CITY DEN APARTMENT ROOM OCCUPANCY"
+              date={occupancyReport.date}
+              metrics={[
+                { label: 'Occupied Rooms', value: occupancyReport.metrics.totalOccupiedRooms },
+                { label: 'Total Guests', value: occupancyReport.metrics.totalGuestCount },
+                { label: 'Total Paid', value: `₦${occupancyReport.metrics.totalAmountPaid.toLocaleString()}` },
+                { label: 'Outstanding Balance', value: `₦${occupancyReport.metrics.totalOutstandingBalance.toLocaleString()}` },
+              ]}
+              columns={[
+                { title: 'ROOM TYPE', key: 'roomType', width: '22%' },
+                { title: 'GUEST NAME', key: 'guestName', width: '22%' },
+                { title: 'ROOM RATE', key: 'roomRate', align: 'right', width: '11%', render: (val) => `₦${Number(val || 0).toLocaleString()}` },
+                { title: 'DISCOUNT', key: 'discount', align: 'right', width: '11%', render: (val) => `₦${Number(val || 0).toLocaleString()}` },
+                { title: 'VAT', key: 'vat', align: 'right', width: '9%', render: (val) => `₦${Number(val || 0).toLocaleString()}` },
+                { title: 'RATE CHARGED', key: 'rateCharged', align: 'right', width: '13%', render: (val) => `₦${Number(val || 0).toLocaleString()}` },
+                { title: 'AMOUNT PAID', key: 'amountPaid', align: 'right', width: '13%', render: (val) => `₦${Number(val || 0).toLocaleString()}` },
+                { title: 'OUTSTANDING BALANCE', key: 'outstandingBalance', align: 'right', width: '14%', render: (val) => `₦${Number(val || 0).toLocaleString()}` },
+              ]}
+              data={occupancyReport.rows}
+              totalsRow={{
+                roomType: 'GRAND TOTAL',
+                roomRate: `₦${occupancyReport.metrics.totalRoomRevenue.toLocaleString()}`,
+                discount: `₦${occupancyReport.metrics.totalDiscount.toLocaleString()}`,
+                vat: `₦${occupancyReport.metrics.totalVat.toLocaleString()}`,
+                rateCharged: `₦${occupancyReport.metrics.totalRateCharged.toLocaleString()}`,
+                amountPaid: `₦${occupancyReport.metrics.totalAmountPaid.toLocaleString()}`,
+                outstandingBalance: `₦${occupancyReport.metrics.totalOutstandingBalance.toLocaleString()}`,
+              }}
+              showSignatureBlock={true}
+              notes="Official Room Occupancy Audit Report. All rates are inclusive of applicable discounts and tax charges."
+            />
+          )}
+        </Modal>
+      )}
     </div>
   );
 }

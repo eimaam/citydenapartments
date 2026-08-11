@@ -22,6 +22,7 @@ import { DiscountCodesService } from '../discount-codes/discount-codes.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { EmailService } from '../email/email.service';
 import { BookingReceiptEmail } from '@citydenapartments/email';
+import { format } from 'date-fns';
 
 @Injectable()
 export class BookingsService {
@@ -40,6 +41,102 @@ export class BookingsService {
   ) {}
 
   private readonly logger = new Logger(BookingsService.name);
+
+  async exportOccupancyReport(branchId: string, dateStr?: string) {
+    const targetDate = dateStr ? new Date(dateStr) : new Date();
+    const startOfDay = new Date(new Date(targetDate).setHours(0, 0, 0, 0));
+    const endOfDay = new Date(new Date(targetDate).setHours(23, 59, 59, 999));
+
+    const bookings = await this.bookingModel.find({
+      branchId: new Types.ObjectId(branchId),
+      bookingStatus: { $in: [BookingStatus.Checked_In, BookingStatus.Reserved] },
+      checkInDate: { $lte: endOfDay },
+      checkOutDate: { $gte: startOfDay },
+    })
+      .populate({
+        path: 'rooms.roomId',
+        select: 'roomNumber roomTypeId',
+        populate: { path: 'roomTypeId', select: 'name' },
+      })
+      .sort({ checkInDate: -1 })
+      .lean();
+
+    let totalOccupiedRooms = 0;
+    let totalGuestCount = 0;
+    let totalRoomRevenue = 0;
+    let totalDiscount = 0;
+    let totalVat = 0;
+    let totalRateCharged = 0;
+    let totalAmountPaid = 0;
+    let totalOutstandingBalance = 0;
+
+    const rows: Array<{
+      sn: number;
+      roomType: string;
+      guestName: string;
+      roomRate: number;
+      discount: number;
+      vat: number;
+      rateCharged: number;
+      amountPaid: number;
+      outstandingBalance: number;
+    }> = [];
+
+    let sn = 1;
+    for (const b of bookings) {
+      const guestName = b.guestDetails?.name || 'Unspecified Guest';
+      totalGuestCount += b.numberOfGuests || 1;
+
+      const discount = b.discount || 0;
+      const vat = b.vatAmount || 0;
+      const rateCharged = b.totalAmountPaid || 0;
+      const roomRate = Math.max(0, rateCharged + discount - vat - (b.serviceChargeAmount || 0));
+      const amountPaid = (b.bookingStatus === BookingStatus.Checked_In || b.bookingStatus === BookingStatus.Checked_Out) ? rateCharged : 0;
+      const outstandingBalance = Math.max(0, rateCharged - amountPaid);
+
+      totalRoomRevenue += roomRate;
+      totalDiscount += discount;
+      totalVat += vat;
+      totalRateCharged += rateCharged;
+      totalAmountPaid += amountPaid;
+      totalOutstandingBalance += outstandingBalance;
+
+      for (const r of b.rooms || []) {
+        totalOccupiedRooms++;
+        const roomObj = r.roomId as any;
+        const roomNo = roomObj?.roomNumber ? `Rm ${roomObj.roomNumber}` : '';
+        const roomTypeName = roomObj?.roomTypeId?.name || 'Standard Room';
+        const roomLabel = roomNo ? `${roomTypeName} (${roomNo})` : roomTypeName;
+
+        rows.push({
+          sn: sn++,
+          roomType: roomLabel,
+          guestName,
+          roomRate,
+          discount,
+          vat,
+          rateCharged,
+          amountPaid,
+          outstandingBalance,
+        });
+      }
+    }
+
+    return {
+      date: format(startOfDay, 'dd MMMM yyyy'),
+      metrics: {
+        totalOccupiedRooms,
+        totalGuestCount,
+        totalRoomRevenue,
+        totalDiscount,
+        totalVat,
+        totalRateCharged,
+        totalAmountPaid,
+        totalOutstandingBalance,
+      },
+      rows,
+    };
+  }
 
   private async expireBreakfastIfNeeded(booking: Booking, actorId: string) {
     const hasDiscount = (booking.discountPercentage || 0) >= 5;

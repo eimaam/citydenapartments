@@ -133,6 +133,60 @@ export class InventoryService {
     }));
   }
 
+  async exportSpotCheck(branchId: string, departmentId?: string) {
+    const filter: any = { branchId: new Types.ObjectId(branchId), isActive: true };
+    if (departmentId) {
+      filter.departmentId = new Types.ObjectId(departmentId);
+    }
+
+    let departmentName = 'All Departments';
+    if (departmentId) {
+      const dept = await this.departmentModel.findById(departmentId).lean();
+      if (dept) departmentName = dept.name;
+    }
+
+    const items = await this.itemModel.find(filter)
+      .populate('departmentId', 'name')
+      .sort({ name: 1 })
+      .lean();
+
+    let totalStockQuantity = 0;
+    let totalDepartmentStockValue = 0;
+    let lowStockCount = 0;
+
+    const formattedItems = items.map((item) => {
+      const unitPrice = item.unitPrice ?? item.costPrice ?? 0;
+      const stockValue = item.currentStock * unitPrice;
+      totalStockQuantity += item.currentStock;
+      totalDepartmentStockValue += stockValue;
+      if (item.currentStock <= item.reorderLevel) lowStockCount++;
+
+      return {
+        _id: item._id.toString(),
+        name: item.name,
+        departmentName: (item.departmentId as any)?.name || departmentName,
+        category: item.category,
+        unit: item.unit,
+        currentStock: item.currentStock,
+        reorderLevel: item.reorderLevel,
+        unitPrice,
+        stockValue,
+        expiryDate: item.expiryDate ? format(new Date(item.expiryDate), 'dd MMM yyyy') : '',
+      };
+    });
+
+    return {
+      departmentName,
+      metrics: {
+        totalItemsCount: items.length,
+        totalStockQuantity,
+        totalDepartmentStockValue,
+        lowStockCount,
+      },
+      items: formattedItems,
+    };
+  }
+
   private async getPendingSpoilageQty(itemId: string | Types.ObjectId): Promise<number> {
     const raw = await this.spoilageModel.aggregate([
       {

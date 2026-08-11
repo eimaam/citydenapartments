@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Search, Package, AlertTriangle, ArrowDownCircle, ArrowUpCircle, Plus, Clock, Trash2, Pencil, ArrowLeftRight,
-  ChevronRight, ArrowLeft, Building2, Utensils, Sparkles, Wrench, Shirt, Shield, Headphones
+  ChevronRight, ArrowLeft, Building2, Utensils, Sparkles, Wrench, Shirt, Shield, Headphones, Check, X, ShieldAlert, Edit, Printer, Download
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/auth';
 import { useToast } from '../../../components/ui/Toast';
-import { Input, Select, Option, Drawer, Button, UserRole, Departments, INVENTORY_UNITS } from '@citydenapartments/shared';
-import { inventoryApi, type InventoryItem } from '../api/inventory.api';
+import { Input, Select, Option, Drawer, Button, UserRole, Departments, INVENTORY_UNITS, Modal, Pagination, PrintableLetterhead } from '@citydenapartments/shared';
+import { inventoryApi, type InventoryItem, type DepartmentSummaryResponse, type SpotCheckExportResponse } from '../api/inventory.api';
 import { departmentsApi } from '../../departments/api/departments.api';
 import { format, isBefore, differenceInDays } from 'date-fns';
 
@@ -27,6 +27,8 @@ const DEPT_ICONS: Record<string, any> = {
   Security: Shield,
   Admin: Building2,
 };
+
+const formatMoney = (val: number | string) => '₦' + Number(val || 0).toLocaleString();
 
 export default function InventoryPage() {
   const { user } = useAuth();
@@ -90,6 +92,30 @@ export default function InventoryPage() {
   const [transferTargetDeptId, setTransferTargetDeptId] = useState('');
   const [transferQty, setTransferQty] = useState<number>(1);
   const [transferNotes, setTransferNotes] = useState<string>('');
+
+  const [showSpotCheckModal, setShowSpotCheckModal] = useState(false);
+  const [spotCheckData, setSpotCheckData] = useState<SpotCheckExportResponse | null>(null);
+  const [loadingSpotCheck, setLoadingSpotCheck] = useState(false);
+
+  const openSpotCheckModal = async () => {
+    setLoadingSpotCheck(true);
+    setShowSpotCheckModal(true);
+    try {
+      const res = await inventoryApi.exportSpotCheck(selectedDepartment?._id);
+      setSpotCheckData(res);
+    } catch {
+      toast('error', 'Failed to generate Spot Check report.');
+      setShowSpotCheckModal(false);
+    } finally {
+      setLoadingSpotCheck(false);
+    }
+  };
+
+  const downloadCsv = () => {
+    const baseUrl = import.meta.env.VITE_API_URL || '/api/v1';
+    const deptQs = selectedDepartment?._id ? `?departmentId=${selectedDepartment._id}` : '';
+    window.open(`${baseUrl}/inventory/export/csv${deptQs}`, '_blank');
+  };
 
   const spoilTypes = [
     { value: 'expired', label: 'Expired' },
@@ -471,6 +497,9 @@ export default function InventoryPage() {
               className="!w-56"
             />
           )}
+          <Button variant="secondary" size="sm" icon={<Printer size={14} />} onClick={openSpotCheckModal}>
+            Spot Check Sheet
+          </Button>
           {canAdd && (
             <Button size="sm" icon={<Plus size={14} />} onClick={openCreateModal}>
               Add Item
@@ -1282,6 +1311,46 @@ export default function InventoryPage() {
           </div>
         )}
       </Drawer>
+      {/* Spot Check Modal */}
+      {showSpotCheckModal && (
+        <Modal
+          isOpen={showSpotCheckModal}
+          onClose={() => setShowSpotCheckModal(false)}
+          title={`Inventory Spot Check Sheet — ${spotCheckData?.departmentName || 'All Departments'}`}
+        >
+          {loadingSpotCheck || !spotCheckData ? (
+            <div className="p-12 text-center text-outline font-medium">Generating Spot Check Report...</div>
+          ) : (
+            <PrintableLetterhead
+              title={`SPOT CHECK AUDIT SHEET — ${spotCheckData.departmentName}`}
+              subtitle="Physical Stock Inspection & Reconciliation Report"
+              date={new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+              metrics={[
+                { label: 'Total Items', value: spotCheckData.metrics.totalItemsCount },
+                { label: 'Total Units', value: spotCheckData.metrics.totalStockQuantity },
+                { label: 'Total Value', value: formatMoney(spotCheckData.metrics.totalDepartmentStockValue) },
+                { label: 'Low Stock Items', value: spotCheckData.metrics.lowStockCount },
+              ]}
+              columns={[
+                { title: 'Item Name', key: 'name', width: '25%' },
+                { title: 'Category', key: 'category', width: '15%' },
+                { title: 'Unit', key: 'unit', align: 'center', width: '8%' },
+                { title: 'System Stock', key: 'currentStock', align: 'right', width: '12%' },
+                { title: 'Physical Count', key: '_pc', align: 'center', width: '14%', render: () => '[ _______ ]' },
+                { title: 'Discrepancy', key: '_disc', align: 'center', width: '14%', render: () => '[ _______ ]' },
+                { title: 'Unit Price', key: 'unitPrice', align: 'right', width: '12%', render: (val) => formatMoney(val) },
+              ]}
+              data={spotCheckData.items}
+              totalsRow={{
+                name: 'TOTAL DEPT VALUE',
+                unitPrice: formatMoney(spotCheckData.metrics.totalDepartmentStockValue),
+              }}
+              onCsvDownload={downloadCsv}
+              notes="Carry this physical printout during stock inspection. Enter exact physical counts in the provided brackets and return signed report to Store Manager."
+            />
+          )}
+        </Modal>
+      )}
     </div>
   );
 }

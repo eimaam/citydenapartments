@@ -46,4 +46,5 @@ export const breakfastApi = {
   },
   serve: (data: ServePayload) => api.post<void>('/breakfast/serve', data),
   reset: (bookingId: string) => api.post<void>(`/breakfast/${bookingId}/reset`),
+  exportManifest: (date?: string) => api.get<PaginatedManifest>(`/breakfast/export${date ? `?date=${date}` : ''}`),
 };

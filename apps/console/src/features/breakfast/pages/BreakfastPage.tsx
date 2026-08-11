@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import { useState, useEffect, useCallback } from 'react';
-import { Coffee, Check, Calendar, Users, XCircle, RotateCcw } from 'lucide-react';
-import { Button } from '@citydenapartments/shared';
+import { Coffee, Check, Calendar, Users, XCircle, RotateCcw, Printer } from 'lucide-react';
+import { Button, Modal, PrintableLetterhead } from '@citydenapartments/shared';
 import { Spinner } from '../../../components/ui/Spinner';
 import { useToast } from '../../../components/ui/Toast';
 import { breakfastApi, type ManifestEntry } from '../api/breakfast.api';
@@ -13,6 +13,24 @@ export default function BreakfastPage() {
   const [serving, setServing] = useState<Record<string, boolean>>({});
   const [resetting, setResetting] = useState<Record<string, boolean>>({});
   const [date, setDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
+
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [printData, setPrintData] = useState<ManifestEntry[]>([]);
+  const [loadingPrint, setLoadingPrint] = useState(false);
+
+  const openPrintModal = async () => {
+    setLoadingPrint(true);
+    setShowPrintModal(true);
+    try {
+      const res = await breakfastApi.exportManifest(date);
+      setPrintData(res);
+    } catch {
+      toast('error', 'Failed to load full breakfast manifest for printing.');
+      setShowPrintModal(false);
+    } finally {
+      setLoadingPrint(false);
+    }
+  };
 
   const fetchManifest = useCallback(async () => {
     setLoading(true);
@@ -65,6 +83,9 @@ export default function BreakfastPage() {
           <Calendar size={16} className="text-outline" />
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
             className="h-9 px-3 text-xs rounded border border-outline-variant bg-surface-container-lowest text-on-surface focus:outline-none focus:border-primary" />
+          <Button size="sm" variant="secondary" onClick={openPrintModal} className="gap-1">
+            <Printer size={14} /> Print Manifest
+          </Button>
         </div>
       </div>
 
@@ -123,6 +144,37 @@ export default function BreakfastPage() {
             </tbody>
           </table>
         </div>
+      )}
+      {showPrintModal && (
+        <Modal
+          isOpen={showPrintModal}
+          onClose={() => setShowPrintModal(false)}
+          title={`Daily Breakfast Manifest — ${date}`}
+        >
+          {loadingPrint ? (
+            <div className="p-12 text-center text-outline font-medium">Loading manifest for printing...</div>
+          ) : (
+            <PrintableLetterhead
+              title="DAILY BREAKFAST MANIFEST SHEET"
+              subtitle="Kitchen & Restaurant Service Handoff Report"
+              date={date}
+              metrics={[
+                { label: 'Total Entitlements', value: printData.length },
+                { label: 'Served Count', value: printData.filter((i) => i.isServed).length },
+                { label: 'Pending Service', value: printData.filter((i) => i.breakfastStatus === 'pending').length },
+                { label: 'Expired', value: printData.filter((i) => i.breakfastStatus === 'expired').length },
+              ]}
+              columns={[
+                { title: 'Room No.', key: 'roomNumber', align: 'center', width: '15%' },
+                { title: 'Guest Name', key: 'guestName', width: '40%' },
+                { title: 'Service Status', key: 'breakfastStatus', align: 'center', width: '20%', render: (val) => String(val).toUpperCase() },
+                { title: 'Kitchen Sign-off', key: '_sign', align: 'center', width: '25%', render: () => '[ ____________ ]' },
+              ]}
+              data={printData}
+              notes="Deliver this printed manifest to the kitchen team at start of breakfast service. Kitchen staff must sign off when serving each room."
+            />
+          )}
+        </Modal>
       )}
     </div>
   );

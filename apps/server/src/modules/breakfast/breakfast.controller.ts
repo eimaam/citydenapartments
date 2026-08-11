@@ -17,7 +17,7 @@ export class BreakfastController {
 
   @Get('manifest')
   @UseGuards(RolesGuard)
-  @Roles(UserRoleEnum.KITCHEN_STAFF, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.SUPER_ADMIN)
+  @Roles(UserRoleEnum.KITCHEN_STAFF, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.RECEPTION, UserRoleEnum.FRONT_OFFICE_MANAGER)
   getManifest(@ActiveUser() user: any, @Query() query: QueryBreakfastDto) {
     const targetDate = query.date || format(new Date(), 'yyyy-MM-dd');
     return this.breakfastService.getDailyManifest({
@@ -26,6 +26,18 @@ export class BreakfastController {
       page: query.page,
       limit: query.limit,
       search: query.search,
+    });
+  }
+
+  @Get('export')
+  @UseGuards(RolesGuard)
+  @Roles(UserRoleEnum.KITCHEN_STAFF, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.RECEPTION, UserRoleEnum.FRONT_OFFICE_MANAGER)
+  exportManifest(@ActiveUser() user: any, @Query('date') date?: string) {
+    const targetDate = date || format(new Date(), 'yyyy-MM-dd');
+    return this.breakfastService.getDailyManifest({
+      branchId: user.activeBranchId,
+      targetDate,
+      limit: 1000,
     });
   }
 

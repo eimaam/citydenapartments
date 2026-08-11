@@ -1,4 +1,6 @@
-import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, Res, UseGuards } from '@nestjs/common';
+import { Response } from 'express';
+import { format } from 'date-fns';
 import { InventoryService } from './inventory.service';
 import { CreateItemDto } from './dto/create-item.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
@@ -42,6 +44,25 @@ export class InventoryController {
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER, UserRoleEnum.ACCOUNTANT, UserRoleEnum.FACILITY_MANAGER)
   getDepartmentSummaries(@ActiveUser() user: any) {
     return this.inventoryService.getDepartmentSummaries(user.activeBranchId);
+  }
+
+  @Get('export/spot-check')
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER, UserRoleEnum.ACCOUNTANT, UserRoleEnum.FACILITY_MANAGER)
+  exportSpotCheck(@ActiveUser() user: any, @Query('departmentId') departmentId?: string) {
+    return this.inventoryService.exportSpotCheck(user.activeBranchId, departmentId);
+  }
+
+  @Get('export/csv')
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER, UserRoleEnum.ACCOUNTANT, UserRoleEnum.FACILITY_MANAGER)
+  async exportCsv(@ActiveUser() user: any, @Res() res: Response, @Query('departmentId') departmentId?: string) {
+    const data = await this.inventoryService.exportSpotCheck(user.activeBranchId, departmentId);
+    let csv = 'S/N,Item Name,Department,Category,Unit,Current Stock,Reorder Level,Unit Price (NGN),Stock Value (NGN),Expiry Date\n';
+    data.items.forEach((item, idx) => {
+      csv += `${idx + 1},"${item.name.replace(/"/g, '""')}","${item.departmentName}","${item.category}","${item.unit}",${item.currentStock},${item.reorderLevel},${item.unitPrice},${item.stockValue},"${item.expiryDate}"\n`;
+    });
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="spot-check-${data.departmentName.toLowerCase().replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd')}.csv"`);
+    res.status(200).send(csv);
   }
 
   @Get('items/:id')

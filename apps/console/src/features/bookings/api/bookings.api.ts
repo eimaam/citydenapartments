@@ -123,6 +123,31 @@ export interface CalendarData {
   bookings: BookingResponse[];
 }
 
+export interface OccupancyReportResponse {
+  date: string;
+  metrics: {
+    totalOccupiedRooms: number;
+    totalGuestCount: number;
+    totalRoomRevenue: number;
+    totalDiscount: number;
+    totalVat: number;
+    totalRateCharged: number;
+    totalAmountPaid: number;
+    totalOutstandingBalance: number;
+  };
+  rows: Array<{
+    sn: number;
+    roomType: string;
+    guestName: string;
+    roomRate: number;
+    discount: number;
+    vat: number;
+    rateCharged: number;
+    amountPaid: number;
+    outstandingBalance: number;
+  }>;
+}
+
 export const bookingsApi = {
   list: (query: BookingsQuery = {}) => {
     const params = new URLSearchParams();
@@ -140,4 +165,6 @@ export const bookingsApi = {
   cancel: (id: string) => api.post<BookingResponse>(`/bookings/${id}/cancel`),
   calendar: (year: number, month: number) =>
     api.get<CalendarData>(`/bookings/calendar?year=${year}&month=${month}`),
+  exportOccupancyReport: (date?: string) =>
+    api.get<OccupancyReportResponse>(`/bookings/export/occupancy${date ? `?date=${date}` : ''}`),
 };
