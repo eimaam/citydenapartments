@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Search, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
+import { Search, ArrowDownCircle, ArrowUpCircle, ArrowLeftRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '../../../contexts/auth';
 import { useToast } from '../../../components/ui/Toast';
@@ -46,6 +46,9 @@ export default function TransactionsPage() {
             <Option value="">All Types</Option>
             <Option value="restock">Restock</Option>
             <Option value="issue">Issue</Option>
+            <Option value="transfer">Transfer</Option>
+            <Option value="spoilage">Spoilage</Option>
+            <Option value="adjustment">Adjustment</Option>
           </Select>
           <Input size="sm" type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="!w-36" />
           <Input size="sm" type="date" value={to} onChange={(e) => setTo(e.target.value)} className="!w-36" />
@@ -74,18 +77,34 @@ export default function TransactionsPage() {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1.5">
-                    {tx.type === 'restock' ? <ArrowUpCircle size={12} className="text-emerald-500" /> : <ArrowDownCircle size={12} className="text-amber-500" />}
+                    {tx.type === 'restock' ? (
+                      <ArrowUpCircle size={12} className="text-emerald-500" />
+                    ) : tx.type === 'transfer' ? (
+                      <ArrowLeftRight size={12} className="text-purple-500" />
+                    ) : (
+                      <ArrowDownCircle size={12} className="text-amber-500" />
+                    )}
                     <span className="text-xs capitalize">{tx.type}</span>
                   </div>
                 </td>
                 <td className="px-4 py-3 text-right font-mono font-medium">
-                  <span className={tx.type === 'restock' ? 'text-emerald-600' : 'text-red-500'}>
-                    {tx.type === 'restock' ? '+' : ''}{tx.quantity}
+                  <span className={tx.type === 'restock' || (tx.type === 'transfer' && tx.quantity > 0) ? 'text-emerald-600' : 'text-red-500'}>
+                    {tx.quantity > 0 ? '+' : ''}{tx.quantity}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right font-mono text-outline">{tx.previousStock}</td>
                 <td className="px-4 py-3 text-right font-mono text-outline">{tx.newStock}</td>
-                <td className="px-4 py-3 text-xs">{tx.requestedBy || tx.department || '-'}</td>
+                <td className="px-4 py-3 text-xs">
+                  {tx.type === 'transfer' ? (
+                    <span>
+                      {typeof tx.fromDepartmentId === 'object' ? tx.fromDepartmentId?.name : ''}
+                      {' → '}
+                      {typeof tx.toDepartmentId === 'object' ? tx.toDepartmentId?.name : ''}
+                    </span>
+                  ) : (
+                    tx.requestedBy || (typeof tx.departmentId === 'object' ? tx.departmentId?.name : tx.department) || '-'
+                  )}
+                </td>
                 <td className="px-4 py-3 text-xs text-outline">{format(new Date(tx.createdAt), 'd MMM, HH:mm')}</td>
               </tr>
             ))}

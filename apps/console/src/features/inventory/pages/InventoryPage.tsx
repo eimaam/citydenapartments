@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  Search, Package, AlertTriangle, ArrowDownCircle, ArrowUpCircle, Plus, Clock, Trash2, Pencil,
+  Search, Package, AlertTriangle, ArrowDownCircle, ArrowUpCircle, Plus, Clock, Trash2, Pencil, ArrowLeftRight,
   ChevronRight, ArrowLeft, Building2, Utensils, Sparkles, Wrench, Shirt, Shield, Headphones
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/auth';
@@ -85,6 +85,11 @@ export default function InventoryPage() {
     unitPrice: '' as string | number,
     expiryDate: '',
   });
+
+  const [transferItem, setTransferItem] = useState<InventoryItem | null>(null);
+  const [transferTargetDeptId, setTransferTargetDeptId] = useState('');
+  const [transferQty, setTransferQty] = useState<number>(1);
+  const [transferNotes, setTransferNotes] = useState<string>('');
 
   const spoilTypes = [
     { value: 'expired', label: 'Expired' },
@@ -291,6 +296,44 @@ export default function InventoryPage() {
       });
       toast('success', `Updated inventory item ${editForm.name}.`);
       setEditItem(null);
+      fetchItems();
+      fetchDepartmentSummaries();
+    } catch (e: any) {
+      toast('error', e.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const openTransfer = (item: InventoryItem) => {
+    setTransferItem(item);
+    setTransferQty(1);
+    setTransferNotes('');
+    const sourceDeptId = getItemDeptId(item);
+    const availableDept = dbDepartments.find((d) => d._id !== sourceDeptId);
+    setTransferTargetDeptId(availableDept ? availableDept._id : '');
+  };
+
+  const submitTransfer = async () => {
+    if (!transferItem) return;
+    if (!transferTargetDeptId) {
+      toast('error', 'Please select a destination department.');
+      return;
+    }
+    if (!transferQty || transferQty <= 0) {
+      toast('error', 'Transfer quantity must be greater than 0.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const targetDeptObj = dbDepartments.find((d) => d._id === transferTargetDeptId);
+      await inventoryApi.transferItem(transferItem._id, {
+        targetDepartmentId: transferTargetDeptId,
+        quantity: transferQty,
+        notes: transferNotes || undefined,
+      });
+      toast('success', `Transferred ${transferQty} ${transferItem.unit} of "${transferItem.name}" to ${targetDeptObj?.name || 'destination department'}.`);
+      setTransferItem(null);
       fetchItems();
       fetchDepartmentSummaries();
     } catch (e: any) {
@@ -603,6 +646,14 @@ export default function InventoryPage() {
                         className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded border border-outline-variant hover:bg-surface-container cursor-pointer bg-transparent text-on-surface-variant hover:text-on-surface"
                       >
                         <Pencil size={12} /> Edit
+                      </button>
+                    )}
+                    {canIssue && (
+                      <button
+                        onClick={() => openTransfer(item)}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded border border-outline-variant hover:bg-surface-container cursor-pointer bg-transparent text-on-surface-variant hover:text-on-surface"
+                      >
+                        <ArrowLeftRight size={12} /> Transfer
                       </button>
                     )}
                     {canIssue && (
@@ -1150,6 +1201,86 @@ export default function InventoryPage() {
             </div>
           </div>
         </div>
+      </Drawer>
+
+      {/* Transfer Item Drawer */}
+      <Drawer
+        open={!!transferItem}
+        onClose={() => setTransferItem(null)}
+        title="Transfer Inventory Item"
+        size="sm"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" onClick={() => setTransferItem(null)}>
+              Cancel
+            </Button>
+            <Button loading={submitting} onClick={submitTransfer}>
+              Confirm Transfer
+            </Button>
+          </div>
+        }
+      >
+        {transferItem && (
+          <div className="space-y-4">
+            <div className="p-3 rounded-lg bg-surface-container space-y-1">
+              <p className="font-medium text-sm">{transferItem.name}</p>
+              <p className="text-xs text-outline">
+                Source Dept: <strong>{getItemDeptName(transferItem)}</strong>
+              </p>
+              <p className="text-xs text-primary font-semibold">
+                Available to Transfer: {transferItem.availableStock ?? transferItem.currentStock} {transferItem.unit}
+              </p>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">
+                Target Department <span className="text-red-500">*</span>
+              </label>
+              <Select
+                size="lg"
+                className="w-full mt-1"
+                value={transferTargetDeptId}
+                onChange={(v) => setTransferTargetDeptId(v)}
+              >
+                <Option value="">Select Target Department</Option>
+                {dbDepartments
+                  .filter((d) => d._id !== getItemDeptId(transferItem))
+                  .map((d) => (
+                    <Option key={d._id} value={d._id}>
+                      {d.name}
+                    </Option>
+                  ))}
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">
+                Quantity to Transfer ({transferItem.unit}) <span className="text-red-500">*</span>
+              </label>
+              <Input
+                size="lg"
+                type="number"
+                step="any"
+                min={0.001}
+                max={transferItem.availableStock ?? transferItem.currentStock}
+                value={transferQty}
+                onChange={(e) => setTransferQty(Number(e.target.value))}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline">Transfer Notes</label>
+              <Input
+                size="lg"
+                placeholder="e.g. Urgent request for kitchen prep"
+                value={transferNotes}
+                onChange={(e) => setTransferNotes(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+          </div>
+        )}
       </Drawer>
     </div>
   );

@@ -20,12 +20,16 @@ export interface InventoryItem {
 export interface InventoryTransaction {
   _id: string;
   itemId: { _id: string; name: string; category: string; unit: string };
-  type: 'restock' | 'issue' | 'adjustment' | 'spoilage' | 'disposal';
+  type: 'restock' | 'issue' | 'adjustment' | 'spoilage' | 'disposal' | 'transfer';
   quantity: number;
   previousStock: number;
   newStock: number;
   requestedBy?: string;
   department?: string;
+  departmentId?: { _id: string; name: string } | string;
+  fromDepartmentId?: { _id: string; name: string } | string;
+  toDepartmentId?: { _id: string; name: string } | string;
+  transferRefId?: string;
   notes?: string;
   createdAt: string;
 }
@@ -121,6 +125,8 @@ export const inventoryApi = {
     api.post<InventoryItem>(`/inventory/items/${id}/restock`, data),
   issue: (id: string, data: { quantity: number; requestedBy?: string; requestedEmployeeId?: string; department?: string; notes?: string }) =>
     api.post<InventoryItem>(`/inventory/items/${id}/issue`, data),
+  transferItem: (id: string, data: { targetDepartmentId: string; quantity: number; notes?: string }) =>
+    api.post<{ sourceItem: InventoryItem; destItem: InventoryItem }>(`/inventory/items/${id}/transfer`, data),
   listTransactions: (params: { page?: number; limit?: number; itemId?: string; type?: string; from?: string; to?: string }) => {
     const qs = new URLSearchParams();
     if (params.page) qs.set('page', String(params.page));

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
-import { ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, ArrowLeftRight } from 'lucide-react';
 import { useToast } from '../../../components/ui/Toast';
 import { Input, Select, Option, Table, Badge, RoomStatus } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
@@ -38,22 +38,40 @@ export default function TransactionsPage() {
     { title: 'Type', dataIndex: 'type', key: 'type', width: 100,
       render: (v: string) => (
         <div className="flex items-center gap-1.5">
-          {v === 'restock' ? <ArrowUpCircle size={12} className="text-emerald-500" /> : <ArrowDownCircle size={12} className="text-amber-500" />}
+          {v === 'restock' ? (
+            <ArrowUpCircle size={12} className="text-emerald-500" />
+          ) : v === 'transfer' ? (
+            <ArrowLeftRight size={12} className="text-purple-500" />
+          ) : (
+            <ArrowDownCircle size={12} className="text-amber-500" />
+          )}
           <span className="text-xs capitalize">{v}</span>
         </div>
       )},
     { title: 'Qty', dataIndex: 'quantity', key: 'qty', width: 80, align: 'right' as const,
       render: (v: number, r: InventoryTransaction) => (
-        <span className={`font-mono font-medium ${r.type === 'restock' ? 'text-emerald-600' : 'text-red-500'}`}>
-          {r.type === 'restock' ? '+' : ''}{v}
+        <span className={`font-mono font-medium ${r.type === 'restock' || (r.type === 'transfer' && v > 0) ? 'text-emerald-600' : 'text-red-500'}`}>
+          {v > 0 ? '+' : ''}{v}
         </span>
       )},
     { title: 'Before', dataIndex: 'previousStock', key: 'before', width: 80, align: 'right' as const,
       render: (v: number) => <span className="font-mono text-outline">{v}</span> },
     { title: 'After', dataIndex: 'newStock', key: 'after', width: 80, align: 'right' as const,
       render: (v: number) => <span className="font-mono text-outline">{v}</span> },
-    { title: 'Requested By', key: 'requested', width: 150,
-      render: (_: unknown, r: InventoryTransaction) => <span className="text-xs">{r.requestedBy || r.department || '-'}</span> },
+    { title: 'Requested By / Dept', key: 'requested', width: 180,
+      render: (_: unknown, r: InventoryTransaction) => (
+        <span className="text-xs">
+          {r.type === 'transfer' ? (
+            <span>
+              {typeof r.fromDepartmentId === 'object' ? r.fromDepartmentId?.name : ''}
+              {' → '}
+              {typeof r.toDepartmentId === 'object' ? r.toDepartmentId?.name : ''}
+            </span>
+          ) : (
+            r.requestedBy || (typeof r.departmentId === 'object' ? r.departmentId?.name : r.department) || '-'
+          )}
+        </span>
+      ) },
     { title: 'Date', dataIndex: 'createdAt', key: 'date', width: 150,
       render: (v: string) => <span className="text-xs text-outline">{format(new Date(v), 'd MMM yyyy, HH:mm')}</span> },
   ];
@@ -69,6 +87,9 @@ export default function TransactionsPage() {
             <Option value="">All Types</Option>
             <Option value="restock">Restock</Option>
             <Option value="issue">Issue</Option>
+            <Option value="transfer">Transfer</Option>
+            <Option value="spoilage">Spoilage</Option>
+            <Option value="adjustment">Adjustment</Option>
           </Select>
           <Input size="sm" type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="!w-36" />
           <Input size="sm" type="date" value={to} onChange={(e) => setTo(e.target.value)} className="!w-36" />

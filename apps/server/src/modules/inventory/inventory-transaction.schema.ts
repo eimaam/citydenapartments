@@ -7,8 +7,9 @@ export const TransactionTypeEnum = {
   Adjustment: 'adjustment',
   Spoilage: 'spoilage',
   Disposal: 'disposal',
+  Transfer: 'transfer',
 } as const;
-export type TransactionType = 'restock' | 'issue' | 'adjustment' | 'spoilage' | 'disposal';
+export type TransactionType = 'restock' | 'issue' | 'adjustment' | 'spoilage' | 'disposal' | 'transfer';
 
 @Schema({ timestamps: true })
 export class InventoryTransaction extends Document {
@@ -35,6 +36,15 @@ export class InventoryTransaction extends Document {
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Department' })
   departmentId: MongooseSchema.Types.ObjectId;
+
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Department' })
+  fromDepartmentId?: MongooseSchema.Types.ObjectId;
+
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Department' })
+  toDepartmentId?: MongooseSchema.Types.ObjectId;
+
+  @Prop()
+  transferRefId?: string;
 
   @Prop()
   notes: string;

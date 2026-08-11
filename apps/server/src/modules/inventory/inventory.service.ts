@@ -12,9 +12,11 @@ import { UpdateItemDto } from './dto/update-item.dto';
 import { RestockDto } from './dto/restock.dto';
 import { IssueDto } from './dto/issue.dto';
 import { ReportSpoilageDto, QuerySpoilageDto } from './dto/spoilage.dto';
+import { TransferItemDto } from './dto/transfer-item.dto';
 import { RedisService } from '../redis/redis.service';
 import { escapeRegex } from '../../common/utils/escape-regex';
 import { format } from 'date-fns';
+import { randomUUID } from 'crypto';
 import { AuditLogService } from '../audit-log/audit-log.service';
 
 @Injectable()
@@ -331,17 +333,161 @@ export class InventoryService {
     });
 
     await this.redis.del(`inventory:items:${branchId}`);
-    this.logger.log(`Inventory issue — ${item.name} | -${dto.quantity} | to ${requestedByName || dto.department || 'unspecified'} | by ${userId}`);
+    this.logger.log(`Issued ${dto.quantity} ${item.unit} of ${item.name} | by ${userId}`);
     await this.auditLog.log({
       entityType: 'inventory_item',
       entityId: id,
       action: 'issue',
-      description: `Inventory issue: ${item.name} (-${dto.quantity} ${item.unit}) to ${requestedByName || dto.department || 'unspecified'}`,
+      description: `Issued ${dto.quantity} ${item.unit} of ${item.name}`,
       performedBy: userId,
       branchId,
-      details: { itemName: item.name, quantity: dto.quantity, unit: item.unit, requestedBy: requestedByName, department: dto.department, notes: dto.notes },
+      details: { itemName: item.name, quantity: dto.quantity, requestedBy: requestedByName, department: dto.department, unit: item.unit, notes: dto.notes },
     });
     return item;
+  }
+
+  async transferItem(id: string, dto: TransferItemDto, userId: string, branchId: string): Promise<Record<string, any>> {
+    const sourceItem = await this.itemModel.findOne({ _id: id, branchId, isActive: true }).populate('departmentId', 'name');
+    if (!sourceItem) throw new NotFoundException('Source item not found.');
+
+    const sourceDeptId = sourceItem.departmentId ? ((sourceItem.departmentId as any)._id || sourceItem.departmentId).toString() : null;
+    if (sourceDeptId && sourceDeptId === dto.targetDepartmentId) {
+      throw new BadRequestException('Target department must be different from source department.');
+    }
+
+    const targetDept = await this.departmentModel.findOne({ _id: dto.targetDepartmentId, branchId, isActive: true });
+    if (!targetDept) throw new NotFoundException('Target department not found.');
+
+    const pendingSpoilage = await this.getPendingSpoilageQty(sourceItem._id);
+    const availableToTransfer = sourceItem.currentStock - pendingSpoilage;
+
+    if (availableToTransfer < dto.quantity) {
+      if (pendingSpoilage > 0) {
+        throw new BadRequestException(
+          `Cannot transfer ${dto.quantity} ${sourceItem.unit}. Total stock is ${sourceItem.currentStock} ${sourceItem.unit}, but ${pendingSpoilage} ${sourceItem.unit} is pending write-off approval. Available to transfer: ${Math.max(0, availableToTransfer)} ${sourceItem.unit}.`,
+        );
+      }
+      throw new BadRequestException(
+        `Insufficient stock for transfer. Available: ${sourceItem.currentStock} ${sourceItem.unit}, requested: ${dto.quantity} ${sourceItem.unit}.`,
+      );
+    }
+
+    const escapedName = escapeRegex(sourceItem.name);
+    let destItem = await this.itemModel.findOne({
+      branchId: new Types.ObjectId(branchId),
+      departmentId: new Types.ObjectId(dto.targetDepartmentId),
+      isActive: true,
+      name: { $regex: new RegExp(`^${escapedName}$`, 'i') },
+    });
+
+    const sourceUnitPrice = sourceItem.unitPrice ?? sourceItem.costPrice ?? 0;
+
+    let destPreviousStock = 0;
+    let destNewStock = dto.quantity;
+    let destNewUnitPrice = sourceUnitPrice;
+
+    if (destItem) {
+      destPreviousStock = destItem.currentStock;
+      destNewStock = destPreviousStock + dto.quantity;
+      const destCurrentUnitPrice = destItem.unitPrice ?? destItem.costPrice ?? 0;
+      if (destNewStock > 0) {
+        const destExistingValue = destPreviousStock * destCurrentUnitPrice;
+        const transferValue = dto.quantity * sourceUnitPrice;
+        destNewUnitPrice = Math.round((destExistingValue + transferValue) / destNewStock);
+      }
+      destItem.currentStock = destNewStock;
+      destItem.unitPrice = destNewUnitPrice;
+      destItem.costPrice = destNewUnitPrice;
+      destItem.updatedBy = userId as any;
+      await destItem.save();
+    } else {
+      destItem = await this.itemModel.create({
+        name: sourceItem.name,
+        branchId: new Types.ObjectId(branchId),
+        departmentId: new Types.ObjectId(dto.targetDepartmentId),
+        category: sourceItem.category,
+        unit: sourceItem.unit,
+        currentStock: dto.quantity,
+        reorderLevel: sourceItem.reorderLevel ?? 0,
+        costPrice: sourceUnitPrice,
+        unitPrice: sourceUnitPrice,
+        description: sourceItem.description,
+        expiryDate: sourceItem.expiryDate,
+        createdBy: new Types.ObjectId(userId),
+        updatedBy: new Types.ObjectId(userId),
+        isActive: true,
+      });
+    }
+
+    const sourcePreviousStock = sourceItem.currentStock;
+    const sourceNewStock = sourcePreviousStock - dto.quantity;
+    sourceItem.currentStock = sourceNewStock;
+    sourceItem.updatedBy = userId as any;
+    await sourceItem.save();
+
+    const transferRefId = randomUUID();
+    const sourceDeptName = (sourceItem.departmentId as any)?.name || 'Source';
+    const targetDeptName = targetDept.name;
+
+    // Outbound Log (Source)
+    await this.txModel.create({
+      itemId: sourceItem._id,
+      type: 'transfer',
+      quantity: -dto.quantity,
+      previousStock: sourcePreviousStock,
+      newStock: sourceNewStock,
+      departmentId: sourceDeptId ? new Types.ObjectId(sourceDeptId) : undefined,
+      fromDepartmentId: sourceDeptId ? new Types.ObjectId(sourceDeptId) : undefined,
+      toDepartmentId: targetDept._id,
+      transferRefId,
+      unitPrice: sourceUnitPrice,
+      totalCost: dto.quantity * sourceUnitPrice,
+      notes: dto.notes || `Transferred ${dto.quantity} ${sourceItem.unit} to ${targetDeptName}`,
+      performedBy: userId,
+      branchId,
+    });
+
+    // Inbound Log (Destination)
+    await this.txModel.create({
+      itemId: destItem._id,
+      type: 'transfer',
+      quantity: dto.quantity,
+      previousStock: destPreviousStock,
+      newStock: destNewStock,
+      departmentId: targetDept._id,
+      fromDepartmentId: sourceDeptId ? new Types.ObjectId(sourceDeptId) : undefined,
+      toDepartmentId: targetDept._id,
+      transferRefId,
+      previousUnitPrice: destItem ? destItem.unitPrice : sourceUnitPrice,
+      newUnitPrice: destNewUnitPrice,
+      unitPrice: sourceUnitPrice,
+      totalCost: dto.quantity * sourceUnitPrice,
+      notes: dto.notes || `Received ${dto.quantity} ${sourceItem.unit} from ${sourceDeptName}`,
+      performedBy: userId,
+      branchId,
+    });
+
+    await this.redis.del(`inventory:items:${branchId}`);
+    this.logger.log(`Transferred ${dto.quantity} ${sourceItem.unit} of ${sourceItem.name} from ${sourceDeptName} to ${targetDeptName} | by ${userId}`);
+    await this.auditLog.log({
+      entityType: 'inventory_item',
+      entityId: id,
+      action: 'transfer',
+      description: `Transferred ${dto.quantity} ${sourceItem.unit} of ${sourceItem.name} from ${sourceDeptName} to ${targetDeptName}`,
+      performedBy: userId,
+      branchId,
+      details: {
+        sourceItemId: id,
+        destinationItemId: destItem._id.toString(),
+        quantity: dto.quantity,
+        fromDepartment: sourceDeptName,
+        toDepartment: targetDeptName,
+        transferRefId,
+        notes: dto.notes,
+      },
+    });
+
+    return { sourceItem, destItem };
   }
 
   async reportSpoilage(itemId: string, dto: ReportSpoilageDto, userId: string, branchId: string) {
@@ -548,7 +694,15 @@ export class InventoryService {
 
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([
-      this.txModel.find(filter).populate('itemId', 'name category unit').sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+      this.txModel.find(filter)
+        .populate('itemId', 'name category unit')
+        .populate('departmentId', 'name')
+        .populate('fromDepartmentId', 'name')
+        .populate('toDepartmentId', 'name')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
       this.txModel.countDocuments(filter),
     ]);
 

@@ -5,6 +5,7 @@ import { UpdateItemDto } from './dto/update-item.dto';
 import { RestockDto } from './dto/restock.dto';
 import { IssueDto } from './dto/issue.dto';
 import { ReportSpoilageDto, QuerySpoilageDto } from './dto/spoilage.dto';
+import { TransferItemDto } from './dto/transfer-item.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { WorkspaceAuthGuard } from '../../common/guards/workspace-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -71,6 +72,12 @@ export class InventoryController {
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER)
   issue(@Param('id') id: string, @Body() dto: IssueDto, @ActiveUser() user: any) {
     return this.inventoryService.issue(id, dto, user.id, user.activeBranchId);
+  }
+
+  @Post('items/:id/transfer')
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.STORE_MANAGER, UserRoleEnum.STORE_KEEPER)
+  transferItem(@Param('id') id: string, @Body() dto: TransferItemDto, @ActiveUser() user: any) {
+    return this.inventoryService.transferItem(id, dto, user.id, user.activeBranchId);
   }
 
   @Get('transactions')
