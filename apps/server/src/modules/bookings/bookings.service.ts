@@ -87,39 +87,53 @@ export class BookingsService {
       const guestName = b.guestDetails?.name || 'Unspecified Guest';
       totalGuestCount += b.numberOfGuests || 1;
 
-      const discount = b.discount || 0;
-      const vat = b.vatAmount || 0;
-      const rateCharged = b.totalAmountPaid || 0;
-      const roomRate = Math.max(0, rateCharged + discount - vat - (b.serviceChargeAmount || 0));
-      const amountPaid = (b.bookingStatus === BookingStatus.Checked_In || b.bookingStatus === BookingStatus.Checked_Out) ? rateCharged : 0;
-      const outstandingBalance = Math.max(0, rateCharged - amountPaid);
+      const totalBookingDiscount = b.discount || 0;
+      const totalBookingVat = b.vatAmount || 0;
+      const totalBookingServiceCharge = b.serviceChargeAmount || 0;
+      const totalBookingRateCharged = b.totalAmountPaid || 0;
+      const totalBookingPaid = (b.bookingStatus === BookingStatus.Checked_In || b.bookingStatus === BookingStatus.Checked_Out) ? totalBookingRateCharged : 0;
 
-      totalRoomRevenue += roomRate;
-      totalDiscount += discount;
-      totalVat += vat;
-      totalRateCharged += rateCharged;
-      totalAmountPaid += amountPaid;
-      totalOutstandingBalance += outstandingBalance;
+      const rooms = b.rooms || [];
+      const numRooms = rooms.length || 1;
+      const bookingSubtotal = rooms.reduce((sum, r) => sum + (Number(r.totalForRoom) || 0), 0) || (b.baseRoomTotal || 0);
 
-      for (const r of b.rooms || []) {
+      rooms.forEach((r) => {
         totalOccupiedRooms++;
         const roomObj = r.roomId as any;
         const roomNo = roomObj?.roomNumber ? `Rm ${roomObj.roomNumber}` : '';
         const roomTypeName = roomObj?.roomTypeId?.name || 'Standard Room';
         const roomLabel = roomNo ? `${roomTypeName} (${roomNo})` : roomTypeName;
 
+        const roomSubtotal = Number(r.totalForRoom) || (bookingSubtotal / numRooms);
+        const ratio = bookingSubtotal > 0 ? roomSubtotal / bookingSubtotal : (1 / numRooms);
+
+        const roomDiscount = Math.round(totalBookingDiscount * ratio);
+        const roomVat = Math.round(totalBookingVat * ratio);
+        const roomServiceCharge = Math.round(totalBookingServiceCharge * ratio);
+        const roomRateCharged = Math.round(totalBookingRateCharged * ratio);
+        const roomBaseRate = Math.max(0, roomRateCharged + roomDiscount - roomVat - roomServiceCharge);
+        const roomPaid = Math.round(totalBookingPaid * ratio);
+        const roomOutstanding = Math.max(0, roomRateCharged - roomPaid);
+
+        totalRoomRevenue += roomBaseRate;
+        totalDiscount += roomDiscount;
+        totalVat += roomVat;
+        totalRateCharged += roomRateCharged;
+        totalAmountPaid += roomPaid;
+        totalOutstandingBalance += roomOutstanding;
+
         rows.push({
           sn: sn++,
           roomType: roomLabel,
           guestName,
-          roomRate,
-          discount,
-          vat,
-          rateCharged,
-          amountPaid,
-          outstandingBalance,
+          roomRate: roomBaseRate,
+          discount: roomDiscount,
+          vat: roomVat,
+          rateCharged: roomRateCharged,
+          amountPaid: roomPaid,
+          outstandingBalance: roomOutstanding,
         });
-      }
+      });
     }
 
     return {
