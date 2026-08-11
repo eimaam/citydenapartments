@@ -18,22 +18,35 @@ export class CustomersController {
   constructor(private customersService: CustomersService) {}
 
   @Get()
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.FRONT_OFFICE_MANAGER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.RECEPTION, UserRoleEnum.FACILITY_MANAGER)
   findAll(@Query() query: PaginatedQueryDto) {
     return this.customersService.findAll({ page: query.page ?? 1, limit: query.limit ?? 20, search: query.search });
   }
 
   @Get('search')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.RECEPTION, UserRoleEnum.FRONT_OFFICE_MANAGER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.RECEPTION, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.FACILITY_MANAGER)
   search(@Query() query: SearchCustomerDto) {
     return this.customersService.searchByPhone(query.phone);
   }
 
   @Get(':id')
-  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.FRONT_OFFICE_MANAGER)
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.RECEPTION, UserRoleEnum.FACILITY_MANAGER)
   findOne(@Param('id') id: string) {
     return this.customersService.findById(id);
   }
+
+  @Get(':id/timeline')
+  @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.RECEPTION, UserRoleEnum.FACILITY_MANAGER)
+  getTimeline(
+    @Param('id') id: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('eventType') eventType?: string,
+  ) {
+    return this.customersService.getTimeline(id, { startDate, endDate, eventType });
+  }
+
+
 
   @Post()
   @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.FRONT_OFFICE_MANAGER)

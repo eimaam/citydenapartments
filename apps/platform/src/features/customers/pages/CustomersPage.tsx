@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Button, Input, Table, Drawer, Select, Option } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, ExternalLink, Receipt } from 'lucide-react';
 import { useToast } from '../../../components/ui/Toast';
 import { useAuth } from '../../../contexts/auth';
 import { customersApi } from '../api/customers.api';
 import type { CustomerResponse } from '@citydenapartments/shared';
+import CustomerTimelineTree from '../components/CustomerTimelineTree';
 
 const LIMIT = 20;
 
@@ -18,6 +20,7 @@ interface PaginatedData {
 }
 
 export default function CustomersPage() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -100,7 +103,7 @@ export default function CustomersPage() {
       key: 'name',
       render: (_: unknown, r: CustomerResponse) => (
         <div>
-          <p className="font-medium text-on-surface">{r.name}</p>
+          <p className="font-medium text-on-surface hover:text-primary transition-colors">{r.name}</p>
           <p className="text-xs text-outline">{r.phone}</p>
         </div>
       ),
@@ -130,9 +133,12 @@ export default function CustomersPage() {
     {
       title: 'Actions',
       key: 'action',
-      width: 100,
+      width: 140,
       render: (_: unknown, r: CustomerResponse) => (
-        <div onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <Button size="sm" variant="ghost" icon={<Receipt size={13} />} onClick={() => navigate(`/customers/${r._id}`)}>
+            Ledger
+          </Button>
           <Button size="sm" variant="ghost" onClick={() => setDetail(r)}>View</Button>
         </div>
       ),
@@ -149,7 +155,7 @@ export default function CustomersPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="font-serif text-2xl sm:text-3xl text-on-surface">Customers</h1>
-          <p className="text-xs text-outline mt-1">Search and create guest profiles for bookings.</p>
+          <p className="text-xs text-outline mt-1">Search, view guest ledger history, and create guest profiles.</p>
         </div>
         <div className="flex items-center gap-3">
           <Input
@@ -180,41 +186,51 @@ export default function CustomersPage() {
             showTotal: (total: number) => `${total} customer${total !== 1 ? 's' : ''}`,
             onChange: (p) => setPage(p),
           }}
-          onRow={(record) => ({ onClick: () => setDetail(record), style: { cursor: 'pointer' } })}
+          onRow={(record) => ({ onClick: () => navigate(`/customers/${record._id}`), style: { cursor: 'pointer' } })}
         />
       </div>
 
       {/* ── Customer Details Drawer ── */}
-      <Drawer open={!!detail} onClose={() => setDetail(null)} title="Customer Details" width={480}>
+      <Drawer open={!!detail} onClose={() => setDetail(null)} title="Customer Details & Timeline Preview" width={560}>
         {detail && (
-          <div className="space-y-5">
-            <div>
-              <p className="text-xs text-outline">Guest Name</p>
-              <p className="font-medium text-lg">{detail.name}</p>
+          <div className="space-y-6">
+            <div className="flex items-center justify-between bg-surface-container-low p-4 rounded-xl border border-outline-variant/50">
+              <div>
+                <p className="text-xs text-outline">Guest Name</p>
+                <p className="font-medium text-lg text-on-surface">{detail.name}</p>
+                <p className="text-xs text-outline">{detail.phone}</p>
+              </div>
+
+              <Button
+                size="sm"
+                icon={<ExternalLink size={14} />}
+                onClick={() => {
+                  const id = detail._id;
+                  setDetail(null);
+                  navigate(`/customers/${id}`);
+                }}
+              >
+                Full Ledger Page
+              </Button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div><p className="text-xs text-outline">Phone</p><p className="font-medium">{detail.phone}</p></div>
+            <div className="grid grid-cols-2 gap-4 text-sm bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/40">
               <div><p className="text-xs text-outline">Email</p><p className="font-medium">{detail.email || '—'}</p></div>
               <div><p className="text-xs text-outline">Gender</p><p className="font-medium capitalize">{detail.gender}</p></div>
               <div><p className="text-xs text-outline">Nationality</p><p className="font-medium">{detail.nationality}</p></div>
               <div><p className="text-xs text-outline">State of Origin</p><p className="font-medium">{detail.stateOfOrigin}</p></div>
               <div><p className="text-xs text-outline">Occupation</p><p className="font-medium">{detail.occupation}</p></div>
               {detail.dob && <div><p className="text-xs text-outline">DOB</p><p className="font-medium">{format(new Date(detail.dob), 'd MMM yyyy')}</p></div>}
-              {detail.phone2 && <div><p className="text-xs text-outline">Phone 2</p><p className="font-medium">{detail.phone2}</p></div>}
             </div>
 
-            <div className="border-t border-outline-variant/60 pt-4">
-              <p className="text-xs font-bold tracking-[0.1em] uppercase text-outline mb-2">Visit History &amp; Stats</p>
-              <div className="grid grid-cols-3 gap-4 text-sm">
-                <div><p className="text-xs text-outline">Total Visits</p><p className="font-medium text-lg">{detail.totalVisits}</p></div>
-                <div><p className="text-xs text-outline">Total Spent</p><p className="font-medium text-lg">₦{detail.totalSpent?.toLocaleString()}</p></div>
-                <div><p className="text-xs text-outline">Last Visit</p><p className="font-medium text-lg">{detail.lastVisitDate ? format(new Date(detail.lastVisitDate), 'd MMM yyyy') : '—'}</p></div>
-              </div>
+            <div className="border-t border-outline-variant/60 pt-4 space-y-4">
+              <p className="text-xs font-bold tracking-[0.1em] uppercase text-outline">History &amp; Timeline Preview</p>
+              <CustomerTimelineTree customerId={detail._id} />
             </div>
           </div>
         )}
       </Drawer>
+
 
       {/* ── Add Customer Drawer ── */}
       <Drawer open={showCreate} onClose={() => setShowCreate(false)} title="Add New Customer" width={480}

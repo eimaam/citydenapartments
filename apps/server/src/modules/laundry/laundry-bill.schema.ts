@@ -73,3 +73,5 @@ export const LaundryBillSchema = SchemaFactory.createForClass(LaundryBill);
 
 LaundryBillSchema.index({ branchId: 1, createdAt: -1 });
 LaundryBillSchema.index({ branchId: 1, status: 1 });
+LaundryBillSchema.index({ customerId: 1, createdAt: -1 });
+

@@ -18,6 +18,7 @@ import TransactionsPage from './features/inventory/pages/TransactionsPage';
 import SpoilagePage from './features/inventory/pages/SpoilagePage';
 import InventoryBookPage from './features/inventory/pages/InventoryBookPage';
 import CustomersPage from './features/customers/pages/CustomersPage';
+import CustomerDetailPage from './features/customers/pages/CustomerDetailPage';
 import LaundryPage from './features/laundry/pages/LaundryPage';
 import DiscountCodesPage from './features/discount-codes/pages/DiscountCodesPage';
 import DepartmentExpensesPage from './features/department-expenses/pages/DepartmentExpensesPage';
@@ -66,7 +67,9 @@ export default function App() {
 
               <Route element={<RoleGuard roles={[UserRole.Reception, UserRole.FrontOfficeManager, UserRole.FacilityManager]} />}>
                 <Route path="customers" element={<CustomersPage />} />
+                <Route path="customers/:id" element={<CustomerDetailPage />} />
               </Route>
+
 
               <Route element={<RoleGuard roles={[UserRole.Reception, UserRole.FrontOfficeManager, UserRole.FacilityManager, UserRole.IT]} />}>
                 <Route path="laundry" element={<LaundryPage />} />

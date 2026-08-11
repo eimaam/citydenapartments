@@ -1,6 +1,6 @@
 import { api } from '../../../lib/api';
-import type { CustomerResponse } from '@citydenapartments/shared';
-export type { CustomerResponse };
+import type { CustomerResponse, CustomerTimelineResponse } from '@citydenapartments/shared';
+export type { CustomerResponse, CustomerTimelineResponse };
 
 export interface PaginatedCustomers {
   items: CustomerResponse[];
@@ -20,7 +20,15 @@ export const customersApi = {
   search: (phone: string) =>
     api.get<CustomerResponse[]>(`/customers/search?phone=${encodeURIComponent(phone)}`),
   get: (id: string) => api.get<CustomerResponse>(`/customers/${id}`),
+  getTimeline: (id: string, params?: { startDate?: string; endDate?: string; eventType?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.startDate) qs.set('startDate', params.startDate);
+    if (params?.endDate) qs.set('endDate', params.endDate);
+    if (params?.eventType) qs.set('eventType', params.eventType);
+    return api.get<CustomerTimelineResponse>(`/customers/${id}/timeline?${qs.toString()}`);
+  },
   create: (data: any) => api.post<CustomerResponse>('/customers', data),
   updateBranchDiscount: (id: string, data: { branchId: string; percentage: number; reason?: string }) =>
     api.patch<CustomerResponse>(`/customers/${id}/branch-discounts`, data),
 };
+

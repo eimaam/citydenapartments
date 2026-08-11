@@ -176,6 +176,89 @@ export interface CustomerResponse {
   branchLifetimeDiscounts?: BranchLifetimeDiscount[];
 }
 
+export type CustomerTimelineEventType =
+  | 'profile_created'
+  | 'booking_created'
+  | 'checked_in'
+  | 'checked_out'
+  | 'booking_cancelled'
+  | 'laundry_bill'
+  | 'vip_discount_updated';
+
+export interface CustomerTimelineEvent {
+  id: string;
+  eventType: CustomerTimelineEventType;
+  timestamp: string;
+  title: string;
+  description?: string;
+  branchName?: string;
+  performedBy?: {
+    id: string;
+    name: string;
+    role?: string;
+  };
+  details?: {
+    bookingId?: string;
+    bookingReference?: string;
+    roomNumbers?: string[];
+    roomTypes?: string[];
+    checkInDate?: string;
+    checkOutDate?: string;
+    actualCheckedInAt?: string;
+    actualCheckedOutAt?: string;
+    nights?: number;
+    baseRoomTotal?: number;
+    discountType?: string;
+    discountPercentage?: number;
+    discountAmount?: number;
+    discountReason?: string;
+    discountCode?: string;
+    vipDiscountPercentage?: number;
+    vatAmount?: number;
+    serviceChargeAmount?: number;
+    totalAmountPaid?: number;
+    paymentMethod?: string;
+    paymentReference?: string;
+    bookingStatus?: string;
+    isFirstVisit?: boolean;
+    isReturnVisit?: boolean;
+    visitNumber?: number;
+    billNumber?: string;
+    laundryTotal?: number;
+    laundryItemsCount?: number;
+    laundryStatus?: string;
+    oldPercentage?: number;
+    newPercentage?: number;
+  };
+}
+
+export interface CustomerGuestLedgerSummary {
+  totalVisits: number;
+  totalSpent: number;
+  totalBilled: number;
+  totalPaid: number;
+  totalDiscountsSaved: number;
+  firstVisitDate?: string;
+  lastVisitDate?: string;
+  activeVipDiscounts: Array<{
+    branchId: string;
+    branchName?: string;
+    percentage: number;
+  }>;
+}
+
+export interface CustomerTimelineResponse {
+  customer: CustomerResponse;
+  summary: CustomerGuestLedgerSummary;
+  events: CustomerTimelineEvent[];
+  queryWindow: {
+    startDate?: string;
+    endDate?: string;
+    totalEvents: number;
+  };
+}
+
+
 export const INVENTORY_UNITS = [
   { value: 'pcs', label: 'Pieces (pcs)' },
   { value: 'kg', label: 'Kilograms (kg)' },
