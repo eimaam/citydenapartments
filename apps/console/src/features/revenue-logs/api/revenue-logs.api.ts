@@ -34,10 +34,11 @@ export const revenueLogsApi = {
     return api.get<RevenueLogsListResponse>(`/revenue-logs${qs ? `?${qs}` : ''}`);
   },
 
-  summary: (query: { fromDate?: string; toDate?: string } = {}) => {
+  summary: (query: { fromDate?: string; toDate?: string; departmentId?: string } = {}) => {
     const params = new URLSearchParams();
     if (query.fromDate) params.set('fromDate', query.fromDate);
     if (query.toDate) params.set('toDate', query.toDate);
+    if (query.departmentId) params.set('departmentId', query.departmentId);
     const qs = params.toString();
     return api.get<RevenueLogSummaryResponse>(`/revenue-logs/summary${qs ? `?${qs}` : ''}`);
   },

@@ -5,7 +5,7 @@ import { can } from '../../../components/ui/Can';
 import { Spinner } from '../../../components/ui/Spinner';
 import { UserRole } from '@citydenapartments/shared';
 import { dashboardApi, type DashboardSummary, type AccountingSummary } from '../api/dashboard.api';
-import { CalendarCheck, Users, DoorOpen, Coffee, Clock, TrendingUp, DollarSign, PieChart, Receipt, BadgePercent, Banknote, CreditCard, Landmark, Package, Download, FileText } from 'lucide-react';
+import { CalendarCheck, Users, Coffee, Clock, TrendingUp, DollarSign, PieChart, Receipt, Banknote, CreditCard, Landmark, Package, Download, FileText, Filter, Store } from 'lucide-react';
 import { MetricCard, exportToCSV, exportToPDF, Input, Table, formatCompactNumber } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
 
@@ -99,8 +99,8 @@ function KitchenDashboard() {
     setExporting(format);
     try {
       const opts = {
-        filename: 'kitchen_breakfast',
-        title: 'Breakfast Summary',
+        filename: 'kitchen_summary',
+        title: 'Kitchen Breakfast Summary',
         columns: [
           { title: 'Metric', dataIndex: 'label' as const },
           { title: 'Value', dataIndex: 'value' as const },
@@ -109,7 +109,6 @@ function KitchenDashboard() {
           { label: 'Total Guests', value: data.breakfast.total },
           { label: 'Served', value: data.breakfast.served },
           { label: 'Pending', value: data.breakfast.pending },
-          { label: 'Coverage', value: data.breakfast.total ? `${Math.round((data.breakfast.served / data.breakfast.total) * 100)}%` : '—' },
         ],
       };
       if (format === 'csv') exportToCSV(opts);
@@ -143,11 +142,12 @@ function DefaultDashboard() {
 }
 
 const ACCT_PERIODS = [
-  { label: 'Daily', value: 'daily' },
-  { label: 'Week', value: 'week' },
-  { label: 'Month', value: 'month' },
+  { label: 'Today', value: 'daily' },
+  { label: 'This Week', value: 'week' },
+  { label: 'This Month', value: 'month' },
   { label: '3 Months', value: '3months' },
   { label: '6 Months', value: '6months' },
+  { label: 'All Time', value: 'all' },
 ];
 
 function AccountantDashboard() {
@@ -156,21 +156,15 @@ function AccountantDashboard() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState<'csv' | 'pdf' | null>(null);
 
-  const [revenuePeriod, setRevenuePeriod] = useState('daily');
-  const [revFromDate, setRevFromDate] = useState('');
-  const [revToDate, setRevToDate] = useState('');
+  // Timeline Filter State
+  const [selectedPeriod, setSelectedPeriod] = useState('daily');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+
   const [revenueData, setRevenueData] = useState<any>(null);
-  const [revenueLoading, setRevenueLoading] = useState(false);
 
-  useEffect(() => {
-    dashboardApi.accounting()
-      .then(setData)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [user?.activeBranchId]);
-
-  const fetchRevenue = async (period: string, from?: string, to?: string) => {
-    setRevenueLoading(true);
+  const loadData = useCallback(async (period: string, from?: string, to?: string) => {
+    setLoading(true);
     try {
       const params: any = {};
       if (from && to) {
@@ -179,27 +173,34 @@ function AccountantDashboard() {
       } else {
         params.period = period;
       }
-      const data = await dashboardApi.revenue(params);
-      setRevenueData(data);
-    } catch { /* ignore */ }
-    finally { setRevenueLoading(false); }
-  };
 
-  useEffect(() => {
-    fetchRevenue('daily');
+      const [acctRes, revRes] = await Promise.all([
+        dashboardApi.accounting(params),
+        dashboardApi.revenue(params),
+      ]);
+
+      setData(acctRes);
+      setRevenueData(revRes);
+    } catch {
+      // quiet catch
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const onPeriodClick = (period: string) => {
-    setRevenuePeriod(period);
-    setRevFromDate('');
-    setRevToDate('');
-    fetchRevenue(period);
+  useEffect(() => {
+    loadData(selectedPeriod, fromDate, toDate);
+  }, [loadData, selectedPeriod, fromDate, toDate, user?.activeBranchId]);
+
+  const handlePeriodChange = (period: string) => {
+    setSelectedPeriod(period);
+    setFromDate('');
+    setToDate('');
   };
 
-  const onDateRangeApply = () => {
-    if (revFromDate && revToDate) {
-      setRevenuePeriod('');
-      fetchRevenue('', revFromDate, revToDate);
+  const handleDateRangeApply = () => {
+    if (fromDate && toDate) {
+      setSelectedPeriod('');
     }
   };
 
@@ -234,14 +235,15 @@ function AccountantDashboard() {
           { title: 'Value', dataIndex: 'value' as const },
         ],
         data: [
-          { metric: 'Total Revenue', value: `₦${revenueData.totalRevenue.toLocaleString()}` },
-          { metric: 'Booking Revenue', value: `₦${revenueData.bookingRevenue.toLocaleString()}` },
+          { metric: 'Gross Revenue (Total)', value: `₦${(revenueData.grossRevenue || revenueData.totalRevenue).toLocaleString()}` },
+          { metric: 'Room Booking Revenue', value: `₦${revenueData.bookingRevenue.toLocaleString()}` },
           { metric: 'Booking Count', value: revenueData.bookingCount },
+          { metric: 'Department Revenue (Other Sales)', value: `₦${(revenueData.departmentRevenue || 0).toLocaleString()}` },
           { metric: 'Department Expenses', value: `₦${revenueData.departmentExpenses.toLocaleString()}` },
-          { metric: 'Net Revenue', value: `₦${(revenueData.bookingRevenue - revenueData.departmentExpenses).toLocaleString()}` },
+          { metric: 'Net Revenue', value: `₦${(revenueData.netRevenue || (revenueData.bookingRevenue - revenueData.departmentExpenses)).toLocaleString()}` },
           { metric: 'VAT Collected', value: `₦${revenueData.vatCollected.toLocaleString()}` },
           { metric: 'Service Charge Collected', value: `₦${revenueData.serviceChargeCollected.toLocaleString()}` },
-          { metric: 'Period', value: revenueData.period?.label || `${revenueData.period?.from} — ${revenueData.period?.to}` },
+          { metric: 'Timeline', value: revenueData.period?.label || 'Custom' },
         ],
       };
       if (format === 'csv') exportToCSV(opts);
@@ -249,7 +251,7 @@ function AccountantDashboard() {
     } finally { setExporting(null); }
   }, [revenueData]);
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="p-6 md:p-8">
         <div className="flex items-center gap-3 mb-6"><span className="w-8 h-px bg-primary" /><span className="text-xs font-bold tracking-[0.15em] uppercase text-outline">Accounting</span></div>
@@ -263,30 +265,88 @@ function AccountantDashboard() {
   const r = data.revenue;
   const d = data.discounts;
   const b = data.bookings;
+  const activeTimelineLabel = data.period?.label || revenueData?.period?.label || 'Today';
+
   const paymentIcon = (method: string) => {
     if (method === 'cash') return Banknote;
     if (method === 'pos_card') return CreditCard;
-    return Landmark;
+    if (method === 'bank_transfer') return Landmark;
+    return Store;
   };
+
   const paymentLabel = (method: string) => {
     if (method === 'cash') return 'Cash';
     if (method === 'pos_card') return 'POS / Card';
-    return 'Bank Transfer';
+    if (method === 'bank_transfer') return 'Bank Transfer';
+    return 'Other Sales';
   };
 
   return (
     <div className="p-6 md:p-8 space-y-8">
-      <div className="flex items-center gap-3 mb-6"><span className="w-8 h-px bg-primary" /><span className="text-xs font-bold tracking-[0.15em] uppercase text-outline">Accounting</span></div>
-      <h1 className="font-serif text-3xl sm:text-4xl text-on-surface mb-2">Financial Overview</h1>
-      <p className="text-on-surface-variant -mt-6">Revenue, discounts, and booking breakdown for {user?.activeBranchId ? 'your branch' : 'all branches'}.</p>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-3 mb-1">
+            <span className="w-8 h-px bg-primary" />
+            <span className="text-xs font-bold tracking-[0.15em] uppercase text-outline">Accounting</span>
+          </div>
+          <h1 className="font-serif text-3xl sm:text-4xl text-on-surface mb-2">Financial Overview</h1>
+          <p className="text-on-surface-variant text-sm">Revenue, department sales, discounts, and booking breakdown for {user?.activeBranchId ? 'your branch' : 'all branches'}.</p>
+        </div>
+      </div>
+
+      {/* Global Timeline Filter Bar */}
+      <div className="bg-surface-container-lowest border border-outline-variant p-4 rounded-xl shadow-sm space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-outline-variant/60 pb-3">
+          <div className="flex items-center gap-2">
+            <Filter size={16} className="text-primary" />
+            <span className="text-xs font-extrabold uppercase tracking-wider text-on-surface">Financial Timeline Filter</span>
+          </div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold">
+            <CalendarCheck size={13} />
+            <span>Viewing: {activeTimelineLabel}</span>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-1 p-1 rounded-lg bg-surface-container border border-outline-variant/40">
+            {ACCT_PERIODS.map((p) => (
+              <button
+                key={p.value}
+                onClick={() => handlePeriodChange(p.value)}
+                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                  selectedPeriod === p.value
+                    ? 'bg-surface-container-lowest text-primary shadow-sm border border-outline-variant/60'
+                    : 'text-on-surface-variant hover:text-on-surface'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-outline font-medium">Custom Range:</span>
+            <Input type="date" size="sm" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="!w-36 text-xs" />
+            <span className="text-xs text-outline">—</span>
+            <Input type="date" size="sm" value={toDate} onChange={(e) => setToDate(e.target.value)} className="!w-36 text-xs" />
+            <button
+              onClick={handleDateRangeApply}
+              disabled={!fromDate || !toDate}
+              className="px-3 py-1.5 text-xs font-bold rounded bg-primary text-on-primary hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed border-none"
+            >
+              Apply Filter
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Revenue Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Revenue', value: `₦${formatCompactNumber(r.total)}`, icon: DollarSign, color: '#d4af37' },
-          { label: "Today's Revenue", value: `₦${formatCompactNumber(r.today)}`, icon: Receipt, color: '#3b82f6' },
-          { label: 'This Month', value: `₦${formatCompactNumber(r.thisMonth)}`, icon: TrendingUp, color: '#10b981' },
-          { label: 'Avg / Booking', value: `₦${formatCompactNumber(r.averagePerBooking)}`, icon: PieChart, color: '#8b5cf6' },
+          { label: 'Gross Revenue', value: `₦${formatCompactNumber(r.total)}`, icon: TrendingUp, color: '#10b981' },
+          { label: 'Room Revenue', value: `₦${formatCompactNumber(r.roomBookingRevenue || 0)}`, icon: DollarSign, color: '#3b82f6' },
+          { label: 'Other Revenue (Depts)', value: `₦${formatCompactNumber(r.departmentRevenue?.total || 0)}`, icon: Store, color: '#8b5cf6' },
+          { label: 'Avg / Booking', value: `₦${formatCompactNumber(r.averagePerBooking)}`, icon: PieChart, color: '#f59e0b' },
         ].map((stat) => (
           <MetricCard key={stat.label} icon={stat.icon} label={stat.label} value={stat.value} color={stat.color} className="bg-surface-container-lowest" />
         ))}
@@ -297,7 +357,7 @@ function AccountantDashboard() {
         <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-5">
           <div className="flex items-center gap-2 mb-4">
             <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-            <h2 className="text-sm font-semibold text-on-surface">Revenue by Payment Method</h2>
+            <h2 className="text-sm font-semibold text-on-surface">Revenue by Payment Method ({activeTimelineLabel})</h2>
           </div>
           <div className="space-y-3">
             {Object.entries(r.byPaymentMethod).map(([method, amount]) => {
@@ -311,7 +371,7 @@ function AccountantDashboard() {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-medium text-on-surface">₦{formatCompactNumber(amount)}</p>
-                    <p className="text-[10px] text-outline">{pct}%</p>
+                    <p className="text-[10px] text-outline">{pct}% of gross</p>
                   </div>
                 </div>
               );
@@ -326,7 +386,7 @@ function AccountantDashboard() {
           </div>
           <div className="space-y-4">
             <div>
-              <p className="text-[10px] text-outline uppercase tracking-wide">All Time</p>
+              <p className="text-[10px] text-outline uppercase tracking-wide">For Selected Timeline ({activeTimelineLabel})</p>
               <div className="grid grid-cols-3 gap-3 mt-1">
                 <div>
                   <p className="text-lg font-bold text-on-surface">₦{formatCompactNumber(d.totalGiven)}</p>
@@ -343,7 +403,7 @@ function AccountantDashboard() {
               </div>
             </div>
             <div className="border-t border-outline-variant pt-3">
-              <p className="text-[10px] text-outline uppercase tracking-wide">This Month</p>
+              <p className="text-[10px] text-outline uppercase tracking-wide">This Month Summary</p>
               <div className="grid grid-cols-3 gap-3 mt-1">
                 <div>
                   <p className="text-lg font-bold text-on-surface">₦{formatCompactNumber(d.thisMonth.totalGiven)}</p>
@@ -431,7 +491,7 @@ function AccountantDashboard() {
         <div className="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden">
           <div className="flex items-center gap-2 p-5 pb-0">
             <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-            <h2 className="text-sm font-semibold text-on-surface">Daily Revenue (Last 14 Days)</h2>
+            <h2 className="text-sm font-semibold text-on-surface">Daily Revenue Trend</h2>
             <div className="ml-auto flex gap-1">
               <button onClick={() => handleDailyExport('csv')} disabled={exporting !== null} className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded border border-outline-variant text-outline hover:text-on-surface hover:border-outline transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed bg-transparent">
                 {exporting === 'csv' ? <Spinner size={10} /> : <FileText size={11} />} CSV
@@ -461,11 +521,11 @@ function AccountantDashboard() {
         </div>
       )}
 
-      {/* Revenue Analysis */}
+      {/* Revenue & Expenses Analysis */}
       <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-5">
         <div className="flex items-center gap-2 mb-4">
           <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-          <h2 className="text-sm font-semibold text-on-surface">Revenue Analysis</h2>
+          <h2 className="text-sm font-semibold text-on-surface">Revenue & Financial Analysis ({activeTimelineLabel})</h2>
           {revenueData && (
             <div className="ml-auto flex gap-1">
               <button onClick={() => handleRevenueExport('csv')} disabled={exporting !== null} className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded border border-outline-variant text-outline hover:text-on-surface hover:border-outline transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed bg-transparent">
@@ -478,51 +538,15 @@ function AccountantDashboard() {
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 mb-4 p-3 bg-surface-container rounded-lg">
-          <div className="flex gap-1 p-0.5 rounded bg-surface-container-high">
-            {ACCT_PERIODS.map((p) => (
-              <button
-                key={p.value}
-                onClick={() => onPeriodClick(p.value)}
-                className="px-2.5 py-1 text-[11px] font-medium rounded-sm transition-all cursor-pointer"
-                style={{
-                  background: revenuePeriod === p.value ? 'var(--color-surface-container-lowest)' : 'transparent',
-                  color: revenuePeriod === p.value ? 'var(--color-on-surface)' : 'var(--color-outline)',
-                  boxShadow: revenuePeriod === p.value ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
-                }}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-          <div className="w-px h-5 bg-outline-variant" />
-          <div className="flex items-center gap-2">
-            <Input type="date" size="sm" value={revFromDate} onChange={(e) => setRevFromDate(e.target.value)} className="!w-32" />
-            <span className="text-[10px] text-outline">—</span>
-            <Input type="date" size="sm" value={revToDate} onChange={(e) => setRevToDate(e.target.value)} className="!w-32" />
-            <button
-              onClick={onDateRangeApply}
-              disabled={!revFromDate || !revToDate}
-              className="px-2.5 py-1 text-[11px] font-medium rounded bg-primary text-on-primary hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed border-none"
-            >
-              Apply
-            </button>
-          </div>
-        </div>
-
-        {revenueLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : revenueData ? (
+        {revenueData && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {[
-              { label: 'Total Revenue', value: `₦${formatCompactNumber(revenueData.totalRevenue)}`, color: '#10b981' },
-              { label: 'Booking Revenue', value: `₦${formatCompactNumber(revenueData.bookingRevenue)}`, color: '#3b82f6' },
+              { label: 'Gross Revenue', value: `₦${formatCompactNumber(revenueData.grossRevenue || revenueData.totalRevenue)}`, color: '#10b981' },
+              { label: 'Room Revenue', value: `₦${formatCompactNumber(revenueData.bookingRevenue)}`, color: '#3b82f6' },
+              { label: 'Other Sales (Depts)', value: `₦${formatCompactNumber(revenueData.departmentRevenue || 0)}`, color: '#8b5cf6' },
               { label: 'Department Expenses', value: `₦${formatCompactNumber(revenueData.departmentExpenses)}`, color: '#f59e0b' },
-              { label: 'Net Revenue', value: `₦${formatCompactNumber(revenueData.bookingRevenue - revenueData.departmentExpenses)}`, color: '#8b5cf6' },
-              { label: 'VAT Collected', value: `₦${formatCompactNumber(revenueData.vatCollected)}`, color: '#d97706' },
-              { label: 'Service Charge', value: `₦${formatCompactNumber(revenueData.serviceChargeCollected)}`, color: '#2563eb' },
+              { label: 'Net Revenue', value: `₦${formatCompactNumber(revenueData.netRevenue || (revenueData.bookingRevenue - revenueData.departmentExpenses))}`, color: '#10b981' },
+              { label: 'VAT & SC', value: `₦${formatCompactNumber(revenueData.vatCollected + revenueData.serviceChargeCollected)}`, color: '#2563eb' },
             ].map((stat) => (
               <div key={stat.label} className="bg-surface-container p-3 rounded">
                 <span className="text-[10px] text-outline">{stat.label}</span>
@@ -530,7 +554,7 @@ function AccountantDashboard() {
               </div>
             ))}
           </div>
-        ) : null}
+        )}
       </div>
     </div>
   );

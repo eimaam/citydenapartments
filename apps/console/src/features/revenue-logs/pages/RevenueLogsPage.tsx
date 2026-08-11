@@ -6,7 +6,7 @@ import { UserRole } from '@citydenapartments/shared';
 import { Button, Input, Select, Option, Drawer, Table, MetricCard } from '@citydenapartments/shared';
 import { useToast } from '../../../components/ui/Toast';
 import { revenueLogsApi } from '../api/revenue-logs.api';
-import { departmentsApi } from '../../department-expenses/api/department-expenses.api';
+import { departmentsApi } from '../../departments/api/departments.api';
 import type { RevenueLogResponse, RevenueLogSummaryResponse } from '@citydenapartments/shared';
 import { DollarSign, Plus, Filter, Building2, Banknote, CreditCard, Landmark } from 'lucide-react';
 
@@ -43,13 +43,14 @@ export default function RevenueLogsPage() {
   });
 
   const loadDepartments = useCallback(async () => {
+    if (!user?.activeBranchId) return;
     try {
-      const res = await departmentsApi.list();
+      const res = await departmentsApi.list(user.activeBranchId);
       setDepartments(Array.isArray(res) ? res : []);
     } catch {
       // quiet catch
     }
-  }, []);
+  }, [user?.activeBranchId]);
 
   const loadData = useCallback(async () => {
     if (!user?.activeBranchId) return;
@@ -426,54 +427,64 @@ export default function RevenueLogsPage() {
             </Select>
           </div>
 
-          <Input
-            label="Revenue Date *"
-            type="date"
-            value={form.revenueDate}
-            onChange={(e) => setForm({ ...form, revenueDate: e.target.value })}
-            helperText="The business date this revenue was earned for."
-          />
+          <div>
+            <label className="block text-xs font-bold text-on-surface mb-1">Revenue Date *</label>
+            <Input
+              type="date"
+              value={form.revenueDate}
+              onChange={(e) => setForm({ ...form, revenueDate: e.target.value })}
+            />
+            <p className="text-[11px] text-outline mt-1">The business date this revenue was earned for.</p>
+          </div>
 
           <div className="p-3.5 rounded-lg border border-outline-variant bg-surface-container-lowest space-y-3">
             <span className="text-xs font-extrabold uppercase tracking-wider text-outline block">
               Payment Breakdown (₦)
             </span>
 
-            <Input
-              label="Cash Amount (₦)"
-              type="number"
-              min="0"
-              placeholder="0"
-              value={form.cashAmount}
-              onChange={(e) => setForm({ ...form, cashAmount: e.target.value })}
-            />
+            <div>
+              <label className="block text-xs font-medium text-on-surface-variant mb-1">Cash Amount (₦)</label>
+              <Input
+                type="number"
+                min="0"
+                placeholder="0"
+                value={form.cashAmount}
+                onChange={(e) => setForm({ ...form, cashAmount: e.target.value })}
+              />
+            </div>
 
-            <Input
-              label="POS Card Amount (₦)"
-              type="number"
-              min="0"
-              placeholder="0"
-              value={form.posAmount}
-              onChange={(e) => setForm({ ...form, posAmount: e.target.value })}
-            />
+            <div>
+              <label className="block text-xs font-medium text-on-surface-variant mb-1">POS Card Amount (₦)</label>
+              <Input
+                type="number"
+                min="0"
+                placeholder="0"
+                value={form.posAmount}
+                onChange={(e) => setForm({ ...form, posAmount: e.target.value })}
+              />
+            </div>
 
-            <Input
-              label="Bank Transfer Amount (₦)"
-              type="number"
-              min="0"
-              placeholder="0"
-              value={form.transferAmount}
-              onChange={(e) => setForm({ ...form, transferAmount: e.target.value })}
-            />
+            <div>
+              <label className="block text-xs font-medium text-on-surface-variant mb-1">Bank Transfer Amount (₦)</label>
+              <Input
+                type="number"
+                min="0"
+                placeholder="0"
+                value={form.transferAmount}
+                onChange={(e) => setForm({ ...form, transferAmount: e.target.value })}
+              />
+            </div>
 
-            <Input
-              label="Other Payment Amount (₦)"
-              type="number"
-              min="0"
-              placeholder="0"
-              value={form.otherAmount}
-              onChange={(e) => setForm({ ...form, otherAmount: e.target.value })}
-            />
+            <div>
+              <label className="block text-xs font-medium text-on-surface-variant mb-1">Other Payment Amount (₦)</label>
+              <Input
+                type="number"
+                min="0"
+                placeholder="0"
+                value={form.otherAmount}
+                onChange={(e) => setForm({ ...form, otherAmount: e.target.value })}
+              />
+            </div>
 
             {/* Computed Total Preview Card */}
             <div className="pt-3 border-t border-outline-variant flex items-center justify-between">
@@ -484,12 +495,14 @@ export default function RevenueLogsPage() {
             </div>
           </div>
 
-          <Input
-            label="Notes / Ref Details (Optional)"
-            placeholder="e.g. Sales summary verified from Bar Supervisor John"
-            value={form.notes}
-            onChange={(e) => setForm({ ...form, notes: e.target.value })}
-          />
+          <div>
+            <label className="block text-xs font-bold text-on-surface mb-1">Notes / Ref Details (Optional)</label>
+            <Input
+              placeholder="e.g. Sales summary verified from Bar Supervisor John"
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+            />
+          </div>
         </form>
       </Drawer>
     </div>

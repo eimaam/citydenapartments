@@ -75,11 +75,16 @@ export const revenueApi = {
     if (params.toDate) qs.set('toDate', params.toDate);
     const s = qs.toString();
     return api.get<{
-      period: { from: string; to: string; label: string | null };
+      period: { from: string | null; to: string | null; label: string };
       bookingRevenue: number;
       bookingCount: number;
+      departmentRevenue: number;
+      departmentRevenueCount: number;
+      departmentRevenueBreakdown: { cash: number; pos: number; transfer: number; other: number };
       departmentExpenses: number;
       expenseCount: number;
+      grossRevenue: number;
+      netRevenue: number;
       totalRevenue: number;
       vatCollected: number;
       serviceChargeCollected: number;

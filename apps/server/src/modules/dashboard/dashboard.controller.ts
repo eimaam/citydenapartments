@@ -16,21 +16,33 @@ export class DashboardController {
   @Get('summary')
   @UseGuards(RolesGuard)
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.FRONT_OFFICE_MANAGER, UserRoleEnum.ACCOUNTANT, UserRoleEnum.RECEPTION)
-  getSummary(@ActiveUser() user: any, @Query('branchId') branchId?: string) {
+  getSummary(
+    @ActiveUser() user: any,
+    @Query('branchId') branchId?: string,
+    @Query('period') period?: string,
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+  ) {
     const resolvedId = isSuperAdmin(user.role)
       ? branchId || undefined
       : user.activeBranchId;
-    return this.dashboardService.getSummary(resolvedId, user.role);
+    return this.dashboardService.getSummary({ branchId: resolvedId, role: user.role, period, fromDate, toDate });
   }
 
   @Get('accounting')
   @UseGuards(RolesGuard)
   @Roles(UserRoleEnum.ACCOUNTANT, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.FACILITY_MANAGER)
-  getAccounting(@ActiveUser() user: any, @Query('branchId') branchId?: string) {
+  getAccounting(
+    @ActiveUser() user: any,
+    @Query('branchId') branchId?: string,
+    @Query('period') period?: string,
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+  ) {
     const resolvedId = isSuperAdmin(user.role)
       ? branchId || undefined
       : user.activeBranchId;
-    return this.dashboardService.getAccountingSummary(resolvedId);
+    return this.dashboardService.getAccountingSummary({ branchId: resolvedId, period, fromDate, toDate });
   }
 
   @Get('revenue')

@@ -1,8 +1,11 @@
 import { api } from '../../../lib/api';
 
 export interface DashboardSummary {
+  period?: { from: string | null; to: string | null; label: string };
   overview: {
     totalRevenue: number;
+    bookingRevenue?: number;
+    departmentRevenue?: number;
     occupancyRate: number;
     roomCounts: {
       total: number;
@@ -16,6 +19,14 @@ export interface DashboardSummary {
     pendingCheckIns: number;
     todayArrivals: number;
   };
+  departmentRevenueBreakdown?: {
+    total: number;
+    cash: number;
+    pos: number;
+    transfer: number;
+    other: number;
+    count: number;
+  };
   breakfast: {
     total: number;
     served: number;
@@ -25,16 +36,28 @@ export interface DashboardSummary {
 }
 
 export interface AccountingSummary {
+  period?: { from: string | null; to: string | null; label: string };
   revenue: {
     total: number;
+    roomBookingRevenue?: number;
     byPaymentMethod: {
       cash: number;
       pos_card: number;
       bank_transfer: number;
+      other?: number;
     };
     today: number;
     thisMonth: number;
     averagePerBooking: number;
+    departmentRevenue?: {
+      total: number;
+      cash: number;
+      pos: number;
+      transfer: number;
+      other: number;
+      count: number;
+    };
+    combinedGrossRevenue?: number;
   };
   discounts: {
     totalGiven: number;
@@ -67,8 +90,22 @@ export interface AccountingSummary {
 }
 
 export const dashboardApi = {
-  summary: () => api.get<DashboardSummary>('/dashboard/summary'),
-  accounting: () => api.get<AccountingSummary>('/dashboard/accounting'),
+  summary: (params: { period?: string; fromDate?: string; toDate?: string } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.period) qs.set('period', params.period);
+    if (params.fromDate) qs.set('fromDate', params.fromDate);
+    if (params.toDate) qs.set('toDate', params.toDate);
+    const s = qs.toString();
+    return api.get<DashboardSummary>(`/dashboard/summary${s ? `?${s}` : ''}`);
+  },
+  accounting: (params: { period?: string; fromDate?: string; toDate?: string } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.period) qs.set('period', params.period);
+    if (params.fromDate) qs.set('fromDate', params.fromDate);
+    if (params.toDate) qs.set('toDate', params.toDate);
+    const s = qs.toString();
+    return api.get<AccountingSummary>(`/dashboard/accounting${s ? `?${s}` : ''}`);
+  },
   revenue: (params: { period?: string; fromDate?: string; toDate?: string }) => {
     const qs = new URLSearchParams();
     if (params.period) qs.set('period', params.period);
@@ -76,11 +113,16 @@ export const dashboardApi = {
     if (params.toDate) qs.set('toDate', params.toDate);
     const s = qs.toString();
     return api.get<{
-      period: { from: string; to: string; label: string | null };
+      period: { from: string | null; to: string | null; label: string };
       bookingRevenue: number;
       bookingCount: number;
+      departmentRevenue: number;
+      departmentRevenueCount: number;
+      departmentRevenueBreakdown: { cash: number; pos: number; transfer: number; other: number };
       departmentExpenses: number;
       expenseCount: number;
+      grossRevenue: number;
+      netRevenue: number;
       totalRevenue: number;
       vatCollected: number;
       serviceChargeCollected: number;

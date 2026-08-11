@@ -30,11 +30,94 @@ export class DashboardService {
     private readonly redis: RedisService,
   ) {}
 
-  async getSummary(branchId?: string, role?: string) {
-    const cacheKey = branchId
-      ? `${CACHE_KEYS.DASHBOARD_SUMMARY}:${branchId}`
-      : CACHE_KEYS.DASHBOARD_SUMMARY;
+  private parseDateRange(params: { period?: string; fromDate?: string; toDate?: string }) {
+    const now = new Date();
+    let fromDate: Date | undefined;
+    let toDate: Date | undefined;
+    let label = 'Today';
 
+    if (params.fromDate && params.toDate) {
+      fromDate = startOfDay(new Date(params.fromDate));
+      toDate = endOfDay(new Date(params.toDate));
+      label = `${format(fromDate, 'dd MMM yyyy')} — ${format(toDate, 'dd MMM yyyy')}`;
+    } else if (params.period) {
+      switch (params.period) {
+        case 'daily':
+        case 'today':
+          fromDate = startOfDay(now);
+          toDate = endOfDay(now);
+          label = `Today (${format(now, 'dd MMM yyyy')})`;
+          break;
+        case 'week':
+          fromDate = startOfDay(subDays(now, 7));
+          toDate = endOfDay(now);
+          label = 'Last 7 Days';
+          break;
+        case 'month':
+          fromDate = startOfMonth(now);
+          toDate = endOfDay(now);
+          label = `This Month (${format(now, 'MMM yyyy')})`;
+          break;
+        case '3months':
+          fromDate = startOfDay(subMonths(now, 3));
+          toDate = endOfDay(now);
+          label = 'Last 3 Months';
+          break;
+        case '6months':
+          fromDate = startOfDay(subMonths(now, 6));
+          toDate = endOfDay(now);
+          label = 'Last 6 Months';
+          break;
+        case 'all':
+          fromDate = undefined;
+          toDate = undefined;
+          label = 'All Time';
+          break;
+        default:
+          fromDate = startOfDay(now);
+          toDate = endOfDay(now);
+          label = `Today (${format(now, 'dd MMM yyyy')})`;
+      }
+    } else {
+      fromDate = startOfDay(now);
+      toDate = endOfDay(now);
+      label = `Today (${format(now, 'dd MMM yyyy')})`;
+    }
+
+    return {
+      fromDate,
+      toDate,
+      from: fromDate ? fromDate.toISOString() : null,
+      to: toDate ? toDate.toISOString() : null,
+      label,
+      key: params.period || (params.fromDate && params.toDate ? 'custom' : 'daily'),
+    };
+  }
+
+  async getSummary(
+    opts?: { branchId?: string; role?: string; period?: string; fromDate?: string; toDate?: string } | string,
+    legacyRole?: string,
+  ) {
+    let branchId: string | undefined;
+    let role: string | undefined;
+    let period: string | undefined;
+    let fromDate: string | undefined;
+    let toDate: string | undefined;
+
+    if (typeof opts === 'object' && opts !== null) {
+      branchId = opts.branchId;
+      role = opts.role;
+      period = opts.period;
+      fromDate = opts.fromDate;
+      toDate = opts.toDate;
+    } else {
+      branchId = opts;
+      role = legacyRole;
+    }
+
+    const range = this.parseDateRange({ period, fromDate, toDate });
+
+    const cacheKey = `${CACHE_KEYS.DASHBOARD_SUMMARY}:${branchId || 'all'}:${range.key}:${range.from || ''}:${range.to || ''}`;
     const cached = await this.redis.get(cacheKey);
     if (cached) {
       this.logger.log(`Summary served from cache ${branchId ? `(branch: ${branchId})` : ''}`);
@@ -46,13 +129,26 @@ export class DashboardService {
     const todayEnd = endOfDay(now);
     const todayStr = format(now, 'yyyy-MM-dd');
 
-    const branchMatch = branchId
-      ? { branchId: new Types.ObjectId(branchId) }
-      : {};
+    const branchMatch = branchId ? { branchId: new Types.ObjectId(branchId) } : {};
+
+    const bookingDateMatch: any = { ...branchMatch };
+    if (range.fromDate || range.toDate) {
+      bookingDateMatch.createdAt = {};
+      if (range.fromDate) bookingDateMatch.createdAt.$gte = range.fromDate;
+      if (range.toDate) bookingDateMatch.createdAt.$lte = range.toDate;
+    }
+
+    const revLogDateMatch: any = { ...branchMatch };
+    if (range.fromDate || range.toDate) {
+      revLogDateMatch.revenueDate = {};
+      if (range.fromDate) revLogDateMatch.revenueDate.$gte = range.fromDate;
+      if (range.toDate) revLogDateMatch.revenueDate.$lte = range.toDate;
+    }
 
     const [
       roomResult,
       bookingResult,
+      revenueLogResult,
       breakfastResult,
       branch,
       activeUsers,
@@ -72,7 +168,7 @@ export class DashboardService {
       ]),
 
       this.bookingModel.aggregate([
-        { $match: branchMatch },
+        { $match: bookingDateMatch },
         {
           $group: {
             _id: null,
@@ -92,6 +188,21 @@ export class DashboardService {
                 $cond: [{ $in: ['$bookingStatus', [BookingStatus.Checked_In, BookingStatus.Checked_Out]] }, '$totalAmountPaid', 0],
               },
             },
+          },
+        },
+      ]),
+
+      this.revenueLogModel.aggregate([
+        { $match: revLogDateMatch },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: '$totalAmount' },
+            cash: { $sum: '$cashAmount' },
+            pos: { $sum: '$posAmount' },
+            transfer: { $sum: '$transferAmount' },
+            other: { $sum: '$otherAmount' },
+            count: { $sum: 1 },
           },
         },
       ]),
@@ -133,6 +244,7 @@ export class DashboardService {
 
     const rooms = roomResult[0] || { total: 0, available: 0, occupied: 0, dirty: 0, maintenance: 0 };
     const bookings = bookingResult[0] || { total: 0, checkedIn: 0, pending: 0, todayArrivals: 0, revenue: 0 };
+    const revLogs = revenueLogResult[0] || { total: 0, cash: 0, pos: 0, transfer: 0, other: 0, count: 0 };
     const breakfast = breakfastResult[0] || { total: 0, served: 0 };
 
     const occupancyRate = rooms.total > 0
@@ -140,8 +252,11 @@ export class DashboardService {
       : 0;
 
     const summary: Record<string, any> = {
+      period: range,
       overview: {
-        totalRevenue: bookings.revenue,
+        totalRevenue: bookings.revenue + revLogs.total,
+        bookingRevenue: bookings.revenue,
+        departmentRevenue: revLogs.total,
         occupancyRate,
         totalRooms: rooms.total,
         totalBookings: bookings.total,
@@ -157,6 +272,7 @@ export class DashboardService {
           maintenance: rooms.maintenance,
         },
       },
+      departmentRevenueBreakdown: revLogs,
       breakfast: {
         total: breakfast.total,
         served: breakfast.served,
@@ -234,13 +350,18 @@ export class DashboardService {
 
     if (role === 'Reception') {
       return {
+        period: range,
         overview: {
+          totalRevenue: summary.overview.totalRevenue,
+          bookingRevenue: summary.overview.bookingRevenue,
+          departmentRevenue: summary.overview.departmentRevenue,
           occupancyRate: summary.overview.occupancyRate,
           checkedInGuests: summary.overview.checkedInGuests,
           pendingCheckIns: summary.overview.pendingCheckIns,
           todayArrivals: summary.overview.todayArrivals,
           roomCounts: summary.overview.roomCounts,
         },
+        departmentRevenueBreakdown: revLogs,
         breakfast: summary.breakfast,
         branch: summary.branch,
       };
@@ -249,8 +370,26 @@ export class DashboardService {
     return summary;
   }
 
-  async getAccountingSummary(branchId?: string) {
-    const cacheKey = `${CACHE_KEYS.DASHBOARD_SUMMARY}:accounting${branchId ? `:${branchId}` : ''}`;
+  async getAccountingSummary(
+    opts?: { branchId?: string; period?: string; fromDate?: string; toDate?: string } | string,
+  ) {
+    let branchId: string | undefined;
+    let period: string | undefined;
+    let fromDate: string | undefined;
+    let toDate: string | undefined;
+
+    if (typeof opts === 'object' && opts !== null) {
+      branchId = opts.branchId;
+      period = opts.period;
+      fromDate = opts.fromDate;
+      toDate = opts.toDate;
+    } else {
+      branchId = opts;
+    }
+
+    const range = this.parseDateRange({ period, fromDate, toDate });
+
+    const cacheKey = `${CACHE_KEYS.DASHBOARD_SUMMARY}:accounting:${branchId || 'all'}:${range.key}:${range.from || ''}:${range.to || ''}`;
     const cached = await this.redis.get(cacheKey);
     if (cached) {
       this.logger.log(`Accounting summary served from cache ${branchId ? `(branch: ${branchId})` : ''}`);
@@ -259,16 +398,28 @@ export class DashboardService {
 
     const now = new Date();
     const todayStart = startOfDay(now);
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthStart = startOfMonth(now);
 
-    const branchMatch = branchId
-      ? { branchId: new Types.ObjectId(branchId) }
-      : {};
+    const branchMatch = branchId ? { branchId: new Types.ObjectId(branchId) } : {};
 
     const activeBookingMatch = {
       ...branchMatch,
       bookingStatus: { $in: [BookingStatus.Checked_In, BookingStatus.Checked_Out] },
     };
+
+    const periodBookingMatch: any = { ...activeBookingMatch };
+    if (range.fromDate || range.toDate) {
+      periodBookingMatch.createdAt = {};
+      if (range.fromDate) periodBookingMatch.createdAt.$gte = range.fromDate;
+      if (range.toDate) periodBookingMatch.createdAt.$lte = range.toDate;
+    }
+
+    const periodRevLogMatch: any = { ...branchMatch };
+    if (range.fromDate || range.toDate) {
+      periodRevLogMatch.revenueDate = {};
+      if (range.fromDate) periodRevLogMatch.revenueDate.$gte = range.fromDate;
+      if (range.toDate) periodRevLogMatch.revenueDate.$lte = range.toDate;
+    }
 
     const [
       revenueResult,
@@ -279,9 +430,10 @@ export class DashboardService {
       dailyRevenueResult,
       inventoryCountResult,
       inventoryAggResult,
+      revenueLogAggResult,
     ] = await Promise.all([
       this.bookingModel.aggregate([
-        { $match: { bookingStatus: { $in: [BookingStatus.Checked_In, BookingStatus.Checked_Out] }, ...branchMatch } },
+        { $match: periodBookingMatch },
         {
           $group: {
             _id: '$paymentMethod',
@@ -326,7 +478,7 @@ export class DashboardService {
       ]),
 
       this.bookingModel.aggregate([
-        { $match: activeBookingMatch },
+        { $match: periodBookingMatch },
         {
           $group: {
             _id: null,
@@ -388,7 +540,7 @@ export class DashboardService {
       ]),
 
       this.revenueLogModel.aggregate([
-        { $match: branchMatch },
+        { $match: periodRevLogMatch },
         {
           $group: {
             _id: null,
@@ -397,35 +549,22 @@ export class DashboardService {
             pos: { $sum: '$posAmount' },
             transfer: { $sum: '$transferAmount' },
             other: { $sum: '$otherAmount' },
+            count: { $sum: 1 },
           },
         },
       ]),
     ]);
 
     const byPayment: Record<string, number> = {};
-    let totalRevenue = 0;
+    let roomRevenue = 0;
     let totalCount = 0;
     for (const r of revenueResult) {
       byPayment[r._id] = r.total;
-      totalRevenue += r.total;
+      roomRevenue += r.total;
       totalCount += r.count;
     }
 
-    const extRev = (inventoryAggResult as any)[1]?.[0] || (dailyRevenueResult as any)[8]?.[0] || {};
-    const extAgg = (await this.revenueLogModel.aggregate([
-      { $match: branchMatch },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: '$totalAmount' },
-          cash: { $sum: '$cashAmount' },
-          pos: { $sum: '$posAmount' },
-          transfer: { $sum: '$transferAmount' },
-          other: { $sum: '$otherAmount' },
-        },
-      },
-    ]))[0] || { total: 0, cash: 0, pos: 0, transfer: 0, other: 0 };
-
+    const extAgg = revenueLogAggResult[0] || { total: 0, cash: 0, pos: 0, transfer: 0, other: 0, count: 0 };
     const todayRev = todayRevenueResult[0]?.revenue || 0;
     const monthData = monthRevenueResult[0] || { revenue: 0, count: 0, discountSum: 0, discountCount: 0, discountPctSum: 0 };
     const discData = discountResult[0] || { totalDiscount: 0, discountCount: 0, discountPctSum: 0 };
@@ -435,17 +574,30 @@ export class DashboardService {
       bookingCounts[b._id] = b.count;
     }
 
+    const combinedGrossRevenue = roomRevenue + extAgg.total;
+
     const accounting = {
+      period: range,
       revenue: {
-        total: totalRevenue,
+        total: combinedGrossRevenue,
+        roomBookingRevenue: roomRevenue,
         byPaymentMethod: {
-          cash: byPayment['cash'] || 0,
-          pos_card: byPayment['pos_card'] || 0,
-          bank_transfer: byPayment['bank_transfer'] || 0,
+          cash: (byPayment['cash'] || 0) + extAgg.cash,
+          pos_card: (byPayment['pos_card'] || 0) + extAgg.pos,
+          bank_transfer: (byPayment['bank_transfer'] || 0) + extAgg.transfer,
+          other: extAgg.other,
         },
         today: todayRev,
         thisMonth: monthData.revenue,
-        averagePerBooking: totalCount > 0 ? Math.round(totalRevenue / totalCount) : 0,
+        averagePerBooking: totalCount > 0 ? Math.round(roomRevenue / totalCount) : 0,
+        departmentRevenue: {
+          total: extAgg.total,
+          cash: extAgg.cash,
+          pos: extAgg.pos,
+          transfer: extAgg.transfer,
+          other: extAgg.other,
+          count: extAgg.count,
+        },
         externalRevenue: {
           total: extAgg.total,
           cash: extAgg.cash,
@@ -453,7 +605,7 @@ export class DashboardService {
           transfer: extAgg.transfer,
           other: extAgg.other,
         },
-        combinedGrossRevenue: totalRevenue + extAgg.total,
+        combinedGrossRevenue,
       },
       discounts: {
         totalGiven: discData.totalDiscount,
@@ -496,57 +648,37 @@ export class DashboardService {
     toDate?: string;
     period?: string;
   }) {
+    const range = this.parseDateRange(params);
     const { branchId } = params;
-    let fromDate: Date;
-    let toDate = new Date();
 
-    if (params.fromDate && params.toDate) {
-      fromDate = new Date(params.fromDate);
-      toDate = new Date(params.toDate);
-    } else if (params.period) {
-      switch (params.period) {
-        case 'daily':
-          fromDate = startOfDay(toDate);
-          break;
-        case 'week':
-          fromDate = subDays(toDate, 7);
-          break;
-        case 'month':
-          fromDate = startOfMonth(toDate);
-          break;
-        case '3months':
-          fromDate = subMonths(toDate, 3);
-          break;
-        case '6months':
-          fromDate = subMonths(toDate, 6);
-          break;
-        default:
-          fromDate = startOfDay(toDate);
-      }
-    } else {
-      fromDate = startOfMonth(toDate);
+    const branchMatch = branchId ? { branchId: new Types.ObjectId(branchId) } : {};
+
+    const bookingDateMatch: any = { ...branchMatch };
+    if (range.fromDate || range.toDate) {
+      bookingDateMatch.createdAt = {};
+      if (range.fromDate) bookingDateMatch.createdAt.$gte = range.fromDate;
+      if (range.toDate) bookingDateMatch.createdAt.$lte = range.toDate;
     }
 
-    const maxRange = 183;
-    const daysDiff = Math.round((toDate.getTime() - fromDate.getTime()) / 86400000);
-    if (daysDiff > maxRange) {
-      fromDate = subDays(toDate, maxRange);
+    const expenseDateMatch: any = { ...branchMatch };
+    if (range.fromDate || range.toDate) {
+      expenseDateMatch.fromDate = {};
+      if (range.fromDate) expenseDateMatch.fromDate.$gte = range.fromDate;
+      if (range.toDate) expenseDateMatch.fromDate.$lte = range.toDate;
     }
 
-    const branchMatch = branchId
-      ? { branchId: new Types.ObjectId(branchId) }
-      : {};
+    const revLogDateMatch: any = { ...branchMatch };
+    if (range.fromDate || range.toDate) {
+      revLogDateMatch.revenueDate = {};
+      if (range.fromDate) revLogDateMatch.revenueDate.$gte = range.fromDate;
+      if (range.toDate) revLogDateMatch.revenueDate.$lte = range.toDate;
+    }
 
-    const dateRangeMatch = (field: string) => ({
-      [field]: { $gte: fromDate, $lte: toDate },
-    });
-
-    const [bookingRevenue, bookingCount, expenseResult, vatScResult] = await Promise.all([
+    const [bookingRevenue, bookingCount, expenseResult, vatScResult, departmentRevResult] = await Promise.all([
       this.bookingModel.aggregate([
         {
           $match: {
-            ...branchMatch,
-            ...dateRangeMatch('createdAt'),
+            ...bookingDateMatch,
             bookingStatus: { $in: [BookingStatus.Checked_In, BookingStatus.Checked_Out] },
           },
         },
@@ -559,18 +691,12 @@ export class DashboardService {
       ]),
 
       this.bookingModel.countDocuments({
-        ...branchMatch,
-        createdAt: { $gte: fromDate, $lte: toDate },
+        ...bookingDateMatch,
         bookingStatus: { $in: [BookingStatus.Checked_In, BookingStatus.Checked_Out] },
       }),
 
       this.expenseModel.aggregate([
-        {
-          $match: {
-            ...(branchId ? { branchId: new Types.ObjectId(branchId) } : {}),
-            fromDate: { $gte: fromDate, $lte: toDate },
-          },
-        },
+        { $match: expenseDateMatch },
         {
           $group: {
             _id: null,
@@ -583,8 +709,7 @@ export class DashboardService {
       this.bookingModel.aggregate([
         {
           $match: {
-            ...branchMatch,
-            ...dateRangeMatch('createdAt'),
+            ...bookingDateMatch,
             bookingStatus: { $in: [BookingStatus.Checked_In, BookingStatus.Checked_Out] },
           },
         },
@@ -598,28 +723,53 @@ export class DashboardService {
           },
         },
       ]),
+
+      this.revenueLogModel.aggregate([
+        { $match: revLogDateMatch },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: '$totalAmount' },
+            cash: { $sum: '$cashAmount' },
+            pos: { $sum: '$posAmount' },
+            transfer: { $sum: '$transferAmount' },
+            other: { $sum: '$otherAmount' },
+            count: { $sum: 1 },
+          },
+        },
+      ]),
     ]);
 
     const bookingRev = bookingRevenue[0]?.total || 0;
     const expenseTotal = expenseResult[0]?.total || 0;
     const expenseCount = expenseResult[0]?.count || 0;
     const vatData = vatScResult[0] || { vatTotal: 0, serviceChargeTotal: 0, vatCount: 0, scCount: 0 };
+    const deptRevData = departmentRevResult[0] || { total: 0, cash: 0, pos: 0, transfer: 0, other: 0, count: 0 };
+
+    const grossRevenue = bookingRev + deptRevData.total;
+    const netRevenue = grossRevenue - expenseTotal;
 
     return {
-      period: {
-        from: fromDate,
-        to: toDate,
-        label: params.period || null,
-      },
+      period: range,
       bookingRevenue: bookingRev,
       bookingCount,
+      departmentRevenue: deptRevData.total,
+      departmentRevenueCount: deptRevData.count,
+      departmentRevenueBreakdown: {
+        cash: deptRevData.cash,
+        pos: deptRevData.pos,
+        transfer: deptRevData.transfer,
+        other: deptRevData.other,
+      },
       departmentExpenses: expenseTotal,
       expenseCount,
       vatCollected: vatData.vatTotal,
       vatCount: vatData.vatCount,
       serviceChargeCollected: vatData.serviceChargeTotal,
       serviceChargeCount: vatData.scCount,
-      totalRevenue: bookingRev + expenseTotal,
+      grossRevenue,
+      netRevenue,
+      totalRevenue: grossRevenue,
     };
   }
 }
