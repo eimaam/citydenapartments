@@ -29,6 +29,7 @@ import DiscountCodesPage from './features/discount-codes/pages/DiscountCodesPage
 import AuditLogsPage from './features/audit/pages/AuditLogsPage';
 import DepartmentExpensesPage from './features/department-expenses/pages/DepartmentExpensesPage';
 import CustomersPage from './features/customers/pages/CustomersPage';
+import CustomerDetailPage from './features/customers/pages/CustomerDetailPage';
 import LaundryItemsPage from './features/laundry-items/pages/LaundryItemsPage';
 import RevenueLogsPage from './features/revenue-logs/pages/RevenueLogsPage';
 import type { UserRoleType } from './lib/types';
@@ -58,6 +59,7 @@ const routeRoles: Record<string, UserRoleType[]> = {
   '/bookings/status-history': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/users': [UserRole.SuperAdmin, UserRole.IT],
   '/customers': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.FrontOfficeManager],
+  '/customers/:id': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.FrontOfficeManager],
   '/employees': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/departments': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/breakfast': [UserRole.SuperAdmin, UserRole.GroupGM],
@@ -101,6 +103,7 @@ export default function App() {
                           case '/bookings/calendar': return <CalendarPage />;
                           case '/bookings/status-history': return <StatusHistoryPage />;
                           case '/customers': return <CustomersPage />;
+                          case '/customers/:id': return <CustomerDetailPage />;
                           case '/users': return <StaffPage />;
                           case '/employees': return <EmployeePage />;
                           case '/departments': return <DepartmentPage />;
@@ -128,3 +131,4 @@ export default function App() {
     </AuthProvider>
   );
 }
+

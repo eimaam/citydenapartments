@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button, Input, Select, Option, Drawer, Table, Badge, RoomStatus, UserRole, Gender } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
-import { Plus, Search, Trash2 } from 'lucide-react';
+import { Plus, Search, Trash2, ExternalLink, Receipt } from 'lucide-react';
 import { useToast } from '../../../components/ui/Toast';
 import { useAuth } from '../../../contexts/auth';
 import { api } from '../../../lib/api';
+import CustomerTimelineTree from '../components/CustomerTimelineTree';
 
 const LIMIT = 20;
 
@@ -53,6 +55,7 @@ interface PaginatedData {
 }
 
 export default function CustomersPage() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
   const role = (user as any)?.role;
@@ -190,6 +193,19 @@ export default function CustomersPage() {
           ? <Badge status={RoomStatus.Available} />
           : null,
     },
+    {
+      title: 'Actions',
+      key: 'action',
+      width: 140,
+      render: (_: unknown, r: Customer) => (
+        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <Button size="sm" variant="ghost" icon={<Receipt size={13} />} onClick={() => navigate(`/customers/${r._id}`)}>
+            Ledger
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setDetailCustomer(r)}>View</Button>
+        </div>
+      ),
+    },
   ];
 
   return (
@@ -217,15 +233,24 @@ export default function CustomersPage() {
             onChange: (p) => setPage(p),
           }}
           onRow={(record) => ({
-            onClick: () => setDetailCustomer(record),
+            onClick: () => navigate(`/customers/${record._id}`),
             style: { cursor: 'pointer' },
           })}
         />
       </div>
 
       <Drawer open={!!detailCustomer} onClose={() => { setDetailCustomer(null); setDiscountForm(null); }}
-        title="Customer Details" size="sm"
-        footer={<div className="flex justify-end"><Button variant="secondary" onClick={() => { setDetailCustomer(null); setDiscountForm(null); }}>Close</Button></div>}>
+        title="Customer Details & Timeline Preview" size="lg"
+        footer={
+          <div className="flex justify-between items-center w-full">
+            {detailCustomer && (
+              <Button size="sm" icon={<ExternalLink size={14} />} onClick={() => { const id = detailCustomer._id; setDetailCustomer(null); navigate(`/customers/${id}`); }}>
+                Open Full Ledger Page
+              </Button>
+            )}
+            <Button variant="secondary" onClick={() => { setDetailCustomer(null); setDiscountForm(null); }}>Close</Button>
+          </div>
+        }>
         {detailCustomer && (
           <div className="space-y-6">
             <div className="space-y-4">
@@ -306,9 +331,15 @@ export default function CustomersPage() {
                 </div>
               ))}
             </div>
+
+            <div className="border-t border-outline-variant pt-4 space-y-4">
+              <label className="text-xs font-bold tracking-[0.1em] uppercase text-outline block">Guest Ledger &amp; Timeline Tree</label>
+              <CustomerTimelineTree customerId={detailCustomer._id} />
+            </div>
           </div>
         )}
       </Drawer>
+
 
       <Drawer open={drawer} onClose={() => setDrawer(false)} title="Add Customer" size="sm"
         footer={
