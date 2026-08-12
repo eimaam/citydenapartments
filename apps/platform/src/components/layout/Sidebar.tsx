@@ -110,7 +110,6 @@ const menuConfig: MenuConfig = {
       { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
     ]},
     { heading: 'People', items: [
-      { label: 'Staff', icon: Users, path: '/staff' },
       { label: 'Customers', icon: BookUser, path: '/customers' },
     ]},
     { heading: 'Settings', items: [

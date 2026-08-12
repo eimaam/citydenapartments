@@ -51,7 +51,7 @@ export default function App() {
                 <Route path="breakfast" element={<BreakfastPage />} />
               </Route>
 
-              <Route element={<RoleGuard roles={[UserRole.FacilityManager]} />}>
+              <Route element={<RoleGuard roles={[UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT]} />}>
                 <Route path="staff" element={<StaffPage />} />
               </Route>
 
