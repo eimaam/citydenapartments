@@ -5,8 +5,8 @@ import { can } from '../../../components/ui/Can';
 import { Spinner } from '../../../components/ui/Spinner';
 import { UserRole } from '@citydenapartments/shared';
 import { dashboardApi, type DashboardSummary, type AccountingSummary } from '../api/dashboard.api';
-import { CalendarCheck, Users, Coffee, Clock, TrendingUp, DollarSign, PieChart, Receipt, Banknote, CreditCard, Landmark, Package, Download, FileText, Filter, Store } from 'lucide-react';
-import { MetricCard, exportToCSV, exportToPDF, Input, Table, formatCompactNumber } from '@citydenapartments/shared';
+import { CalendarCheck, Users, Coffee, Clock, TrendingUp, DollarSign, PieChart, Receipt, Banknote, CreditCard, Landmark, Package, Download, FileText, Filter, Store, Printer } from 'lucide-react';
+import { MetricCard, exportToCSV, exportToPDF, Input, Table, formatCompactNumber, Modal, PrintableLetterhead } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
 
 export default function DashboardPage() {
@@ -162,6 +162,7 @@ function AccountantDashboard() {
   const [toDate, setToDate] = useState('');
 
   const [revenueData, setRevenueData] = useState<any>(null);
+  const [showRevenueReportModal, setShowRevenueReportModal] = useState(false);
 
   const loadData = useCallback(async (period: string, from?: string, to?: string) => {
     setLoading(true);
@@ -528,11 +529,18 @@ function AccountantDashboard() {
           <h2 className="text-sm font-semibold text-on-surface">Revenue & Financial Analysis ({activeTimelineLabel})</h2>
           {revenueData && (
             <div className="ml-auto flex gap-1">
-              <button onClick={() => handleRevenueExport('csv')} disabled={exporting !== null} className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded border border-outline-variant text-outline hover:text-on-surface hover:border-outline transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed bg-transparent">
-                {exporting === 'csv' ? <Spinner size={10} /> : <FileText size={11} />} CSV
+              <button
+                onClick={() => handleRevenueExport('csv')}
+                disabled={exporting !== null}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded border border-outline-variant text-outline hover:text-on-surface hover:border-outline transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed bg-transparent"
+              >
+                {exporting === 'csv' ? <Spinner size={10} /> : <FileText size={11} />} CSV Export
               </button>
-              <button onClick={() => handleRevenueExport('pdf')} disabled={exporting !== null} className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded border border-outline-variant text-outline hover:text-on-surface hover:border-outline transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed bg-transparent">
-                {exporting === 'pdf' ? <Spinner size={10} /> : <Download size={11} />} PDF
+              <button
+                onClick={() => setShowRevenueReportModal(true)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded border border-primary/40 bg-primary/10 text-primary hover:bg-primary hover:text-on-primary transition-all cursor-pointer shadow-sm"
+              >
+                <Printer size={11} /> Financial Report
               </button>
             </div>
           )}
@@ -556,6 +564,73 @@ function AccountantDashboard() {
           </div>
         )}
       </div>
+
+      {/* Printable Revenue & Financial Analysis Report Modal */}
+      {revenueData && (
+        <Modal
+          isOpen={showRevenueReportModal}
+          onClose={() => setShowRevenueReportModal(false)}
+          title="Financial & Revenue Report"
+          width={950}
+        >
+          <div className="py-2">
+            <PrintableLetterhead
+              title="FINANCIAL & REVENUE REPORT"
+              subtitle={`Timeline: ${activeTimelineLabel} · ${user?.activeBranchId ? 'Active Branch' : 'All Branches'}`}
+              date={fromDate && toDate ? `${fromDate} to ${toDate}` : undefined}
+              metrics={[
+                { label: 'Gross Revenue', value: `₦${(revenueData.grossRevenue || revenueData.totalRevenue).toLocaleString()}` },
+                { label: 'Room Revenue', value: `₦${revenueData.bookingRevenue.toLocaleString()}` },
+                { label: 'Other Sales', value: `₦${(revenueData.departmentRevenue || 0).toLocaleString()}` },
+                { label: 'Net Revenue', value: `₦${(revenueData.netRevenue || (revenueData.bookingRevenue - revenueData.departmentExpenses)).toLocaleString()}` },
+              ]}
+              columns={[
+                { title: 'Financial Metric / Revenue Stream', key: 'metric' },
+                { title: 'Category / Operational Details', key: 'category' },
+                { title: 'Amount (₦)', key: 'amount', align: 'right' },
+              ]}
+              data={[
+                {
+                  metric: 'Gross Revenue (Total Sales)',
+                  category: 'Combined Room Bookings + External Departments',
+                  amount: `₦${(revenueData.grossRevenue || revenueData.totalRevenue).toLocaleString()}`,
+                },
+                {
+                  metric: 'Room Booking Revenue',
+                  category: `${revenueData.bookingCount} Confirmed Booking(s)`,
+                  amount: `₦${revenueData.bookingRevenue.toLocaleString()}`,
+                },
+                {
+                  metric: 'Other Department Sales',
+                  category: 'Bar, Laundry, Restaurant, Gym External Logs',
+                  amount: `₦${(revenueData.departmentRevenue || 0).toLocaleString()}`,
+                },
+                {
+                  metric: 'Department Expenses',
+                  category: 'Operational Expenses Billed',
+                  amount: `₦${revenueData.departmentExpenses.toLocaleString()}`,
+                },
+                {
+                  metric: 'VAT (7.5%) Tax Collected',
+                  category: 'Statutory Value Added Tax',
+                  amount: `₦${revenueData.vatCollected.toLocaleString()}`,
+                },
+                {
+                  metric: 'Service Charge (10%) Collected',
+                  category: 'Property Operations Charge',
+                  amount: `₦${revenueData.serviceChargeCollected.toLocaleString()}`,
+                },
+              ]}
+              totalsRow={{
+                metric: 'NET OPERATING REVENUE',
+                category: 'Gross Revenue minus Operational Expenses',
+                amount: `₦${(revenueData.netRevenue || (revenueData.bookingRevenue - revenueData.departmentExpenses)).toLocaleString()}`,
+              }}
+              notes="Financial & Revenue Audit Report generated from City Den Apartments Operations Platform."
+            />
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

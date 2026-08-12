@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Plus, Eye, Receipt, Building2 } from 'lucide-react';
+import { Plus, Eye, Receipt, Building2, Printer } from 'lucide-react';
 import { format } from 'date-fns';
-import { Input, Select, Option, Drawer, Button, Table, Badge } from '@citydenapartments/shared';
+import { Input, Select, Option, Drawer, Button, Table, Badge, Modal, PrintableLetterhead } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
 import { useAuth } from '../../../contexts/auth';
 import { useToast } from '../../../components/ui/Toast';
@@ -79,6 +79,7 @@ export default function DepartmentExpensesPage() {
   const [editEntry, setEditEntry] = useState<DepartmentExpenseEntry | null>(null);
   const [editForm, setEditForm] = useState({ departmentId: '', amount: '', description: '', fromDate: '', toDate: '' });
   const [showEdit, setShowEdit] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
 
   const canWrite = user ? [UserRole.Accountant, UserRole.SuperAdmin, UserRole.GroupGM].includes(user.role as any) : false;
 
@@ -255,11 +256,21 @@ export default function DepartmentExpensesPage() {
           <Receipt size={22} className="text-outline" />
           <h1 className="font-serif text-2xl sm:text-3xl text-on-surface">Department Expenses</h1>
         </div>
-        {canWrite && (
-          <Button size="sm" onClick={() => setShowCreate(true)} icon={<Plus size={14} />}>
-            Log Expense
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowPrintModal(true)}
+            icon={<Printer size={14} />}
+          >
+            Print Expense Report
           </Button>
-        )}
+          {canWrite && (
+            <Button size="sm" onClick={() => setShowCreate(true)} icon={<Plus size={14} />}>
+              Log Expense
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Department tabs */}
@@ -394,6 +405,48 @@ export default function DepartmentExpensesPage() {
       </Drawer>
 
       <DetailDrawer entry={selectedEntry} open={detailOpen} onClose={() => { setDetailOpen(false); setSelectedEntry(null); }} />
+
+      {/* Printable Department Expenses Report Modal */}
+      <Modal
+        isOpen={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        title="Print Department Expenses Report"
+        width={950}
+      >
+        <div className="py-2">
+          <PrintableLetterhead
+            title="DEPARTMENT OPERATIONAL EXPENSES REPORT"
+            subtitle={selectedDeptId ? `Filtered by Department: ${groups.find((g) => g.departmentId === selectedDeptId)?.departmentName || 'Selected Department'}` : 'All Property Departments'}
+            metrics={[
+              { label: 'Total Expenses Billed', value: `₦${items.reduce((s, e) => s + e.amount, 0).toLocaleString()}` },
+              { label: 'Total Expense Entries', value: items.length },
+              { label: 'Departments Billed', value: groups.length },
+            ]}
+            columns={[
+              { title: 'Department', key: 'dept' },
+              { title: 'Expense Description', key: 'desc' },
+              { title: 'Billing Period', key: 'period' },
+              { title: 'Logged By', key: 'user' },
+              { title: 'Amount (₦)', key: 'amount', align: 'right' },
+            ]}
+            data={items.map((e) => ({
+              dept: e.departmentId?.name || '—',
+              desc: e.description,
+              period: `${format(new Date(e.fromDate), 'd MMM')} - ${format(new Date(e.toDate), 'd MMM yyyy')}`,
+              user: e.loggedBy?.name || '—',
+              amount: `₦${e.amount.toLocaleString()}`,
+            }))}
+            totalsRow={{
+              dept: 'TOTAL DEPARTMENT EXPENSES',
+              desc: `Summary of ${items.length} Expense Entry Log(s)`,
+              period: '—',
+              user: '—',
+              amount: `₦${items.reduce((s, e) => s + e.amount, 0).toLocaleString()}`,
+            }}
+            notes="Official Department Expenses Audit Log generated from City Den Apartments Operations System."
+          />
+        </div>
+      </Modal>
     </div>
   );
 }
