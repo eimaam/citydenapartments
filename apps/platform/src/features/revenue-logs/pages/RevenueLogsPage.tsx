@@ -3,12 +3,12 @@ import { format } from 'date-fns';
 import { useAuth } from '../../../contexts/auth';
 import { can } from '../../../components/ui/Can';
 import { UserRole } from '@citydenapartments/shared';
-import { Button, Input, Select, Option, Drawer, Table, MetricCard } from '@citydenapartments/shared';
+import { Button, Input, Select, Option, Drawer, Table, MetricCard, Modal, PrintableLetterhead } from '@citydenapartments/shared';
 import { useToast } from '../../../components/ui/Toast';
 import { revenueLogsApi } from '../api/revenue-logs.api';
 import { departmentsApi } from '../../department-expenses/api/department-expenses.api';
 import type { RevenueLogResponse, RevenueLogSummaryResponse } from '@citydenapartments/shared';
-import { DollarSign, Plus, Filter, Building2, Banknote, CreditCard, Landmark } from 'lucide-react';
+import { DollarSign, Plus, Filter, Building2, Banknote, CreditCard, Landmark, Printer } from 'lucide-react';
 
 export default function RevenueLogsPage() {
   const { user } = useAuth();
@@ -31,6 +31,7 @@ export default function RevenueLogsPage() {
 
   // Modal / Drawer state
   const [showDrawer, setShowDrawer] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     departmentId: '',
@@ -243,11 +244,16 @@ export default function RevenueLogsPage() {
             Log and audit external department revenues (Bar, Laundry, Restaurant, Gym) by payment breakdown.
           </p>
         </div>
-        {canCreate && (
-          <Button onClick={handleOpenDrawer} className="gap-2 shrink-0">
-            <Plus size={16} /> Log Department Revenue
+        <div className="flex items-center gap-2 shrink-0">
+          <Button variant="secondary" onClick={() => setShowPrintModal(true)} className="gap-2">
+            <Printer size={16} /> Print Revenue Report
           </Button>
-        )}
+          {canCreate && (
+            <Button onClick={handleOpenDrawer} className="gap-2">
+              <Plus size={16} /> Log Department Revenue
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Date & Department Filters */}
@@ -504,6 +510,92 @@ export default function RevenueLogsPage() {
           </div>
         </form>
       </Drawer>
+
+      {/* Printable Revenue Overview Report Modal */}
+      <Modal
+        isOpen={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        title="Revenue Overview Report"
+        width={950}
+      >
+        <div className="py-2">
+          <PrintableLetterhead
+            title="REVENUE OVERVIEW REPORT"
+            subtitle={
+              selectedDeptId
+                ? `Department: ${departments.find((d) => d._id === selectedDeptId)?.name || 'Filtered Department'}`
+                : 'All External Department Revenues Audit'
+            }
+            date={fromDate && toDate ? `${fromDate} to ${toDate}` : fromDate ? `From ${fromDate}` : undefined}
+            metrics={
+              summaryData
+                ? [
+                    { label: 'Total Revenue', value: `₦${summaryData.overall.totalRevenue.toLocaleString()}` },
+                    { label: 'Total Cash', value: `₦${summaryData.overall.totalCash.toLocaleString()}` },
+                    { label: 'Total POS Cards', value: `₦${summaryData.overall.totalPos.toLocaleString()}` },
+                    { label: 'Total Bank Transfers', value: `₦${summaryData.overall.totalTransfer.toLocaleString()}` },
+                  ]
+                : []
+            }
+            columns={[
+              {
+                title: 'Revenue Date',
+                key: 'revenueDate',
+                render: (val) => (val ? format(new Date(val), 'dd MMM yyyy') : '-'),
+              },
+              {
+                title: 'Department',
+                key: 'departmentId',
+                render: (val) => (typeof val === 'object' ? val?.name : val || 'N/A'),
+              },
+              {
+                title: 'Cash (₦)',
+                key: 'cashAmount',
+                align: 'right',
+                render: (val) => (val ? `₦${Number(val).toLocaleString()}` : '₦0'),
+              },
+              {
+                title: 'POS (₦)',
+                key: 'posAmount',
+                align: 'right',
+                render: (val) => (val ? `₦${Number(val).toLocaleString()}` : '₦0'),
+              },
+              {
+                title: 'Transfer (₦)',
+                key: 'transferAmount',
+                align: 'right',
+                render: (val) => (val ? `₦${Number(val).toLocaleString()}` : '₦0'),
+              },
+              {
+                title: 'Other (₦)',
+                key: 'otherAmount',
+                align: 'right',
+                render: (val) => (val ? `₦${Number(val).toLocaleString()}` : '₦0'),
+              },
+              {
+                title: 'Total (₦)',
+                key: 'totalAmount',
+                align: 'right',
+                render: (val) => (val ? `₦${Number(val).toLocaleString()}` : '₦0'),
+              },
+            ]}
+            data={items}
+            totalsRow={
+              summaryData
+                ? {
+                    departmentId: 'GRAND TOTAL',
+                    cashAmount: `₦${summaryData.overall.totalCash.toLocaleString()}`,
+                    posAmount: `₦${summaryData.overall.totalPos.toLocaleString()}`,
+                    transferAmount: `₦${summaryData.overall.totalTransfer.toLocaleString()}`,
+                    otherAmount: `₦${summaryData.overall.totalOther.toLocaleString()}`,
+                    totalAmount: `₦${summaryData.overall.totalRevenue.toLocaleString()}`,
+                  }
+                : undefined
+            }
+            notes="Logged revenue metrics verified by Finance/Accounts department. Generated from City Den Apartments Operations Portal."
+          />
+        </div>
+      </Modal>
     </div>
   );
 }

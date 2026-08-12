@@ -397,7 +397,7 @@ export function Sidebar({
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCloseMobile} />
         <div
           className={cn(
-            'absolute left-0 top-0 h-full w-[280px] shadow-2xl transition-transform duration-300 ease-out',
+            'absolute left-0 top-0 h-full w-[200px] shadow-2xl transition-transform duration-300 ease-out',
             mobileOpen ? 'translate-x-0' : '-translate-x-full',
           )}
         >
@@ -409,7 +409,7 @@ export function Sidebar({
       <aside
         className={cn(
           'hidden lg:block h-screen sticky top-0 flex-shrink-0 transition-all duration-300 ease-out',
-          collapsed ? 'w-16' : 'w-[260px]',
+          collapsed ? 'w-16' : 'w-[200px]',
         )}
       >
         {sidebarContent}
