@@ -38,7 +38,7 @@ interface SidebarGroup {
   items: SidebarItem[];
 }
 
-type MenuConfig = Record<UserRoleType, SidebarGroup[]>;
+type MenuConfig = Partial<Record<UserRoleType, SidebarGroup[]>>;
 
 const menuConfig: MenuConfig = {
   SuperAdmin: [
@@ -145,19 +145,6 @@ const menuConfig: MenuConfig = {
     ]},
     { heading: 'Audit', items: [
       { label: 'Audit Logs', icon: History, path: '/audit-logs' },
-    ]},
-  ],
-  FacilityManager: [
-    { heading: 'Overview', items: [
-      { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    ]},
-    { heading: 'Logistics', items: [
-      { label: 'Inventory', icon: Package, path: '/inventory' },
-      { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
-    ]},
-    { heading: 'Monitoring', items: [
-      { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
-      { label: 'Revenue Logs', icon: DollarSign, path: '/revenue-logs' },
     ]},
   ],
   FrontOfficeManager: [

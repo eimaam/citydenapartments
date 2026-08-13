@@ -43,14 +43,14 @@ function ProtectedRoute({ roles, children }: { roles: UserRoleType[]; children: 
 
 function DashboardSwitch() {
   const { user } = useAuth();
-  if (user?.role === UserRole.Accountant || user?.role === UserRole.FacilityManager) {
+  if (user?.role === UserRole.Accountant) {
     return <AccountantDashboard />;
   }
   return <AdminDashboard />;
 }
 
 const routeRoles: Record<string, UserRoleType[]> = {
-  '/': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.Accountant, UserRole.Reception, UserRole.FacilityManager, UserRole.FrontOfficeManager],
+  '/': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.Accountant],
   '/branches': [UserRole.SuperAdmin],
   '/room-types': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.FrontOfficeManager],
   '/rooms': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.FrontOfficeManager],
@@ -63,14 +63,14 @@ const routeRoles: Record<string, UserRoleType[]> = {
   '/employees': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/departments': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/breakfast': [UserRole.SuperAdmin, UserRole.GroupGM],
-  '/inventory': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.Accountant, UserRole.FacilityManager],
-  '/inventory/transactions': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.Accountant, UserRole.FacilityManager],
+  '/inventory': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.Accountant],
+  '/inventory/transactions': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.Accountant],
   '/inventory/spoilage': [UserRole.SuperAdmin, UserRole.GroupGM],
   '/discount-codes': [UserRole.SuperAdmin, UserRole.GroupGM],
   '/audit-logs': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/roles': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
-  '/department-expenses': [UserRole.Accountant, UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.FacilityManager],
-  '/revenue-logs': [UserRole.Accountant, UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.FacilityManager],
+  '/department-expenses': [UserRole.Accountant, UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
+  '/revenue-logs': [UserRole.Accountant, UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/laundry-items': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
 };
 

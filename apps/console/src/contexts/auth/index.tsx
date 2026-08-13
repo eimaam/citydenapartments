@@ -2,6 +2,15 @@ import { createContext, useContext, useState, useCallback, useEffect, type React
 import type { AuthUser, LoginResponse } from '../../lib/types';
 import { api } from '../../lib/api';
 
+import { UserRole } from '@citydenapartments/shared';
+
+const ALLOWED_CONSOLE_ROLES: string[] = [
+  UserRole.SuperAdmin,
+  UserRole.GroupGM,
+  UserRole.IT,
+  UserRole.Accountant,
+];
+
 interface AuthContextType {
   user: AuthUser | null;
   token: string | null;
@@ -25,6 +34,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchMe = useCallback(async () => {
     try {
       const me = await api.get<AuthUser>('/auth/me');
+      if (!ALLOWED_CONSOLE_ROLES.includes(me.role)) {
+        localStorage.removeItem('token');
+        setToken(null);
+        setUser(null);
+        return;
+      }
       setUser(me);
     } catch {
       localStorage.removeItem('token');
@@ -45,6 +60,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await api.post<LoginResponse>('/auth/login', { email, password });
+    if (!ALLOWED_CONSOLE_ROLES.includes(res.user.role)) {
+      throw new Error(`Access Denied: Your account role (${res.user.role}) is restricted to the Staff Portal. Please log in on the Staff Platform.`);
+    }
     localStorage.setItem('token', res.accessToken);
     setToken(res.accessToken);
     setUser(res.user);

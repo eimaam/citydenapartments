@@ -163,6 +163,7 @@ function AccountantDashboard() {
 
   const [revenueData, setRevenueData] = useState<any>(null);
   const [showRevenueReportModal, setShowRevenueReportModal] = useState(false);
+  const [overviewSummary, setOverviewSummary] = useState<DashboardSummary | null>(null);
 
   const loadData = useCallback(async (period: string, from?: string, to?: string) => {
     setLoading(true);
@@ -175,13 +176,15 @@ function AccountantDashboard() {
         params.period = period;
       }
 
-      const [acctRes, revRes] = await Promise.all([
+      const [acctRes, revRes, summaryRes] = await Promise.all([
         dashboardApi.accounting(params),
         dashboardApi.revenue(params),
+        dashboardApi.summary().catch(() => null),
       ]);
 
       setData(acctRes);
       setRevenueData(revRes);
+      if (summaryRes) setOverviewSummary(summaryRes);
     } catch {
       // quiet catch
     } finally {
@@ -288,12 +291,26 @@ function AccountantDashboard() {
         <div>
           <div className="flex items-center gap-3 mb-1">
             <span className="w-8 h-px bg-primary" />
-            <span className="text-xs font-bold tracking-[0.15em] uppercase text-outline">Accounting</span>
+            <span className="text-xs font-bold tracking-[0.15em] uppercase text-outline">Management Overview</span>
           </div>
-          <h1 className="font-serif text-3xl sm:text-4xl text-on-surface mb-2">Financial Overview</h1>
-          <p className="text-on-surface-variant text-sm">Revenue, department sales, discounts, and booking breakdown for {user?.activeBranchId ? 'your branch' : 'all branches'}.</p>
+          <h1 className="font-serif text-3xl sm:text-4xl text-on-surface mb-2">Operations & Financial Overview</h1>
+          <p className="text-on-surface-variant text-sm">Real-time occupancy, revenue metrics, department sales, and expenses breakdown for {user?.activeBranchId ? 'your branch' : 'all branches'}.</p>
         </div>
       </div>
+
+      {/* Operational Summary Banner (Arrivals, In-House, Pending, Occupancy) */}
+      {overviewSummary && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: "Today's Arrivals", value: overviewSummary.overview.todayArrivals, icon: CalendarCheck, color: '#d4af37' },
+            { label: 'Currently In-House', value: overviewSummary.overview.checkedInGuests, icon: Users, color: '#3b82f6' },
+            { label: 'Pending Check-ins', value: overviewSummary.overview.pendingCheckIns, icon: Clock, color: '#f59e0b' },
+            { label: 'Occupancy Rate', value: `${overviewSummary.overview.occupancyRate}%`, icon: TrendingUp, color: '#10b981' },
+          ].map((stat) => (
+            <MetricCard key={stat.label} icon={stat.icon} label={stat.label} value={stat.value} color={stat.color} className="bg-surface-container-lowest" />
+          ))}
+        </div>
+      )}
 
       {/* Global Timeline Filter Bar */}
       <div className="bg-surface-container-lowest border border-outline-variant p-4 rounded-xl shadow-sm space-y-3">
