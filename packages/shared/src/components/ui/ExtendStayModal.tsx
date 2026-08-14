@@ -471,12 +471,12 @@ export function ExtendStayModal({
 
         {/* Action Buttons */}
         <div className="flex justify-end gap-3 pt-4 border-t border-outline-variant">
-          <Button variant="secondary" size="sm" onClick={onClose} disabled={submitting} type="button">
+          <Button variant="secondary" size="sm" onClick={onClose} disabled={submitting} htmlType="button">
             Cancel
           </Button>
           <Button
             size="sm"
-            type="submit"
+            htmlType="submit"
             loading={submitting}
             icon={<ArrowRight size={14} />}
           >
