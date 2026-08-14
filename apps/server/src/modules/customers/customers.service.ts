@@ -9,6 +9,7 @@ import { Branch } from '../branches/branch.schema';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { escapeRegex } from '../../common/utils/escape-regex';
 import { CustomerTimelineEvent, CustomerGuestLedgerSummary } from '@citydenapartments/shared';
+import { format } from 'date-fns';
 
 import { AuditLogService } from '../audit-log/audit-log.service';
 
@@ -356,6 +357,34 @@ export class CustomersService {
             ...commonBookingDetails,
             actualCheckedOutAt: checkedOutTimestamp,
           },
+        });
+      }
+
+      // Extension events
+      if (b.extensionHistory && b.extensionHistory.length > 0) {
+        b.extensionHistory.forEach((ext: any, idx: number) => {
+          const extDate = ext.extendedAt ? new Date(ext.extendedAt).toISOString() : new Date(b.createdAt).toISOString();
+          const extStaff = ext.extendedBy
+            ? { id: ext.extendedBy._id?.toString(), name: ext.extendedBy.name || `${ext.extendedBy.firstName || ''} ${ext.extendedBy.lastName || ''}`.trim(), role: ext.extendedBy.role }
+            : undefined;
+
+          events.push({
+            id: `bk-ext-${b._id}-${idx}`,
+            eventType: 'booking_extended',
+            timestamp: extDate,
+            title: `Stay Extended (+${ext.additionalNights} Night${ext.additionalNights > 1 ? 's' : ''}) (${b.bookingReference})`,
+            description: `Extended stay to ${format(new Date(ext.newCheckOutDate), 'd MMM yyyy')} for ₦${Number(ext.additionalAmountPaid || 0).toLocaleString()} via ${(ext.paymentMethod || 'POS').replace('_', ' ')}.`,
+            branchName,
+            performedBy: extStaff || bookingStaff,
+            details: {
+              ...commonBookingDetails,
+              extensionIndex: ext.extensionIndex,
+              previousCheckOutDate: new Date(ext.previousCheckOutDate).toISOString(),
+              newCheckOutDate: new Date(ext.newCheckOutDate).toISOString(),
+              additionalNights: ext.additionalNights,
+              additionalAmountPaid: ext.additionalAmountPaid,
+            },
+          });
         });
       }
 

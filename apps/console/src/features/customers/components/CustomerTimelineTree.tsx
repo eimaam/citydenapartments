@@ -76,10 +76,10 @@ export default function CustomerTimelineTree({ customerId }: Props) {
   const filteredEvents = (data?.events || []).filter((ev) => {
     if (eventCategoryFilter === 'all') return true;
     if (eventCategoryFilter === 'stays') {
-      return ['checked_in', 'checked_out', 'booking_created', 'booking_cancelled'].includes(ev.eventType);
+      return ['checked_in', 'checked_out', 'booking_created', 'booking_extended', 'booking_cancelled'].includes(ev.eventType);
     }
     if (eventCategoryFilter === 'financials') {
-      return ['booking_created', 'vip_discount_updated', 'laundry_bill'].includes(ev.eventType);
+      return ['booking_created', 'booking_extended', 'vip_discount_updated', 'laundry_bill'].includes(ev.eventType);
     }
     if (eventCategoryFilter === 'laundry') {
       return ev.eventType === 'laundry_bill';
@@ -97,6 +97,8 @@ export default function CustomerTimelineTree({ customerId }: Props) {
         return { bg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30', icon: LogOut };
       case 'booking_created':
         return { bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30', icon: Calendar };
+      case 'booking_extended':
+        return { bg: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30', icon: Clock };
       case 'booking_cancelled':
         return { bg: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30', icon: XCircle };
       case 'vip_discount_updated':

@@ -13,6 +13,7 @@ import { RoomType } from '../room-types/room-type.schema';
 import { Branch } from '../branches/branch.schema';
 import { Customer } from '../customers/customer.schema';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { ExtendBookingDto } from './dto/extend-booking.dto';
 import { RedisService } from '../redis/redis.service';
 import { escapeRegex } from '../../common/utils/escape-regex';
 import { BookingStatus, BookingSource, Gender, getMaxManualDiscount } from '@citydenapartments/shared';
@@ -247,6 +248,7 @@ export class BookingsService {
       .populate('checkedOutBy', 'firstName lastName')
       .populate('cancelledBy', 'firstName lastName')
       .populate('statusHistory.changedBy', 'firstName lastName')
+      .populate('extensionHistory.extendedBy', 'firstName lastName')
       .lean();
   }
 
@@ -908,6 +910,247 @@ export class BookingsService {
         details: { bookingReference: booking.bookingReference, rooms: roomNums },
         persistForever: true,
       });
+      return booking;
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  }
+
+  async extendStay(
+    id: string,
+    dto: ExtendBookingDto,
+    actorId: string,
+    branchId: string,
+    actorRole?: string,
+  ) {
+    const booking = await this.bookingModel.findOne({ _id: id, branchId });
+    if (!booking) {
+      throw new NotFoundException('Booking not found.');
+    }
+
+    if (
+      booking.bookingStatus !== BookingStatus.Checked_In &&
+      booking.bookingStatus !== BookingStatus.Confirmed &&
+      booking.bookingStatus !== BookingStatus.Reserved
+    ) {
+      throw new BadRequestException(
+        `Cannot extend a booking with status "${booking.bookingStatus}". Only active bookings can be extended.`,
+      );
+    }
+
+    const currentCheckOut = new Date(booking.checkOutDate);
+    const newCheckOut = new Date(dto.newCheckOutDate);
+
+    if (newCheckOut <= currentCheckOut) {
+      throw new BadRequestException('New check-out date must be after the current check-out date.');
+    }
+
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const extraNights = Math.ceil((newCheckOut.getTime() - currentCheckOut.getTime()) / msPerDay);
+    if (extraNights < 1) {
+      throw new BadRequestException('Extension must be for at least 1 additional night.');
+    }
+
+    const session = await this.connection.startSession();
+    session.startTransaction();
+
+    try {
+      // 1. Check room conflict for all rooms in this booking between currentCheckOut and newCheckOut
+      for (const r of booking.rooms) {
+        const conflict = await this.bookingModel
+          .findOne({
+            _id: { $ne: booking._id },
+            'rooms.roomId': r.roomId,
+            bookingStatus: { $in: [BookingStatus.Reserved, BookingStatus.Confirmed, BookingStatus.Checked_In] },
+            checkInDate: { $lt: newCheckOut },
+            checkOutDate: { $gt: currentCheckOut },
+          })
+          .session(session);
+
+        if (conflict) {
+          const roomDoc = await this.roomModel.findById(r.roomId).session(session);
+          const roomNo = roomDoc ? roomDoc.roomNumber : r.roomId.toString();
+          throw new ConflictException(
+            `Room ${roomNo} conflict detected. Another reservation exists between ${format(currentCheckOut, 'dd/MM/yyyy')} and ${format(newCheckOut, 'dd/MM/yyyy')}.`,
+          );
+        }
+      }
+
+      // 2. Compute incremental room rates
+      let extraBaseTotal = 0;
+      for (const r of booking.rooms) {
+        const roomExtraTotal = r.actualPricePerNight * extraNights;
+        r.totalForRoom = (r.totalForRoom || 0) + roomExtraTotal;
+        extraBaseTotal += roomExtraTotal;
+      }
+
+      // 3. Discount calculation on extra stay
+      let pct = dto.discountPercentage ?? (dto.discountType === 'percentage' ? (booking.discountPercentage || 0) : 0);
+      if (pct > 0) {
+        const maxAllowedManual = getMaxManualDiscount(actorRole);
+        if (pct > maxAllowedManual) {
+          throw new BadRequestException(
+            `Role "${actorRole || 'User'}" cannot apply a manual discount of ${pct}%. Maximum allowed direct manual discount for your role is ${maxAllowedManual}%.`,
+          );
+        }
+      }
+
+      let effectiveDiscountAmount = 0;
+      if (dto.discountType === 'fixed' || (dto.discountAmount !== undefined && dto.discountAmount > 0 && !dto.discountPercentage)) {
+        effectiveDiscountAmount = Math.min(extraBaseTotal, dto.discountAmount || 0);
+        pct = extraBaseTotal > 0 ? Math.min(100, Math.round((effectiveDiscountAmount / extraBaseTotal) * 100)) : 0;
+      } else {
+        effectiveDiscountAmount = Math.round((extraBaseTotal * pct) / 100);
+      }
+
+      const netExtraSubtotal = Math.max(0, extraBaseTotal - effectiveDiscountAmount);
+
+      const includeVat = dto.includeVat ?? booking.includeVat ?? false;
+      const includeServiceCharge = dto.includeServiceCharge ?? booking.includeServiceCharge ?? false;
+      const vatRate = 7.5;
+      const scRate = 10;
+      const computedVat = includeVat ? Math.round((netExtraSubtotal * vatRate) / 100) : 0;
+      const computedSc = includeServiceCharge ? Math.round((netExtraSubtotal * scRate) / 100) : 0;
+      const computedExtraTotal = netExtraSubtotal + computedVat + computedSc;
+
+      if (Math.abs(dto.additionalAmountPaid - computedExtraTotal) > 1) {
+        throw new BadRequestException(
+          `Extension price mismatch. Expected ₦${computedExtraTotal} (extra subtotal ₦${extraBaseTotal}${effectiveDiscountAmount > 0 ? ` − ₦${effectiveDiscountAmount} discount` : ''}${includeVat ? ` + ₦${computedVat} VAT` : ''}${includeServiceCharge ? ` + ₦${computedSc} service charge` : ''}), got ₦${dto.additionalAmountPaid}`,
+        );
+      }
+
+      // 4. Update Booking Document
+      const extensionIndex = (booking.extensionHistory?.length || 0) + 1;
+      const extensionRecord = {
+        extensionIndex,
+        previousCheckOutDate: currentCheckOut,
+        newCheckOutDate: newCheckOut,
+        additionalNights: extraNights,
+        additionalBaseTotal: extraBaseTotal,
+        additionalDiscount: effectiveDiscountAmount,
+        additionalVat: computedVat,
+        additionalServiceCharge: computedSc,
+        additionalAmountPaid: dto.additionalAmountPaid,
+        paymentMethod: dto.paymentMethod,
+        paymentReference: dto.paymentReference,
+        walletAmountApplied: dto.walletAmountApplied || 0,
+        notes: dto.notes,
+        extendedBy: actorId as any,
+        extendedAt: new Date(),
+      };
+
+      booking.extensionHistory.push(extensionRecord as any);
+      booking.checkOutDate = newCheckOut;
+      booking.baseRoomTotal = (booking.baseRoomTotal || 0) + extraBaseTotal;
+      booking.discount = (booking.discount || 0) + effectiveDiscountAmount;
+      booking.vatAmount = (booking.vatAmount || 0) + computedVat;
+      booking.serviceChargeAmount = (booking.serviceChargeAmount || 0) + computedSc;
+      booking.totalAmountPaid = (booking.totalAmountPaid || 0) + dto.additionalAmountPaid;
+
+      await booking.save({ session });
+
+      // 5. Update Customer stats & wallet
+      const netFreshSpent = Math.max(0, dto.additionalAmountPaid - (dto.walletAmountApplied || 0));
+      if (booking.customerId) {
+        await this.customerModel.updateOne(
+          { _id: booking.customerId },
+          {
+            $inc: { totalSpent: netFreshSpent },
+            $set: { lastVisitDate: new Date() },
+          },
+        ).session(session);
+
+        if (dto.walletAmountApplied && dto.walletAmountApplied > 0) {
+          await this.customersService.debitWallet({
+            customerId: booking.customerId.toString(),
+            branchId,
+            bookingId: booking._id.toString(),
+            amount: dto.walletAmountApplied,
+            reason: `Applied wallet balance to Stay Extension #${extensionIndex} for Booking #${booking.bookingReference}`,
+            performedBy: actorId,
+            session,
+          });
+        }
+      }
+
+      await session.commitTransaction();
+      await this.redis.invalidateDashboardCache(branchId);
+
+      this.logger.log(
+        `Stay extended — Booking #${booking.bookingReference} | +${extraNights} night(s) to ${format(newCheckOut, 'yyyy-MM-dd')} | Paid ₦${dto.additionalAmountPaid} | by ${actorId}`,
+      );
+
+      await this.auditLog.log({
+        entityType: 'booking',
+        entityId: booking._id.toString(),
+        action: 'extend_stay',
+        description: `Stay extended: #${booking.bookingReference} (+${extraNights} night(s) to ${format(newCheckOut, 'd MMM yyyy')}) — ₦${dto.additionalAmountPaid.toLocaleString()}`,
+        performedBy: actorId,
+        branchId,
+        details: {
+          bookingReference: booking.bookingReference,
+          extensionIndex,
+          additionalNights: extraNights,
+          newCheckOutDate: newCheckOut,
+          additionalAmountPaid: dto.additionalAmountPaid,
+        },
+        persistForever: true,
+      });
+
+      // Send updated receipt email if guest email is present
+      if (booking.guestDetails?.email) {
+        try {
+          const [branch, populatedRooms] = await Promise.all([
+            this.branchModel.findById(branchId).lean(),
+            this.roomModel.find({ _id: { $in: booking.rooms.map((r) => r.roomId) } }).populate<{ roomTypeId: { name: string } }>('roomTypeId', 'name').lean(),
+          ]);
+
+          const totalNights = Math.ceil(
+            (new Date(booking.checkOutDate).getTime() - new Date(booking.checkInDate).getTime()) / msPerDay,
+          );
+
+          this.emailService.sendEmail(
+            booking.guestDetails.email,
+            `Stay Extended — Booking #${booking.bookingReference}`,
+            BookingReceiptEmail({
+              guestName: booking.guestDetails.name,
+              guestEmail: booking.guestDetails.email,
+              guestPhone: booking.guestDetails.phone,
+              bookingReference: booking.bookingReference,
+              branchName: branch?.name || 'City Den Apartments',
+              checkInDate: booking.checkInDate.toString(),
+              checkOutDate: booking.checkOutDate.toString(),
+              rooms: booking.rooms.map((re) => {
+                const room = populatedRooms.find((r) => r._id.toString() === re.roomId.toString());
+                return {
+                  roomNumber: room?.roomNumber || re.roomId.toString(),
+                  roomType: (room as any)?.roomTypeId?.name || 'Room',
+                  nights: totalNights,
+                  pricePerNight: re.actualPricePerNight,
+                  total: re.totalForRoom,
+                };
+              }),
+              numberOfGuests: booking.numberOfGuests,
+              subtotal: booking.baseRoomTotal,
+              discount: booking.discount,
+              discountPercentage: booking.discountPercentage,
+              vatAmount: booking.vatAmount,
+              serviceChargeAmount: booking.serviceChargeAmount,
+              totalPaid: booking.totalAmountPaid,
+              paymentMethod: dto.paymentMethod,
+              paymentReference: dto.paymentReference || undefined,
+              bookingStatus: booking.bookingStatus,
+              bookingDate: new Date().toISOString(),
+            }),
+          );
+        } catch (emailErr: any) {
+          this.logger.error(`Failed to send extension receipt to ${booking.guestDetails.email}: ${emailErr.message}`);
+        }
+      }
+
       return booking;
     } catch (error) {
       await session.abortTransaction();

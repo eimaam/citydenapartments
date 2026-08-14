@@ -72,6 +72,17 @@ export interface ReceiptBooking {
   bookingStatus: string;
   bookingSource: string;
   createdAt: string;
+  extensionHistory?: Array<{
+    extensionIndex: number;
+    previousCheckOutDate: string;
+    newCheckOutDate: string;
+    additionalNights: number;
+    additionalBaseTotal: number;
+    additionalAmountPaid: number;
+    paymentMethod: string;
+    paymentReference?: string;
+    extendedAt: string;
+  }>;
 }
 
 interface BookingReceiptProps {

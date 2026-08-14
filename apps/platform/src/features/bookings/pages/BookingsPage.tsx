@@ -3,8 +3,8 @@ import { Plus, Search, Copy, Check, Printer } from 'lucide-react';
 import { format } from 'date-fns';
 import {
   Button, Input, Table, Drawer, Modal, Badge,
-  BookingStatus, BookingReceipt, BookingFormDrawer, PrintableLetterhead,
-  type BranchInfo, type ReceiptBooking,
+  BookingStatus, BookingReceipt, BookingFormDrawer, ExtendStayModal, PrintableLetterhead,
+  type BranchInfo, type ReceiptBooking, type ExtendBookingPayload,
 } from '@citydenapartments/shared';
 import type { TableProps } from '@citydenapartments/shared';
 import { Spinner } from '../../../components/ui/Spinner';
@@ -46,6 +46,9 @@ export default function BookingsPage() {
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [showDetail, setShowDetail] = useState<BookingResponse | null>(null);
+  const [showExtend, setShowExtend] = useState(false);
+  const [extendBookingData, setExtendBookingData] = useState<BookingResponse | null>(null);
+  const [walletBalance, setWalletBalance] = useState(0);
   const [actionLoading, setActionLoading] = useState('');
   const [copiedRef, setCopiedRef] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
@@ -118,6 +121,22 @@ export default function BookingsPage() {
       fetchBookings();
     } catch (e) { toast('error', e instanceof Error ? e.message : `Failed to ${action}.`); }
     finally { setActionLoading(''); }
+  };
+
+  const handleOpenExtend = async (booking: BookingResponse) => {
+    setExtendBookingData(booking);
+    setWalletBalance(0);
+    setShowExtend(true);
+    if (booking.guestDetails?.phone) {
+      try {
+        const custs = await customersApi.search(booking.guestDetails.phone);
+        if (custs && custs.length > 0 && custs[0].walletBalance) {
+          setWalletBalance(custs[0].walletBalance);
+        }
+      } catch {
+        // silent fallback
+      }
+    }
   };
 
   const openReceipt = useCallback(async (booking: ReceiptBooking) => {
@@ -210,6 +229,23 @@ export default function BookingsPage() {
         activeBranchId={user?.activeBranchId || undefined}
       />
 
+      {/* Extend Stay Modal */}
+      <ExtendStayModal
+        open={showExtend}
+        onClose={() => { setShowExtend(false); setExtendBookingData(null); }}
+        booking={extendBookingData}
+        customerWalletBalance={walletBalance}
+        userRole={user?.role}
+        onExtend={(payload) => bookingsApi.extend(extendBookingData!._id, payload)}
+        onSuccess={async (updated) => {
+          toast('success', `Stay extended successfully! New check-out: ${format(new Date(updated.checkOutDate), 'd MMM yyyy')}`);
+          fetchBookings();
+          const fresh = await bookingsApi.get(updated._id);
+          setShowDetail(fresh);
+          openReceipt(fresh as unknown as ReceiptBooking);
+        }}
+      />
+
       {/* Detail Drawer */}
       <Drawer open={!!showDetail} onClose={() => setShowDetail(null)} title="Booking Details" width={480}>
         {showDetail && (<div className="space-y-5">
@@ -220,7 +256,7 @@ export default function BookingsPage() {
             <div><p className="text-xs text-outline">Check-in</p><p>{format(new Date(showDetail.checkInDate), 'EEE d MMM, yyyy')}</p></div>
             <div><p className="text-xs text-outline">Check-out</p><p>{format(new Date(showDetail.checkOutDate), 'EEE d MMM, yyyy')}</p></div>
             <div><p className="text-xs text-outline">Total Paid</p><p className="font-medium">₦{showDetail.totalAmountPaid?.toLocaleString()}</p></div>
-            <div><p className="text-xs text-outline">Payment</p><p>{showDetail.paymentMethod?.replace('_', ' ')}</p></div>
+            <div><p className="text-xs text-outline">Payment</p>{showDetail.paymentMethod?.replace('_', ' ')}</div>
             <div><p className="text-xs text-outline">Source</p><p>{showDetail.bookingSource}</p></div>
           </div>
           <div className="pt-2 border-t border-outline-variant"><p className="text-xs font-bold tracking-[0.1em] uppercase text-outline mb-2">Guest Info</p><div className="grid grid-cols-2 gap-3 text-sm">{[
@@ -235,7 +271,17 @@ export default function BookingsPage() {
             ['Next Destination', showDetail.guestDetails.nextDestination],
             ['Religion', showDetail.guestDetails.religion],
           ].filter(([, v]) => v).map(([label, value]) => (<div key={label as string}><p className="text-xs text-outline">{label as string}</p><p className="font-medium">{value as string}</p></div>))}</div></div>
-          <div className="flex gap-3 pt-2 flex-wrap">{showDetail.bookingStatus === BookingStatus.Checked_In && <Button size="sm" loading={actionLoading === `checkOut-${showDetail._id}`} onClick={() => handleAction('checkOut', showDetail._id)}>Check Out</Button>}{(showDetail.bookingStatus === BookingStatus.Reserved || showDetail.bookingStatus === BookingStatus.Confirmed) && <Button size="sm" loading={actionLoading === `checkIn-${showDetail._id}`} onClick={() => handleAction('checkIn', showDetail._id)}>Check In</Button>}{showDetail.bookingStatus !== BookingStatus.Cancelled && showDetail.bookingStatus !== BookingStatus.Checked_Out && <Button variant="destructive" size="sm" loading={actionLoading === `cancel-${showDetail._id}`} onClick={() => handleAction('cancel', showDetail._id)}>Cancel</Button>}{showDetail.bookingStatus === BookingStatus.Checked_In && <Button size="sm" variant="secondary" icon={<Printer size={14} />} onClick={() => { setShowDetail(null); openReceipt(showDetail as unknown as ReceiptBooking); }}>Print Receipt</Button>}</div>
+          <div className="flex gap-3 pt-2 flex-wrap">
+            {(showDetail.bookingStatus === BookingStatus.Checked_In || showDetail.bookingStatus === BookingStatus.Confirmed || showDetail.bookingStatus === BookingStatus.Reserved) && (
+              <Button size="sm" variant="secondary" onClick={() => handleOpenExtend(showDetail)}>
+                Extend Stay
+              </Button>
+            )}
+            {showDetail.bookingStatus === BookingStatus.Checked_In && <Button size="sm" loading={actionLoading === `checkOut-${showDetail._id}`} onClick={() => handleAction('checkOut', showDetail._id)}>Check Out</Button>}
+            {(showDetail.bookingStatus === BookingStatus.Reserved || showDetail.bookingStatus === BookingStatus.Confirmed) && <Button size="sm" loading={actionLoading === `checkIn-${showDetail._id}`} onClick={() => handleAction('checkIn', showDetail._id)}>Check In</Button>}
+            {showDetail.bookingStatus !== BookingStatus.Cancelled && showDetail.bookingStatus !== BookingStatus.Checked_Out && <Button variant="destructive" size="sm" loading={actionLoading === `cancel-${showDetail._id}`} onClick={() => handleAction('cancel', showDetail._id)}>Cancel</Button>}
+            {showDetail.bookingStatus === BookingStatus.Checked_In && <Button size="sm" variant="secondary" icon={<Printer size={14} />} onClick={() => { setShowDetail(null); openReceipt(showDetail as unknown as ReceiptBooking); }}>Print Receipt</Button>}
+          </div>
 
           {showDetail.statusHistory && showDetail.statusHistory.length > 0 && (
             <div className="pt-4 border-t border-outline-variant">

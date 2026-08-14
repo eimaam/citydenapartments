@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { ExtendBookingDto } from './dto/extend-booking.dto';
 import { QueryBookingsDto } from './dto/query-bookings.dto';
 import { CalendarQueryDto } from './dto/calendar-query.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -64,6 +65,12 @@ export class BookingsController {
   @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.FRONT_OFFICE_MANAGER)
   checkOut(@Param('id') id: string, @ActiveUser() user: any) {
     return this.bookingsService.checkOut(id, user.id, user.activeBranchId);
+  }
+
+  @Post(':id/extend')
+  @Roles(UserRoleEnum.RECEPTION, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.FACILITY_MANAGER, UserRoleEnum.FRONT_OFFICE_MANAGER)
+  extend(@Param('id') id: string, @Body() dto: ExtendBookingDto, @ActiveUser() user: any) {
+    return this.bookingsService.extendStay(id, dto, user.id, user.activeBranchId, user.role);
   }
 
   @Post(':id/cancel')

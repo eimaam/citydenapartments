@@ -168,6 +168,44 @@ export class Booking extends Document {
     changedAt: Date;
   }>;
 
+  @Prop({
+    type: [{
+      extensionIndex: { type: Number, required: true },
+      previousCheckOutDate: { type: Date, required: true },
+      newCheckOutDate: { type: Date, required: true },
+      additionalNights: { type: Number, required: true },
+      additionalBaseTotal: { type: Number, required: true },
+      additionalDiscount: { type: Number, default: 0 },
+      additionalVat: { type: Number, default: 0 },
+      additionalServiceCharge: { type: Number, default: 0 },
+      additionalAmountPaid: { type: Number, required: true },
+      paymentMethod: { type: String, required: true },
+      paymentReference: String,
+      walletAmountApplied: { type: Number, default: 0 },
+      notes: String,
+      extendedBy: { type: MongooseSchema.Types.ObjectId, ref: 'User', required: true },
+      extendedAt: { type: Date, default: Date.now },
+    }],
+    default: [],
+  })
+  extensionHistory: Array<{
+    extensionIndex: number;
+    previousCheckOutDate: Date;
+    newCheckOutDate: Date;
+    additionalNights: number;
+    additionalBaseTotal: number;
+    additionalDiscount: number;
+    additionalVat: number;
+    additionalServiceCharge: number;
+    additionalAmountPaid: number;
+    paymentMethod: string;
+    paymentReference?: string;
+    walletAmountApplied?: number;
+    notes?: string;
+    extendedBy: MongooseSchema.Types.ObjectId;
+    extendedAt: Date;
+  }>;
+
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'DiscountCode' })
   discountCodeId?: MongooseSchema.Types.ObjectId;
 

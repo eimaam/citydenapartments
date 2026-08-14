@@ -177,6 +177,24 @@ export interface CustomerResponse {
   branchLifetimeDiscounts?: BranchLifetimeDiscount[];
 }
 
+export interface BookingExtensionEntry {
+  extensionIndex: number;
+  previousCheckOutDate: string;
+  newCheckOutDate: string;
+  additionalNights: number;
+  additionalBaseTotal: number;
+  additionalDiscount?: number;
+  additionalVat?: number;
+  additionalServiceCharge?: number;
+  additionalAmountPaid: number;
+  paymentMethod: PaymentMethodType | string;
+  paymentReference?: string;
+  walletAmountApplied?: number;
+  notes?: string;
+  extendedBy?: { _id: string; firstName?: string; lastName?: string; name?: string; email?: string } | string;
+  extendedAt: string;
+}
+
 export interface CustomerWalletLogResponse {
   _id: string;
   customerId: string;
@@ -197,6 +215,7 @@ export type CustomerTimelineEventType =
   | 'checked_in'
   | 'checked_out'
   | 'booking_cancelled'
+  | 'booking_extended'
   | 'laundry_bill'
   | 'vip_discount_updated';
 
@@ -244,6 +263,11 @@ export interface CustomerTimelineEvent {
     laundryStatus?: string;
     oldPercentage?: number;
     newPercentage?: number;
+    extensionIndex?: number;
+    previousCheckOutDate?: string;
+    newCheckOutDate?: string;
+    additionalNights?: number;
+    additionalAmountPaid?: number;
   };
 }
 

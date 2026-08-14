@@ -66,6 +66,40 @@ export interface BookingResponse {
   checkedInAt?: string;
   checkedOutAt?: string;
   statusHistory?: StatusHistoryEntry[];
+  extensionHistory?: Array<{
+    extensionIndex: number;
+    previousCheckOutDate: string;
+    newCheckOutDate: string;
+    additionalNights: number;
+    additionalBaseTotal: number;
+    additionalDiscount?: number;
+    additionalVat?: number;
+    additionalServiceCharge?: number;
+    additionalAmountPaid: number;
+    paymentMethod: PaymentMethodType | string;
+    paymentReference?: string;
+    walletAmountApplied?: number;
+    notes?: string;
+    extendedBy?: { _id: string; firstName?: string; lastName?: string };
+    extendedAt: string;
+  }>;
+}
+
+export interface ExtendBookingPayload {
+  newCheckOutDate: string;
+  additionalAmountPaid: number;
+  paymentMethod: PaymentMethodType | string;
+  paymentReference?: string;
+  walletAmountApplied?: number;
+  discountType?: string;
+  discountPercentage?: number;
+  discountAmount?: number;
+  discountReason?: string;
+  includeVat?: boolean;
+  includeServiceCharge?: boolean;
+  vatAmount?: number;
+  serviceChargeAmount?: number;
+  notes?: string;
 }
 
 export interface CreateRoomBookingPayload {
@@ -166,6 +200,7 @@ export const bookingsApi = {
   create: (data: CreateBookingPayload) => api.post<BookingResponse>('/bookings', data),
   checkIn: (id: string) => api.post<BookingResponse>(`/bookings/${id}/check-in`),
   checkOut: (id: string) => api.post<BookingResponse>(`/bookings/${id}/check-out`),
+  extend: (id: string, data: ExtendBookingPayload) => api.post<BookingResponse>(`/bookings/${id}/extend`, data),
   cancel: (id: string) => api.post<BookingResponse>(`/bookings/${id}/cancel`),
   calendar: (year: number, month: number) =>
     api.get<CalendarData>(`/bookings/calendar?year=${year}&month=${month}`),
