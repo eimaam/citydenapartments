@@ -12,7 +12,7 @@ import { escapeRegex } from '../../common/utils/escape-regex';
 import { AuditLogService } from '../audit-log/audit-log.service';
 
 @Injectable()
-export class LaundryService implements OnModuleInit {
+export class LaundryService  {
   private readonly logger = new Logger(LaundryService.name);
 
   constructor(
@@ -23,13 +23,13 @@ export class LaundryService implements OnModuleInit {
     private readonly auditLogService: AuditLogService,
   ) {}
 
-  async onModuleInit() {
-    try {
-      await this.ensureCatalog();
-    } catch (error) {
-      this.logger.error(`Laundry catalog seeding failed: ${(error as Error).message}`);
-    }
-  }
+  // async onModuleInit() {
+  //   try {
+  //     await this.ensureCatalog();
+  //   } catch (error) {
+  //     this.logger.error(`Laundry catalog seeding failed: ${(error as Error).message}`);
+  //   }
+  // }
 
   private isDuplicateKey(error: unknown): boolean {
     return typeof error === 'object' && error !== null && (error as any).code === 11000;

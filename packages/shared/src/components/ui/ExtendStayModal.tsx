@@ -241,7 +241,6 @@ export function ExtendStayModal({
       onClose={onClose}
       title="Extend Guest Stay"
       subTitle={`Booking Ref: ${booking.bookingReference} — ${booking.guestDetails.name}`}
-      width={560}
     >
       <form onSubmit={handleSubmit} className="space-y-4 pt-2">
         {errorMsg && (
@@ -293,7 +292,7 @@ export function ExtendStayModal({
                     : 'bg-surface-container hover:bg-surface-container-high border-outline-variant text-on-surface'
                 }`}
               >
-                +{n} {n === 1 ? 'Night' : n === 7 ? '1 Week' : 'Nights'}
+                {n < 7 ? `+${n} ${n === 1 ? 'Night' : 'Nights'}` : n === 7 ? '1 Week' : n}
               </button>
             ))}
           </div>

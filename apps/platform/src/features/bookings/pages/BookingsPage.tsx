@@ -318,7 +318,7 @@ export default function BookingsPage() {
       </Drawer>
 
       {/* Receipt Modal */}
-      <Modal isOpen={showReceipt} onClose={() => setShowReceipt(false)} width={800}>
+      <Modal isOpen={showReceipt} onClose={() => setShowReceipt(false)}>
         {loadingReceipt ? (
           <div className="flex items-center justify-center py-16"><Spinner /></div>
         ) : receiptBooking && receiptBranch ? (

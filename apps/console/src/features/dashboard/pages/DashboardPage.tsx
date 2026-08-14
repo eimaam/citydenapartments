@@ -447,7 +447,6 @@ export default function AdminDashboard() {
           isOpen={showReportModal}
           onClose={() => setShowReportModal(false)}
           title="Financial & Department Revenue Report"
-          width={950}
         >
           <div className="py-2">
             <PrintableLetterhead

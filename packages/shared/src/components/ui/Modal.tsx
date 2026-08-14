@@ -74,7 +74,7 @@ export const Modal: React.FC<ModalProps> & {
   title,
   subTitle,
   children,
-  width = 500,
+  width = 800,
   showCloseButton = true,
   className,
   footer,
