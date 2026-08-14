@@ -114,7 +114,7 @@ const PRINT_STYLES = `
   body {
     margin: 0; padding: 0;
     background: #fff; color: #1a1a1a;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-size: 12px;
     line-height: 1.4;
     -webkit-print-color-adjust: exact;
@@ -184,6 +184,9 @@ function buildPrintHtml({
   const roomsHtml = buildRoomsListHtml(booking);
 
   return `<html><head><meta charset="utf-8"><title>Booking Receipt - ${booking.bookingReference}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Serif:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
 <style>${PRINT_STYLES}</style></head><body>
 <div class="receipt-header">
   <h1 class="receipt-hotel-name">City Den Apartments</h1>

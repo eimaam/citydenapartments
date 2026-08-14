@@ -169,6 +169,7 @@ export interface OccupancyReportResponse {
     totalRoomRevenue: number;
     totalDiscount: number;
     totalVat: number;
+    totalServiceCharge: number;
     totalRateCharged: number;
     totalAmountPaid: number;
     totalOutstandingBalance: number;
@@ -180,6 +181,7 @@ export interface OccupancyReportResponse {
     roomRate: number;
     discount: number;
     vat: number;
+    serviceCharge: number;
     rateCharged: number;
     amountPaid: number;
     outstandingBalance: number;

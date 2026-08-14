@@ -69,6 +69,7 @@ export class BookingsService {
     let totalRoomRevenue = 0;
     let totalDiscount = 0;
     let totalVat = 0;
+    let totalServiceCharge = 0;
     let totalRateCharged = 0;
     let totalAmountPaid = 0;
     let totalOutstandingBalance = 0;
@@ -80,6 +81,7 @@ export class BookingsService {
       roomRate: number;
       discount: number;
       vat: number;
+      serviceCharge: number;
       rateCharged: number;
       amountPaid: number;
       outstandingBalance: number;
@@ -121,6 +123,7 @@ export class BookingsService {
         totalRoomRevenue += roomBaseRate;
         totalDiscount += roomDiscount;
         totalVat += roomVat;
+        totalServiceCharge += roomServiceCharge;
         totalRateCharged += roomRateCharged;
         totalAmountPaid += roomPaid;
         totalOutstandingBalance += roomOutstanding;
@@ -132,6 +135,7 @@ export class BookingsService {
           roomRate: roomBaseRate,
           discount: roomDiscount,
           vat: roomVat,
+          serviceCharge: roomServiceCharge,
           rateCharged: roomRateCharged,
           amountPaid: roomPaid,
           outstandingBalance: roomOutstanding,
@@ -147,6 +151,7 @@ export class BookingsService {
         totalRoomRevenue,
         totalDiscount,
         totalVat,
+        totalServiceCharge,
         totalRateCharged,
         totalAmountPaid,
         totalOutstandingBalance,

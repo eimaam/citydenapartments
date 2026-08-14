@@ -61,6 +61,9 @@ export function PrintableLetterhead<T>({
       <html>
         <head>
           <title>${title} - City Den Apartments</title>
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Serif:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
           <style>
             @page {
               size: A4 portrait;
@@ -70,7 +73,7 @@ export function PrintableLetterhead<T>({
               box-sizing: border-box;
             }
             body {
-              font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              font-family: 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
               color: #0f172a;
               background: #fff;
               margin: 0;
