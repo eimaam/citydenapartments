@@ -78,6 +78,7 @@ export class BookingsService {
       sn: number;
       roomType: string;
       guestName: string;
+      numberOfNights: number;
       roomRate: number;
       discount: number;
       vat: number;
@@ -87,19 +88,33 @@ export class BookingsService {
       outstandingBalance: number;
     }> = [];
 
+    const msPerDay = 86_400_000;
+
     let sn = 1;
     for (const b of bookings) {
       const guestName = b.guestDetails?.name || 'Unspecified Guest';
       totalGuestCount += b.numberOfGuests || 1;
 
+      // ── Booking-level financials ──────────────────────────────────
       const totalBookingDiscount = b.discount || 0;
       const totalBookingVat = b.vatAmount || 0;
       const totalBookingServiceCharge = b.serviceChargeAmount || 0;
-      const totalBookingRateCharged = b.totalAmountPaid || 0;
-      const totalBookingPaid = (b.bookingStatus === BookingStatus.Checked_In || b.bookingStatus === BookingStatus.Checked_Out) ? totalBookingRateCharged : 0;
+      // totalAmountPaid IS the all-in amount for the full stay (baseTotal − discount + vat + sc)
+      const totalBookingAmountPaid = b.totalAmountPaid || 0;
 
+      // ── Night calculations ────────────────────────────────────────
+      const checkIn = new Date(b.checkInDate);
+      const checkOut = new Date(b.checkOutDate);
+      const totalNights = Math.max(1, Math.ceil((checkOut.getTime() - checkIn.getTime()) / msPerDay));
+
+      // Nights elapsed as of the report date (clamped to 0…totalNights)
+      const msFromCheckIn = startOfDay.getTime() - checkIn.getTime();
+      const nightsElapsed = Math.min(totalNights, Math.max(0, Math.ceil(msFromCheckIn / msPerDay)));
+
+      // ── Per-room ratio split ──────────────────────────────────────
       const rooms = b.rooms || [];
       const numRooms = rooms.length || 1;
+      // bookingSubtotal = sum of (actualPricePerNight × nights) per room — pure base, before adjustments
       const bookingSubtotal = rooms.reduce((sum, r) => sum + (Number(r.totalForRoom) || 0), 0) || (b.baseRoomTotal || 0);
 
       rooms.forEach((r) => {
@@ -109,35 +124,59 @@ export class BookingsService {
         const roomTypeName = roomObj?.roomTypeId?.name || 'Standard Room';
         const roomLabel = roomNo ? `${roomTypeName} (${roomNo})` : roomTypeName;
 
+        // ── 1. Room Rate: actual nightly price for this specific room ──
+        const roomRate = Number(r.actualPricePerNight) || 0;
+
+        // ── Proportional split ratio for this room within the booking ─
         const roomSubtotal = Number(r.totalForRoom) || (bookingSubtotal / numRooms);
         const ratio = bookingSubtotal > 0 ? roomSubtotal / bookingSubtotal : (1 / numRooms);
 
+        // ── 2. Discounted Rate: actual discount applied to this room ───
         const roomDiscount = Math.round(totalBookingDiscount * ratio);
-        const roomVat = Math.round(totalBookingVat * ratio);
-        const roomServiceCharge = Math.round(totalBookingServiceCharge * ratio);
-        const roomRateCharged = Math.round(totalBookingRateCharged * ratio);
-        const roomBaseRate = Math.max(0, roomRateCharged + roomDiscount - roomVat - roomServiceCharge);
-        const roomPaid = Math.round(totalBookingPaid * ratio);
-        const roomOutstanding = Math.max(0, roomRateCharged - roomPaid);
 
-        totalRoomRevenue += roomBaseRate;
+        // ── 3. VAT allocated to this room ──────────────────────────────
+        const roomVat = Math.round(totalBookingVat * ratio);
+
+        // ── 4. Service Charge allocated to this room ───────────────────
+        const roomServiceCharge = Math.round(totalBookingServiceCharge * ratio);
+
+        // ── 5. Rate Charged: all-in total for this room (full stay) ────
+        //    = room base subtotal − discount + vat + sc
+        const roomRateCharged = Math.round(roomSubtotal - roomDiscount + roomVat + roomServiceCharge);
+
+        // ── 6. Amount Paid: the actual money the client paid for this room ─
+        //    Proportional share of b.totalAmountPaid (the real cash exchanged)
+        const roomAmountPaid = Math.round(totalBookingAmountPaid * ratio);
+
+        // ── Outstanding Balance (signed) ───────────────────────────────
+        //    outstandingBalance = roomAmountPaid − amountConsumed
+        //      +ve → prepaid credit remaining (guest has unused nights left)
+        //       0  → fully consumed (on/after checkout, fully elapsed)
+        //      -ve → guest owes the hotel (unpaid or underpaid booking)
+        const amountConsumed = totalNights > 0
+          ? Math.round(roomAmountPaid * (nightsElapsed / totalNights))
+          : roomAmountPaid;
+        const roomOutstanding = roomAmountPaid - amountConsumed;
+
+        totalRoomRevenue += roomRate;
         totalDiscount += roomDiscount;
         totalVat += roomVat;
         totalServiceCharge += roomServiceCharge;
         totalRateCharged += roomRateCharged;
-        totalAmountPaid += roomPaid;
+        totalAmountPaid += roomAmountPaid;
         totalOutstandingBalance += roomOutstanding;
 
         rows.push({
           sn: sn++,
           roomType: roomLabel,
           guestName,
-          roomRate: roomBaseRate,
+          numberOfNights: totalNights,
+          roomRate,
           discount: roomDiscount,
           vat: roomVat,
           serviceCharge: roomServiceCharge,
           rateCharged: roomRateCharged,
-          amountPaid: roomPaid,
+          amountPaid: roomAmountPaid,
           outstandingBalance: roomOutstanding,
         });
       });

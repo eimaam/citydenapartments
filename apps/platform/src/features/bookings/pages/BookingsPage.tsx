@@ -354,15 +354,22 @@ export default function BookingsPage() {
                 { label: 'Outstanding Balance', value: `₦${occupancyReport.metrics.totalOutstandingBalance.toLocaleString()}` },
               ]}
               columns={[
-                { title: 'ROOM TYPE', key: 'roomType', width: '20%' },
-                { title: 'GUEST NAME', key: 'guestName', width: '20%' },
-                { title: 'TOTAL ROOM AMOUNT', key: 'roomRate', align: 'right', width: '12%', render: (val) => `₦${Number(val || 0).toLocaleString()}` },
-                { title: 'DISCOUNTED RATE', key: 'discount', align: 'right', width: '10%', render: (val) => `₦${Number(val || 0).toLocaleString()}` },
-                { title: 'VAT', key: 'vat', align: 'right', width: '8%', render: (val) => `₦${Number(val || 0).toLocaleString()}` },
+                { title: 'ROOM TYPE', key: 'roomType', width: '18%' },
+                { title: 'GUEST NAME', key: 'guestName', width: '17%' },
+                { title: 'DAYS', key: 'numberOfNights', align: 'center', width: '5%', render: (val) => `${Number(val || 0)}N` },
+                { title: 'ROOM RATE/NIGHT', key: 'roomRate', align: 'right', width: '10%', render: (val) => `₦${Number(val || 0).toLocaleString()}` },
+                { title: 'DISCOUNT', key: 'discount', align: 'right', width: '9%', render: (val) => `₦${Number(val || 0).toLocaleString()}` },
+                { title: 'VAT', key: 'vat', align: 'right', width: '7%', render: (val) => `₦${Number(val || 0).toLocaleString()}` },
                 { title: 'SERVICE CHARGE', key: 'serviceCharge', align: 'right', width: '9%', render: (val) => `₦${Number(val || 0).toLocaleString()}` },
-                { title: 'RATE CHARGED', key: 'rateCharged', align: 'right', width: '11%', render: (val) => `₦${Number(val || 0).toLocaleString()}` },
-                { title: 'AMOUNT PAID', key: 'amountPaid', align: 'right', width: '11%', render: (val) => `₦${Number(val || 0).toLocaleString()}` },
-                { title: 'OUTSTANDING BALANCE', key: 'outstandingBalance', align: 'right', width: '12%', render: (val) => `₦${Number(val || 0).toLocaleString()}` },
+                { title: 'RATE CHARGED', key: 'rateCharged', align: 'right', width: '10%', render: (val) => `₦${Number(val || 0).toLocaleString()}` },
+                { title: 'AMOUNT PAID', key: 'amountPaid', align: 'right', width: '9%', render: (val) => `₦${Number(val || 0).toLocaleString()}` },
+                { title: 'OUTSTANDING', key: 'outstandingBalance', align: 'right', width: '10%', render: (val) => {
+                  const n = Number(val || 0);
+                  const formatted = `₦${Math.abs(n).toLocaleString()}`;
+                  if (n > 0) return `+${formatted}`;
+                  if (n < 0) return `-${formatted}`;
+                  return formatted;
+                }},
               ]}
               data={occupancyReport.rows}
               totalsRow={{
@@ -373,7 +380,13 @@ export default function BookingsPage() {
                 serviceCharge: `₦${(occupancyReport.metrics.totalServiceCharge || 0).toLocaleString()}`,
                 rateCharged: `₦${occupancyReport.metrics.totalRateCharged.toLocaleString()}`,
                 amountPaid: `₦${occupancyReport.metrics.totalAmountPaid.toLocaleString()}`,
-                outstandingBalance: `₦${occupancyReport.metrics.totalOutstandingBalance.toLocaleString()}`,
+                outstandingBalance: (() => {
+                  const n = occupancyReport.metrics.totalOutstandingBalance;
+                  const formatted = `₦${Math.abs(n).toLocaleString()}`;
+                  if (n > 0) return `+${formatted}`;
+                  if (n < 0) return `-${formatted}`;
+                  return formatted;
+                })(),
               }}
               showSignatureBlock={true}
               notes="Official Room Occupancy Audit Report. All rates are inclusive of applicable discounts and tax charges."

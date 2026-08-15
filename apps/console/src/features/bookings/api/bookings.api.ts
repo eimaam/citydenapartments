@@ -174,6 +174,7 @@ export interface OccupancyReportResponse {
     sn: number;
     roomType: string;
     guestName: string;
+    numberOfNights: number;
     roomRate: number;
     discount: number;
     vat: number;
