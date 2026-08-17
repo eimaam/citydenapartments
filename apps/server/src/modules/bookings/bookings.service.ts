@@ -59,7 +59,7 @@ export class BookingsService {
       .populate({
         path: 'rooms.roomId',
         select: 'roomNumber roomTypeId',
-        populate: { path: 'roomTypeId', select: 'name' },
+        populate: { path: 'roomTypeId', select: 'name minPriceAllowed basePrice' },
       })
       .sort({ checkInDate: -1 })
       .lean();
@@ -124,8 +124,12 @@ export class BookingsService {
         const roomTypeName = roomObj?.roomTypeId?.name || 'Standard Room';
         const roomLabel = roomNo ? `${roomTypeName} (${roomNo})` : roomTypeName;
 
-        // ── 1. Room Rate: actual nightly price for this specific room ──
-        const roomRate = Number(r.actualPricePerNight) || 0;
+        // ── 1. Room Rate: baseline internal price (minPriceAllowed) ──
+        const roomRate =
+          Number(roomObj?.roomTypeId?.minPriceAllowed) ||
+          (r as any).minPriceAllowed ||
+          Number(r.actualPricePerNight) ||
+          0;
 
         // ── Proportional split ratio for this room within the booking ─
         const roomSubtotal = Number(r.totalForRoom) || (bookingSubtotal / numRooms);
