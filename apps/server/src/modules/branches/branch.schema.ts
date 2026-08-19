@@ -6,6 +6,8 @@ export interface IBranch {
   name: string;
   code: string;
   address: string;
+  city: string;
+  state: string;
   isActive: boolean;
 }
 
@@ -28,17 +30,23 @@ export class Branch extends Document {
   @Prop({ required: true, unique: true, trim: true })
   name: string;
 
-  @Prop({ required: true, uppercase: true, unique: true })
-  code: string
+  @Prop({ required: true, uppercase: true, unique: true, trim: true })
+  code: string;
 
   @Prop({ required: true, trim: true })
   address: string;
 
+  @Prop({ required: true, uppercase: true, trim: true })
+  city: string;
+
+  @Prop({ required: true, uppercase: true, trim: true })
+  state: string;
+
   @Prop({ required: true, default: true })
-  isActive: boolean
+  isActive: boolean;
 
   @Prop({ type: Object, default: {} })
-  policies: IBranchPolicies
+  policies: IBranchPolicies;
 }
 
 

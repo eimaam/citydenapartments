@@ -32,6 +32,10 @@ import CustomersPage from './features/customers/pages/CustomersPage';
 import CustomerDetailPage from './features/customers/pages/CustomerDetailPage';
 import LaundryItemsPage from './features/laundry-items/pages/LaundryItemsPage';
 import RevenueLogsPage from './features/revenue-logs/pages/RevenueLogsPage';
+import MenuCatalogPage from './features/restaurant/pages/MenuCatalogPage';
+import DeliveryZonesPage from './features/restaurant/pages/DeliveryZonesPage';
+import BannersPage from './features/restaurant/pages/BannersPage';
+import RestaurantAnalyticsPage from './features/restaurant/pages/RestaurantAnalyticsPage';
 import type { UserRoleType } from './lib/types';
 
 function ProtectedRoute({ roles, children }: { roles: UserRoleType[]; children: React.ReactNode }) {
@@ -72,6 +76,10 @@ const routeRoles: Record<string, UserRoleType[]> = {
   '/department-expenses': [UserRole.Accountant, UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/revenue-logs': [UserRole.Accountant, UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/laundry-items': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
+  '/restaurant/menu': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.FacilityManager],
+  '/restaurant/delivery-zones': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
+  '/restaurant/banners': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
+  '/restaurant/analytics': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.Accountant],
 };
 
 export default function App() {
@@ -117,6 +125,10 @@ export default function App() {
                           case '/revenue-logs': return <RevenueLogsPage />;
                           case '/laundry-items': return <LaundryItemsPage />;
                           case '/roles': return <RolesPage />;
+                          case '/restaurant/menu': return <MenuCatalogPage />;
+                          case '/restaurant/delivery-zones': return <DeliveryZonesPage />;
+                          case '/restaurant/banners': return <BannersPage />;
+                          case '/restaurant/analytics': return <RestaurantAnalyticsPage />;
                           default: return null;
                         }
                       })()}

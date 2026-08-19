@@ -14,6 +14,11 @@ import { InventoryTransaction } from '../inventory/inventory-transaction.schema'
 import { Employee } from '../employees/employee.schema';
 import { Department } from '../departments/department.schema';
 import { Customer } from '../customers/customer.schema';
+import { MenuCategory } from '../restaurant-menu/schemas/menu-category.schema';
+import { MenuItem } from '../restaurant-menu/schemas/menu-item.schema';
+import { RestaurantBanner } from '../restaurant-menu/schemas/restaurant-banner.schema';
+import { DeliveryLocation } from '../restaurant-delivery/schemas/delivery-location.schema';
+import { OptionSelectionType, BannerType } from '@citydenapartments/shared';
 import { AppConfig } from '../../config/app.config';
 
 // random helpers────────────────────────────────────────────
@@ -204,6 +209,10 @@ export class SeedService  {
     @InjectModel(Employee.name) private employeeModel: Model<Employee>,
     @InjectModel(Department.name) private departmentModel: Model<Department>,
     @InjectModel(Customer.name) private customerModel: Model<Customer>,
+    @InjectModel(MenuCategory.name) private menuCategoryModel: Model<MenuCategory>,
+    @InjectModel(MenuItem.name) private menuItemModel: Model<MenuItem>,
+    @InjectModel(RestaurantBanner.name) private bannerModel: Model<RestaurantBanner>,
+    @InjectModel(DeliveryLocation.name) private deliveryLocationModel: Model<DeliveryLocation>,
   ) {}
 
   async seed() {
@@ -757,6 +766,7 @@ export class SeedService  {
     //   creds[c.label] = `${c.email} / ${c.password}`;
     // }
 
+
     return {
       message: 'System seeded successfully',
       stats: {
@@ -1072,6 +1082,633 @@ export class SeedService  {
         departments: departments.length,
         employees: employeeData.length,
         userAccounts: liveUsers.length,
+      },
+    };
+  }
+
+  // ── Restaurant Seed: Categories, Dishes, Delivery Locations, Banners ──
+  async seedRestaurant() {
+    this.logger.log('Restaurant seed started');
+    const branches = await this.branchModel.find().lean();
+    if (branches.length === 0) {
+      throw new Error('No branches found. Please run main seed first.');
+    }
+
+    // Clear existing restaurant data
+    await this.menuCategoryModel.deleteMany({});
+    await this.menuItemModel.deleteMany({});
+    await this.deliveryLocationModel.deleteMany({});
+    await this.bannerModel.deleteMany({});
+    this.logger.log('Existing restaurant collections cleared');
+
+    // Category Blueprint
+    const categoryTemplates = [
+      { name: 'Breakfast & Morning Bites', slug: 'breakfast-morning-bites', icon: '🍳', description: 'Freshly made eggs, morning platters, hot beverages and breakfast bowls', sortOrder: 1 },
+      { name: 'Northern & Hausa Specialties', slug: 'northern-specialties', icon: '🍲', description: 'Authentic Masa, Miyan Taushe, tender goat meat and seasoned delicacies', sortOrder: 2 },
+      { name: 'Continental & Grills', slug: 'continental-grills', icon: '🥩', description: 'Smoky party jollof, grilled quarter chicken, croaker fish and steaks', sortOrder: 3 },
+      { name: 'Soups & Swallows', slug: 'soups-swallows', icon: '🥣', description: 'Egusi, Afang, Ogbono, and Native Soups served with freshly pounded swallows', sortOrder: 4 },
+      { name: 'Fast Food & Finger Bites', slug: 'fast-food-finger-bites', icon: '🍔', description: 'Triple club sandwiches, seasoned wings, crispy chips and finger bites', sortOrder: 5 },
+      { name: 'Fresh Juices & Cold Drinks', slug: 'juices-beverages', icon: '🍹', description: 'Homemade tiger nut milk, iced zobo punch and natural fruit juices', sortOrder: 6 },
+    ];
+
+    let totalCategories = 0;
+    let totalItems = 0;
+    let totalLocations = 0;
+
+    for (const branch of branches) {
+      // 1. Create Categories for this branch
+      const createdCategories: Record<string, any> = {};
+      for (const tpl of categoryTemplates) {
+        const cat = await this.menuCategoryModel.create({
+          branchId: branch._id,
+          name: tpl.name,
+          slug: tpl.slug,
+          icon: tpl.icon,
+          description: tpl.description,
+          sortOrder: tpl.sortOrder,
+          isActive: true,
+        });
+        createdCategories[tpl.slug] = cat;
+        totalCategories++;
+      }
+
+      // 2. Create Rich Dishes for this branch
+      const itemsToSeed = [
+        // Category 1: Breakfast
+        {
+          categoryId: createdCategories['breakfast-morning-bites']._id,
+          name: 'City Den Royal English Breakfast',
+          description: 'Two sunny-side eggs, grilled sausage links, baked beans, toasted brioche, grilled tomatoes, and sautéed mushrooms.',
+          images: ['https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?auto=format&fit=crop&w=800&q=80'],
+          basePrice: 6000,
+          hasSizes: false,
+          sizes: [],
+          optionGroups: [
+            {
+              name: 'Egg Preparation',
+              required: true,
+              minSelections: 1,
+              maxSelections: 1,
+              selectionType: OptionSelectionType.SingleSelect,
+              options: [
+                { name: 'Sunny Side Up', extraPrice: 0, isAvailable: true },
+                { name: 'Scrambled Eggs', extraPrice: 0, isAvailable: true },
+                { name: 'Well-Done Fried', extraPrice: 0, isAvailable: true },
+                { name: 'Boiled Eggs (2 pcs)', extraPrice: 0, isAvailable: true },
+              ],
+            },
+            {
+              name: 'Morning Hot Drink',
+              required: true,
+              minSelections: 1,
+              maxSelections: 1,
+              selectionType: OptionSelectionType.SingleSelect,
+              options: [
+                { name: 'Freshly Brewed Coffee', extraPrice: 0, isAvailable: true },
+                { name: 'English Breakfast Tea', extraPrice: 0, isAvailable: true },
+                { name: 'Rich Hot Cocoa & Milk', extraPrice: 500, isAvailable: true },
+              ],
+            },
+          ],
+          estimatedPrepTimeMinutes: 15,
+          isAvailable: true,
+          isChefSpecial: true,
+          tags: ['breakfast', 'popular', 'chef-special'],
+          sortOrder: 1,
+        },
+        {
+          categoryId: createdCategories['breakfast-morning-bites']._id,
+          name: 'Akara (Crispy Bean Cakes) & Creamy Custard',
+          description: 'Golden fried seasoned bean cakes served with hot vanilla custard sweetened with honey and creamy evaporated milk.',
+          images: ['https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80'],
+          basePrice: 3500,
+          hasSizes: true,
+          sizes: [
+            { name: 'Regular Bowl (6 Pcs Akara)', price: 3500, isDefault: true },
+            { name: 'Executive Bowl (10 Pcs Akara)', price: 5000, isDefault: false },
+          ],
+          optionGroups: [
+            {
+              name: 'Base Choice',
+              required: true,
+              minSelections: 1,
+              maxSelections: 1,
+              selectionType: OptionSelectionType.SingleSelect,
+              options: [
+                { name: 'Vanilla Custard & Milk', extraPrice: 0, isAvailable: true },
+                { name: 'Hot Spiced Pap (Akamu)', extraPrice: 0, isAvailable: true },
+                { name: 'Warm Rolled Oats', extraPrice: 500, isAvailable: true },
+              ],
+            },
+          ],
+          estimatedPrepTimeMinutes: 15,
+          isAvailable: true,
+          isChefSpecial: false,
+          tags: ['breakfast', 'traditional'],
+          sortOrder: 2,
+        },
+
+        // Category 2: Northern Specialties
+        {
+          categoryId: createdCategories['northern-specialties']._id,
+          name: 'Masa with Spiced Shredded Beef & Suya Yaji',
+          description: 'Golden fermented rice cakes lightly browned and served with tender shredded beef in traditional soup and fiery Yaji spice.',
+          images: ['https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80'],
+          basePrice: 4500,
+          hasSizes: true,
+          sizes: [
+            { name: 'Regular (4 Pcs)', price: 4500, isDefault: true },
+            { name: 'Large (8 Pcs)', price: 8000, isDefault: false },
+            { name: 'Sharing Platter (12 Pcs)', price: 11500, isDefault: false },
+          ],
+          optionGroups: [
+            {
+              name: 'Choice of Soup',
+              required: true,
+              minSelections: 1,
+              maxSelections: 1,
+              selectionType: OptionSelectionType.SingleSelect,
+              options: [
+                { name: 'Miyan Taushe (Pumpkin & Peanut)', extraPrice: 0, isAvailable: true },
+                { name: 'Miyan Kuka (Baobab Leaf)', extraPrice: 0, isAvailable: true },
+                { name: 'Miyan Geda (Groundnut Soup)', extraPrice: 500, isAvailable: true },
+              ],
+            },
+            {
+              name: 'Extra Toppings',
+              required: false,
+              minSelections: 0,
+              maxSelections: 3,
+              selectionType: OptionSelectionType.MultiSelect,
+              options: [
+                { name: 'Extra Spiced Shredded Beef', extraPrice: 1500, isAvailable: true },
+                { name: 'Boiled Egg (2 pcs)', extraPrice: 500, isAvailable: true },
+                { name: 'Extra Suya Yaji Pepper Sauce', extraPrice: 300, isAvailable: true },
+              ],
+            },
+          ],
+          estimatedPrepTimeMinutes: 20,
+          isAvailable: true,
+          isChefSpecial: true,
+          tags: ['popular', 'hausa', 'chef-special'],
+          sortOrder: 1,
+        },
+        {
+          categoryId: createdCategories['northern-specialties']._id,
+          name: 'Slow-Cooked Goat Meat Pepper Soup',
+          description: 'Aromatic, spicy herbal broth cooked with tender, fresh cuts of goat meat and traditional African peppersoup spices.',
+          images: ['https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80'],
+          basePrice: 5500,
+          hasSizes: true,
+          sizes: [
+            { name: 'Single Bowl', price: 5500, isDefault: true },
+            { name: 'Family Sharing Pot', price: 14000, isDefault: false },
+          ],
+          optionGroups: [
+            {
+              name: 'Spice Level',
+              required: true,
+              minSelections: 1,
+              maxSelections: 1,
+              selectionType: OptionSelectionType.SingleSelect,
+              options: [
+                { name: 'Medium Heat', extraPrice: 0, isAvailable: true },
+                { name: 'Extra Spicy Fire', extraPrice: 0, isAvailable: true },
+                { name: 'Mild & Light', extraPrice: 0, isAvailable: true },
+              ],
+            },
+            {
+              name: 'Side Starch Pairing',
+              required: false,
+              minSelections: 0,
+              maxSelections: 1,
+              selectionType: OptionSelectionType.SingleSelect,
+              options: [
+                { name: 'Boiled Yam Chunks', extraPrice: 1200, isAvailable: true },
+                { name: 'Steamed White Rice', extraPrice: 1000, isAvailable: true },
+                { name: 'Warm Agidi / Eko', extraPrice: 800, isAvailable: true },
+              ],
+            },
+          ],
+          estimatedPrepTimeMinutes: 20,
+          isAvailable: true,
+          isChefSpecial: true,
+          tags: ['peppersoup', 'spicy', 'goat-meat'],
+          sortOrder: 2,
+        },
+        {
+          categoryId: createdCategories['northern-specialties']._id,
+          name: 'Special Beef Kilishi & Suya Platter',
+          description: 'Finely sliced sun-dried beef crisps tossed in peanut chili rub, paired with skewered suya beef, red onions and cabbage.',
+          images: ['https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80'],
+          basePrice: 7000,
+          hasSizes: false,
+          sizes: [],
+          optionGroups: [
+            {
+              name: 'Suya Meat Selection',
+              required: true,
+              minSelections: 1,
+              maxSelections: 1,
+              selectionType: OptionSelectionType.SingleSelect,
+              options: [
+                { name: 'Prime Beef Suya', extraPrice: 0, isAvailable: true },
+                { name: 'Gizzard & Chicken Suya', extraPrice: 500, isAvailable: true },
+                { name: 'Mixed Deluxe Suya', extraPrice: 1500, isAvailable: true },
+              ],
+            },
+          ],
+          estimatedPrepTimeMinutes: 15,
+          isAvailable: true,
+          isChefSpecial: false,
+          tags: ['suya', 'kilishi', 'grills'],
+          sortOrder: 3,
+        },
+
+        // Category 3: Continental & Grills
+        {
+          categoryId: createdCategories['continental-grills']._id,
+          name: 'City Den Party Jollof with Quarter Grilled Chicken',
+          description: 'Smoky firewood-style Nigerian party jollof rice served with seasoned grilled quarter chicken, fried sweet plantains (dodo), and coleslaw.',
+          images: ['https://images.unsplash.com/photo-1574484284002-952d92456975?auto=format&fit=crop&w=800&q=80'],
+          basePrice: 6500,
+          hasSizes: true,
+          sizes: [
+            { name: 'Standard Plate', price: 6500, isDefault: true },
+            { name: 'Executive Jumbo Plate', price: 9500, isDefault: false },
+          ],
+          optionGroups: [
+            {
+              name: 'Choice of Protein',
+              required: true,
+              minSelections: 1,
+              maxSelections: 1,
+              selectionType: OptionSelectionType.SingleSelect,
+              options: [
+                { name: 'Quarter Grilled Chicken', extraPrice: 0, isAvailable: true },
+                { name: 'Crispy Fried Fish Cut', extraPrice: 500, isAvailable: true },
+                { name: 'Tender Braised Beef (2 pcs)', extraPrice: 500, isAvailable: true },
+                { name: 'Jumbo Grilled Turkey Wing', extraPrice: 2000, isAvailable: true },
+              ],
+            },
+            {
+              name: 'Extra Sides',
+              required: false,
+              minSelections: 0,
+              maxSelections: 3,
+              selectionType: OptionSelectionType.MultiSelect,
+              options: [
+                { name: 'Extra Sweet Fried Plantains (Dodo)', extraPrice: 1000, isAvailable: true },
+                { name: 'Steamed Moi-Moi with Egg', extraPrice: 1200, isAvailable: true },
+                { name: 'Fresh Coleslaw Salad', extraPrice: 500, isAvailable: true },
+              ],
+            },
+          ],
+          estimatedPrepTimeMinutes: 25,
+          isAvailable: true,
+          isChefSpecial: true,
+          tags: ['jollof', 'popular', 'grilled-chicken'],
+          sortOrder: 1,
+        },
+        {
+          categoryId: createdCategories['continental-grills']._id,
+          name: 'Char-Grilled Whole Croaker Fish with Yam Chips',
+          description: 'Fresh whole croaker fish marinated in spicy garlic ginger herb butter, char-grilled to perfection and served with crispy yam fries.',
+          images: ['https://images.unsplash.com/photo-1534939561126-855b8675edd7?auto=format&fit=crop&w=800&q=80'],
+          basePrice: 12500,
+          hasSizes: false,
+          sizes: [],
+          optionGroups: [
+            {
+              name: 'Basting Sauce Glaze',
+              required: true,
+              minSelections: 1,
+              maxSelections: 1,
+              selectionType: OptionSelectionType.SingleSelect,
+              options: [
+                { name: 'Fiery Pepper Herb Sauce', extraPrice: 0, isAvailable: true },
+                { name: 'Sweet BBQ Glaze', extraPrice: 0, isAvailable: true },
+                { name: 'Lemon Garlic Butter', extraPrice: 500, isAvailable: true },
+              ],
+            },
+            {
+              name: 'Starch Accompaniment',
+              required: true,
+              minSelections: 1,
+              maxSelections: 1,
+              selectionType: OptionSelectionType.SingleSelect,
+              options: [
+                { name: 'Crispy Yam Fries', extraPrice: 0, isAvailable: true },
+                { name: 'Golden Potato French Fries', extraPrice: 0, isAvailable: true },
+                { name: 'Seasoned Fried Rice', extraPrice: 1000, isAvailable: true },
+              ],
+            },
+          ],
+          estimatedPrepTimeMinutes: 35,
+          isAvailable: true,
+          isChefSpecial: true,
+          tags: ['seafood', 'grilled-fish', 'premium'],
+          sortOrder: 2,
+        },
+
+        // Category 4: Soups & Swallows
+        {
+          categoryId: createdCategories['soups-swallows']._id,
+          name: 'Lumpy Egusi Soup with Assorted Meats',
+          description: 'Savory ground melon seed soup enriched with spinach, stockfish chunks, kpomo, shaki, and tender beef cuts.',
+          images: ['https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=800&q=80'],
+          basePrice: 7000,
+          hasSizes: false,
+          sizes: [],
+          optionGroups: [
+            {
+              name: 'Choice of Swallow',
+              required: true,
+              minSelections: 1,
+              maxSelections: 1,
+              selectionType: OptionSelectionType.SingleSelect,
+              options: [
+                { name: 'Pounded Yam', extraPrice: 0, isAvailable: true },
+                { name: 'Semovita', extraPrice: 0, isAvailable: true },
+                { name: 'Wheat Swallow', extraPrice: 0, isAvailable: true },
+                { name: 'Yellow Garri (Eba)', extraPrice: 0, isAvailable: true },
+              ],
+            },
+            {
+              name: 'Extra Proteins',
+              required: false,
+              minSelections: 0,
+              maxSelections: 2,
+              selectionType: OptionSelectionType.MultiSelect,
+              options: [
+                { name: 'Fried Goat Meat Cut', extraPrice: 2000, isAvailable: true },
+                { name: 'Stockfish Head Chunk', extraPrice: 2500, isAvailable: true },
+                { name: 'Tender Cow Foot', extraPrice: 1200, isAvailable: true },
+              ],
+            },
+          ],
+          estimatedPrepTimeMinutes: 25,
+          isAvailable: true,
+          isChefSpecial: false,
+          tags: ['soup', 'egusi', 'swallow'],
+          sortOrder: 1,
+        },
+        {
+          categoryId: createdCategories['soups-swallows']._id,
+          name: 'Calabar Afang Soup with Smoked Catfish',
+          description: 'Finely shredded afang leaves, fresh waterleaves, periwinkles, smoked catfish, dried prawns, and assorted beef.',
+          images: ['https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80'],
+          basePrice: 8000,
+          hasSizes: false,
+          sizes: [],
+          optionGroups: [
+            {
+              name: 'Choice of Swallow',
+              required: true,
+              minSelections: 1,
+              maxSelections: 1,
+              selectionType: OptionSelectionType.SingleSelect,
+              options: [
+                { name: 'Pounded Yam', extraPrice: 0, isAvailable: true },
+                { name: 'Semovita', extraPrice: 0, isAvailable: true },
+                { name: 'Wheat Swallow', extraPrice: 0, isAvailable: true },
+                { name: 'Yellow Garri (Eba)', extraPrice: 0, isAvailable: true },
+              ],
+            },
+            {
+              name: 'Seafood Additions',
+              required: false,
+              minSelections: 0,
+              maxSelections: 2,
+              selectionType: OptionSelectionType.MultiSelect,
+              options: [
+                { name: 'Jumbo Snail in Sauce', extraPrice: 3500, isAvailable: true },
+                { name: 'Extra Smoked Catfish Chunk', extraPrice: 2000, isAvailable: true },
+              ],
+            },
+          ],
+          estimatedPrepTimeMinutes: 25,
+          isAvailable: true,
+          isChefSpecial: true,
+          tags: ['soup', 'afang', 'chef-special'],
+          sortOrder: 2,
+        },
+
+        // Category 5: Fast Food
+        {
+          categoryId: createdCategories['fast-food-finger-bites']._id,
+          name: 'City Den Triple Club Sandwich & Fries',
+          description: 'Toasted triple brioche layered with smoked chicken, boiled egg, cheese, crispy beef bacon, tomato, lettuce, and secret garlic mayo.',
+          images: ['https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=800&q=80'],
+          basePrice: 5500,
+          hasSizes: false,
+          sizes: [],
+          optionGroups: [
+            {
+              name: 'Fries Accompaniment',
+              required: true,
+              minSelections: 1,
+              maxSelections: 1,
+              selectionType: OptionSelectionType.SingleSelect,
+              options: [
+                { name: 'French Fries', extraPrice: 0, isAvailable: true },
+                { name: 'Spicy Potato Wedges', extraPrice: 500, isAvailable: true },
+                { name: 'Crispy Yam Chips', extraPrice: 500, isAvailable: true },
+              ],
+            },
+            {
+              name: 'Sauce Dips',
+              required: false,
+              minSelections: 0,
+              maxSelections: 2,
+              selectionType: OptionSelectionType.MultiSelect,
+              options: [
+                { name: 'Garlic Mayo Dip', extraPrice: 300, isAvailable: true },
+                { name: 'Sweet Chili Dip', extraPrice: 300, isAvailable: true },
+              ],
+            },
+          ],
+          estimatedPrepTimeMinutes: 20,
+          isAvailable: true,
+          isChefSpecial: false,
+          tags: ['sandwich', 'fries', 'quick-bites'],
+          sortOrder: 1,
+        },
+        {
+          categoryId: createdCategories['fast-food-finger-bites']._id,
+          name: 'Crispy Seasoned Chicken Wings',
+          description: 'Tender chicken wings fried crisp and tossed in your choice of artisan sauce glaze.',
+          images: ['https://images.unsplash.com/photo-1567620832903-9fc6debc209f?auto=format&fit=crop&w=800&q=80'],
+          basePrice: 4500,
+          hasSizes: true,
+          sizes: [
+            { name: '6 Wings', price: 4500, isDefault: true },
+            { name: '12 Wings', price: 8500, isDefault: false },
+            { name: '20 Wings Sharing Pack', price: 13500, isDefault: false },
+          ],
+          optionGroups: [
+            {
+              name: 'Glaze Flavor',
+              required: true,
+              minSelections: 1,
+              maxSelections: 1,
+              selectionType: OptionSelectionType.SingleSelect,
+              options: [
+                { name: 'Honey BBQ Sauce', extraPrice: 0, isAvailable: true },
+                { name: 'Suya Spiced Fire Glaze', extraPrice: 0, isAvailable: true },
+                { name: 'Garlic Parmesan Crust', extraPrice: 500, isAvailable: true },
+              ],
+            },
+          ],
+          estimatedPrepTimeMinutes: 20,
+          isAvailable: true,
+          isChefSpecial: false,
+          tags: ['wings', 'finger-food', 'crispy'],
+          sortOrder: 2,
+        },
+
+        // Category 6: Cold Drinks & Juices
+        {
+          categoryId: createdCategories['juices-beverages']._id,
+          name: 'Chilled Kunu Aya (Tiger Nut, Dates & Coconut)',
+          description: 'Creamy homemade milk made from blended organic tiger nuts, dates, ginger, and coconut water. Served ice-cold.',
+          images: ['https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=800&q=80'],
+          basePrice: 2000,
+          hasSizes: true,
+          sizes: [
+            { name: '500ml Bottle', price: 2000, isDefault: true },
+            { name: '1 Litre Pitcher', price: 3800, isDefault: false },
+          ],
+          optionGroups: [
+            {
+              name: 'Sweetness',
+              required: true,
+              minSelections: 1,
+              maxSelections: 1,
+              selectionType: OptionSelectionType.SingleSelect,
+              options: [
+                { name: 'All Natural / No Added Sugar', extraPrice: 0, isAvailable: true },
+                { name: 'Pure Honey Infused', extraPrice: 300, isAvailable: true },
+              ],
+            },
+          ],
+          estimatedPrepTimeMinutes: 5,
+          isAvailable: true,
+          isChefSpecial: true,
+          tags: ['beverage', 'healthy', 'traditional'],
+          sortOrder: 1,
+        },
+        {
+          categoryId: createdCategories['juices-beverages']._id,
+          name: 'Infused Hibiscus & Pineapple Zobo Cooler',
+          description: 'Chilled hibiscus flower infusion simmered with fresh pineapple chunks, ginger, and aromatic cloves.',
+          images: ['https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=800&q=80'],
+          basePrice: 1500,
+          hasSizes: true,
+          sizes: [
+            { name: '500ml Bottle', price: 1500, isDefault: true },
+            { name: '1 Litre Pitcher', price: 2800, isDefault: false },
+          ],
+          optionGroups: [],
+          estimatedPrepTimeMinutes: 5,
+          isAvailable: true,
+          isChefSpecial: false,
+          tags: ['zobo', 'cold-drink', 'refreshing'],
+          sortOrder: 2,
+        },
+      ];
+
+      for (const itemData of itemsToSeed) {
+        await this.menuItemModel.create({
+          branchId: branch._id,
+          ...itemData,
+        });
+        totalItems++;
+      }
+
+      // 3. Create Delivery Locations for this branch
+      const locationTemplates =
+        branch.name.toLowerCase().includes('kaduna')
+          ? [
+              { zoneName: 'Ungwan Rimi & Malali', deliveryFee: 1000, estimatedDeliveryMinutes: 25, sortOrder: 1 },
+              { zoneName: 'Barnawa & Narayi', deliveryFee: 1500, estimatedDeliveryMinutes: 35, sortOrder: 2 },
+              { zoneName: 'Kaduna GRA & Independence Way', deliveryFee: 1000, estimatedDeliveryMinutes: 30, sortOrder: 3 },
+              { zoneName: 'Millennium City', deliveryFee: 2500, estimatedDeliveryMinutes: 45, sortOrder: 4 },
+            ]
+          : branch.name.toLowerCase().includes('maiduguri')
+          ? [
+              { zoneName: 'GRA Maiduguri', deliveryFee: 1000, estimatedDeliveryMinutes: 25, sortOrder: 1 },
+              { zoneName: 'UNIMAID Axis', deliveryFee: 1500, estimatedDeliveryMinutes: 35, sortOrder: 2 },
+              { zoneName: 'Bulumkutu & Airport Road', deliveryFee: 1500, estimatedDeliveryMinutes: 35, sortOrder: 3 },
+            ]
+          : [
+              { zoneName: 'Wuse II', deliveryFee: 1500, estimatedDeliveryMinutes: 35, sortOrder: 1 },
+              { zoneName: 'Maitama', deliveryFee: 2000, estimatedDeliveryMinutes: 40, sortOrder: 2 },
+              { zoneName: 'Jabi & Utako', deliveryFee: 1000, estimatedDeliveryMinutes: 25, sortOrder: 3 },
+              { zoneName: 'Garki I & II', deliveryFee: 2000, estimatedDeliveryMinutes: 45, sortOrder: 4 },
+              { zoneName: 'Asokoro', deliveryFee: 2500, estimatedDeliveryMinutes: 50, sortOrder: 5 },
+              { zoneName: 'Guzape', deliveryFee: 3000, estimatedDeliveryMinutes: 55, sortOrder: 6 },
+              { zoneName: 'Central Business District (CBD)', deliveryFee: 1500, estimatedDeliveryMinutes: 35, sortOrder: 7 },
+              { zoneName: 'Life Camp & Gwarinpa', deliveryFee: 2000, estimatedDeliveryMinutes: 40, sortOrder: 8 },
+            ];
+
+      for (const loc of locationTemplates) {
+        await this.deliveryLocationModel.create({
+          branchId: branch._id,
+          ...loc,
+          isActive: true,
+        });
+        totalLocations++;
+      }
+    }
+
+    // 4. Create General and Branch Promotional Banners
+    const bannersToSeed = [
+      {
+        branchId: null, // applies to all branches
+        title: 'Executive Suite Dining Experience',
+        subtitle: 'Enjoy gourmet chef specials delivered right to your apartment door.',
+        imageUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=80',
+        bannerType: BannerType.SpecialDiscount,
+        actionLink: '/menu',
+        isActive: true,
+        sortOrder: 1,
+      },
+      {
+        branchId: null,
+        title: 'Authentic Northern & Traditional Specialties',
+        subtitle: 'Fresh Masa, Miyan Taushe, Suya, and slow-cooked pepper soup made fresh daily.',
+        imageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80',
+        bannerType: BannerType.MealPromo,
+        actionLink: '/menu',
+        isActive: true,
+        sortOrder: 2,
+      },
+      {
+        branchId: null,
+        title: 'Fast City Home Delivery',
+        subtitle: 'Hot, packaged meals dispatched across all major city delivery zones in 45 mins.',
+        imageUrl: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=1200&q=80',
+        bannerType: BannerType.Announcement,
+        actionLink: '/menu',
+        isActive: true,
+        sortOrder: 3,
+      },
+    ];
+
+    for (const b of bannersToSeed) {
+      await this.bannerModel.create(b);
+    }
+
+    this.logger.log(`Restaurant seed completed — Categories: ${totalCategories}, Dishes: ${totalItems}, Delivery Locations: ${totalLocations}, Banners: ${bannersToSeed.length}`);
+    return {
+      message: 'Restaurant menu items, categories, delivery zones, and banners seeded successfully',
+      stats: {
+        branches: branches.length,
+        categories: totalCategories,
+        menuItems: totalItems,
+        deliveryLocations: totalLocations,
+        banners: bannersToSeed.length,
       },
     };
   }

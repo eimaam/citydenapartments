@@ -355,3 +355,190 @@ export interface RevenueLogSummaryResponse {
   };
   departmentCards: DepartmentRevenueCard[];
 }
+
+// ── Restaurant & Digital Menu System ──────────────────────────────
+
+export const RestaurantOrderStatus = {
+  Received: 'received',
+  Confirmed: 'confirmed',
+  Preparing: 'preparing',
+  OutForDelivery: 'out_for_delivery',
+  Completed: 'completed',
+  Cancelled: 'cancelled',
+} as const;
+export type RestaurantOrderStatusType = (typeof RestaurantOrderStatus)[keyof typeof RestaurantOrderStatus];
+
+export const RestaurantDeliveryType = {
+  InRoom: 'in_room',
+  Pickup: 'pickup',
+  HomeDelivery: 'home_delivery',
+} as const;
+export type RestaurantDeliveryTypeType = (typeof RestaurantDeliveryType)[keyof typeof RestaurantDeliveryType];
+
+export const RestaurantPaymentMethod = {
+  PayOnDelivery: 'pay_on_delivery',
+  ChargeToRoom: 'charge_to_room',
+  Transfer: 'transfer',
+  PosTerminal: 'pos_terminal',
+} as const;
+export type RestaurantPaymentMethodType = (typeof RestaurantPaymentMethod)[keyof typeof RestaurantPaymentMethod];
+
+export const RestaurantPaymentStatus = {
+  Pending: 'pending',
+  Settled: 'settled',
+  PostedToFolio: 'posted_to_folio',
+  Cancelled: 'cancelled',
+} as const;
+export type RestaurantPaymentStatusType = (typeof RestaurantPaymentStatus)[keyof typeof RestaurantPaymentStatus];
+
+export const BannerType = {
+  MealPromo: 'meal_promo',
+  Announcement: 'announcement',
+  SpecialDiscount: 'special_discount',
+} as const;
+export type BannerTypeType = (typeof BannerType)[keyof typeof BannerType];
+
+export const OptionSelectionType = {
+  SingleSelect: 'single_select',
+  MultiSelect: 'multi_select',
+} as const;
+export type OptionSelectionTypeType = (typeof OptionSelectionType)[keyof typeof OptionSelectionType];
+
+export interface MenuItemSize {
+  name: string;
+  price: number;
+  isDefault?: boolean;
+}
+
+export interface MenuItemOptionItem {
+  name: string;
+  extraPrice: number;
+  isAvailable?: boolean;
+}
+
+export interface MenuItemOptionGroup {
+  name: string;
+  required: boolean;
+  minSelections?: number;
+  maxSelections?: number;
+  selectionType: OptionSelectionTypeType;
+  options: MenuItemOptionItem[];
+}
+
+export interface MenuCategoryResponse {
+  _id: string;
+  branchId: string;
+  name: string;
+  slug: string;
+  description?: string;
+  icon?: string;
+  sortOrder: number;
+  isActive: boolean;
+  itemCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MenuItemResponse {
+  _id: string;
+  branchId: string;
+  categoryId: string | MenuCategoryResponse;
+  name: string;
+  description?: string;
+  images: string[];
+  basePrice: number;
+  hasSizes: boolean;
+  sizes: MenuItemSize[];
+  optionGroups: MenuItemOptionGroup[];
+  estimatedPrepTimeMinutes?: number;
+  isAvailable: boolean;
+  isChefSpecial: boolean;
+  tags: string[];
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DeliveryLocationResponse {
+  _id: string;
+  branchId: string;
+  zoneName: string;
+  deliveryFee: number;
+  estimatedDeliveryMinutes?: number;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RestaurantBannerResponse {
+  _id: string;
+  branchId?: string | null;
+  title: string;
+  subtitle?: string;
+  imageUrl?: string;
+  bannerType: BannerTypeType;
+  actionLink?: string;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SelectedOptionItem {
+  groupName: string;
+  optionName: string;
+  extraPrice: number;
+}
+
+export interface OrderItemLine {
+  menuItemId: string;
+  name: string;
+  image?: string;
+  selectedSize?: MenuItemSize;
+  selectedOptions?: SelectedOptionItem[];
+  unitPrice: number;
+  quantity: number;
+  specialInstructions?: string;
+  lineTotal: number;
+}
+
+export interface OrderTimelineEvent {
+  status: RestaurantOrderStatusType;
+  timestamp: string;
+  updatedBy?: string;
+  notes?: string;
+}
+
+export interface RestaurantOrderResponse {
+  _id: string;
+  orderNumber: string;
+  branchId: string | { _id: string; name: string; code?: string };
+  customer: {
+    name: string;
+    phone: string;
+    email?: string;
+  };
+  isGuestLodged: boolean;
+  roomNumber?: string;
+  deliveryType: RestaurantDeliveryTypeType;
+  deliveryLocation?: {
+    zoneId?: string;
+    zoneName?: string;
+    address?: string;
+    notes?: string;
+  };
+  orderNotes?: string;
+  items: OrderItemLine[];
+  subtotal: number;
+  deliveryFee: number;
+  totalAmount: number;
+  orderStatus: RestaurantOrderStatusType;
+  paymentMethod: RestaurantPaymentMethodType;
+  paymentStatus: RestaurantPaymentStatusType;
+  timeline: OrderTimelineEvent[];
+  telegramMessageId?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+

@@ -50,17 +50,29 @@ class BranchPoliciesDto {
 
 export class BranchUpdateDto {
     @IsString()
-    name: string;
+    @IsOptional()
+    name?: string;
 
     @IsString()
-    code: string
+    @IsOptional()
+    code?: string;
 
     @IsString()
     @MaxLength(100)
-    address: string
+    @IsOptional()
+    address?: string;
+
+    @IsString()
+    @IsOptional()
+    city?: string;
+
+    @IsString()
+    @IsOptional()
+    state?: string;
 
     @IsBoolean()
-    isActive: boolean
+    @IsOptional()
+    isActive?: boolean;
 
     @ValidateNested()
     @Type(() => BranchPoliciesDto)

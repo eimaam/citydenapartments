@@ -58,7 +58,12 @@ export class BranchService {
     }
 
     async create(dto: CreateBranchDto) {
-        const { name, address, code, isActive, policies } = dto
+        const name = dto.name?.trim();
+        const code = dto.code?.trim().toUpperCase();
+        const address = dto.address?.trim();
+        const city = dto.city ? dto.city.trim().toUpperCase() : '';
+        const state = dto.state ? dto.state.trim().toUpperCase() : '';
+        const { isActive, policies } = dto;
 
         const duplicate = await this.branchModel.findOne({
             $or: [{ name: { $regex: `^${escapeRegex(name)}$`, $options: 'i' } }, { code: code.toUpperCase() }],
@@ -69,20 +74,24 @@ export class BranchService {
         }
 
         const newBranch = await this.branchModel.create({
-            name, address, code, isActive, policies
-        })
+            name, address, city, state, code, isActive, policies
+        });
 
         await this.redisService.invalidateDashboardCache();
-        this.logger.log(`Branch created — ${name} (${code}) | address: ${address}`);
+        this.logger.log(`Branch created — ${name} (${code}) | address: ${address}, ${city}, ${state}`);
 
         return newBranch;
     }
 
     async update(branchId: string, dto: BranchUpdateDto) {
-        const updateDetails = {
-            ...dto
-        }
-        const updatedBranch = await this.branchModel.findByIdAndUpdate(branchId, updateDetails, { new: true })
+        const updateDetails: any = { ...dto };
+        if (dto.name) updateDetails.name = dto.name.trim();
+        if (dto.code) updateDetails.code = dto.code.trim().toUpperCase();
+        if (dto.address) updateDetails.address = dto.address.trim();
+        if (dto.city) updateDetails.city = dto.city.trim().toUpperCase();
+        if (dto.state) updateDetails.state = dto.state.trim().toUpperCase();
+
+        const updatedBranch = await this.branchModel.findByIdAndUpdate(branchId, updateDetails, { new: true });
 
         if (updatedBranch) {
             await this.redisService.del(CACHE_KEYS.BRANCH_DETAILS(branchId));
@@ -91,6 +100,5 @@ export class BranchService {
         }
 
         return updatedBranch;
-
     }
 }

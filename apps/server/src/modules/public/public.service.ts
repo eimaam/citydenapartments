@@ -27,6 +27,21 @@ export class PublicService {
     });
   }
 
+  async getBranches() {
+    const branches = await this.branchModel.find({ isActive: true }).lean();
+    const items = branches.map((b) => ({
+      _id: (b as any)._id.toString(),
+      id: (b as any)._id.toString(),
+      name: b.name,
+      code: b.code,
+      address: b.address || '',
+      city: b.city || '',
+      state: b.state || '',
+      policies: (b as any).policies || {},
+    }));
+    return { items };
+  }
+
   async getRoomTypes(branchCode?: string) {
     const filter: any = { isActive: true };
     if (branchCode) {
