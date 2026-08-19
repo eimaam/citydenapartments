@@ -53,14 +53,20 @@ export class CreateBranchDto {
     name: string;
 
     @IsString()
-    code: string
+    code: string;
 
     @IsString()
     @MaxLength(100)
-    address: string
+    address: string;
+
+    @IsString()
+    city: string;
+
+    @IsString()
+    state: string;
 
     @IsBoolean()
-    isActive: boolean
+    isActive: boolean;
 
     @ValidateNested()
     @Type(() => BranchPoliciesDto)

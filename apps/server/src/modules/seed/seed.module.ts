@@ -13,6 +13,10 @@ import { InventoryTransaction, InventoryTransactionSchema } from '../inventory/i
 import { Employee, EmployeeSchema } from '../employees/employee.schema';
 import { Customer, CustomerSchema } from '../customers/customer.schema';
 import { Department, DepartmentSchema } from '../departments/department.schema';
+import { MenuCategory, MenuCategorySchema } from '../restaurant-menu/schemas/menu-category.schema';
+import { MenuItem, MenuItemSchema } from '../restaurant-menu/schemas/menu-item.schema';
+import { RestaurantBanner, RestaurantBannerSchema } from '../restaurant-menu/schemas/restaurant-banner.schema';
+import { DeliveryLocation, DeliveryLocationSchema } from '../restaurant-delivery/schemas/delivery-location.schema';
 
 @Module({
   imports: [
@@ -27,6 +31,10 @@ import { Department, DepartmentSchema } from '../departments/department.schema';
       { name: Employee.name, schema: EmployeeSchema },
       { name: Customer.name, schema: CustomerSchema },
       { name: Department.name, schema: DepartmentSchema },
+      { name: MenuCategory.name, schema: MenuCategorySchema },
+      { name: MenuItem.name, schema: MenuItemSchema },
+      { name: RestaurantBanner.name, schema: RestaurantBannerSchema },
+      { name: DeliveryLocation.name, schema: DeliveryLocationSchema },
     ]),
   ],
   controllers: [SeedController],

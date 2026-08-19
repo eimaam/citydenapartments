@@ -27,6 +27,9 @@ interface AppConfig {
   ZEPTOMAIL_API_TOKEN?: string;
   RESEND_API_KEY?: string;
   PLATFORM_DOMAIN?: string;
+  TELEGRAM_BOT_TOKEN?: string;
+  TELEGRAM_STAFF_CHAT_ID?: string;
+  TELEGRAM_ENABLED?: boolean;
 }
 
 export const AppConfigValidationSchema = Joi.object({
@@ -35,7 +38,7 @@ export const AppConfigValidationSchema = Joi.object({
   MONGODB_URI: Joi.string().required(),
   JWT_SECRET: Joi.string().min(16).required(),
   JWT_EXPIRES_IN: Joi.string().default('7d'),
-  CORS_ORIGINS: Joi.string().default('http://localhost:5174,http://localhost:5175'),
+  CORS_ORIGINS: Joi.string().default('http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176'),
   REDIS_URL: Joi.string().uri().allow('').optional(),
   REDIS_HOST: Joi.string().allow('').optional(),
   REDIS_PORT: Joi.number().optional(),
@@ -53,6 +56,10 @@ export const AppConfigValidationSchema = Joi.object({
   ZEPTOMAIL_API_TOKEN: Joi.string().allow('').optional(),
   RESEND_API_KEY: Joi.string().allow('').optional(),
   PLATFORM_DOMAIN: Joi.string().default('https://citydenapartments.com'),
+  TELEGRAM_BOT_TOKEN: Joi.string().allow('').optional(),
+  TELEGRAM_STAFF_CHAT_ID: Joi.string().allow('').optional().default(process.env.TELEGRAM_CHAT_ID || process.env.TELEGRAM_STAFF_CHAT_ID || ''),
+  TELEGRAM_CHAT_ID: Joi.string().allow('').optional(),
+  TELEGRAM_ENABLED: Joi.boolean().default(true),
 });
 
 const { error, value } = AppConfigValidationSchema.validate(process.env, {

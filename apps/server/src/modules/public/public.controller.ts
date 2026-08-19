@@ -16,6 +16,11 @@ export class PublicController {
     };
   }
 
+  @Get('branches')
+  getBranches() {
+    return this.publicService.getBranches();
+  }
+
   @Get('room-types')
   getRoomTypes(@Query('branchCode') branchCode?: string) {
     return this.publicService.getRoomTypes(branchCode);

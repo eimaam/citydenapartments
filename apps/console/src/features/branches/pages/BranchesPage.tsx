@@ -13,6 +13,8 @@ interface Branch {
   name: string;
   code: string;
   address: string;
+  city: string;
+  state: string;
   isActive: boolean;
 }
 
@@ -34,7 +36,7 @@ export default function BranchesPage() {
   const [drawer, setDrawer] = useState(false);
   const [edit, setEdit] = useState<Branch | null>(null);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ name: '', code: '', address: '', isActive: true });
+  const [form, setForm] = useState({ name: '', code: '', address: '', city: '', state: '', isActive: true });
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -56,14 +58,40 @@ export default function BranchesPage() {
     searchTimer.current = setTimeout(() => setSearch(val), 400);
   };
 
-  const openCreate = () => { setEdit(null); setForm({ name: '', code: '', address: '', isActive: true }); setDrawer(true); };
-  const openEdit = (b: Branch) => { setEdit(b); setForm({ name: b.name, code: b.code, address: b.address, isActive: b.isActive }); setDrawer(true); };
+  const openCreate = () => {
+    setEdit(null);
+    setForm({ name: '', code: '', address: '', city: '', state: '', isActive: true });
+    setDrawer(true);
+  };
+
+  const openEdit = (b: Branch) => {
+    setEdit(b);
+    setForm({
+      name: b.name,
+      code: b.code,
+      address: b.address,
+      city: b.city || '',
+      state: b.state || '',
+      isActive: b.isActive,
+    });
+    setDrawer(true);
+  };
 
   const save = async () => {
+    if (!form.name.trim() || !form.code.trim() || !form.address.trim() || !form.city.trim() || !form.state.trim()) {
+      toast('error', 'Please fill in all required fields (Name, Code, Address, City, State).');
+      return;
+    }
     setSaving(true);
     try {
-      if (edit) await api.patch(`/branches/${edit._id}`, form);
-      else await api.post('/branches', form);
+      const payload = {
+        ...form,
+        code: form.code.trim().toUpperCase(),
+        city: form.city.trim().toUpperCase(),
+        state: form.state.trim().toUpperCase(),
+      };
+      if (edit) await api.patch(`/branches/${edit._id}`, payload);
+      else await api.post('/branches', payload);
       toast('success', edit ? 'Branch updated.' : 'Branch created.');
       setDrawer(false);
       fetch();
@@ -73,7 +101,16 @@ export default function BranchesPage() {
 
   const columns: TableProps<Branch>['columns'] = [
     { title: 'Name', dataIndex: 'name', key: 'name' },
-    { title: 'Code', dataIndex: 'code', key: 'code', width: 80, render: (_: unknown, r: Branch) => <span className="font-mono">{r.code}</span> },
+    { title: 'Code', dataIndex: 'code', key: 'code', width: 80, render: (_: unknown, r: Branch) => <span className="font-mono font-bold">{r.code}</span> },
+    {
+      title: 'Location',
+      key: 'location',
+      render: (_: unknown, r: Branch) => (
+        <span>
+          {r.city ? `${r.city}, ${r.state || ''}` : '-'}
+        </span>
+      ),
+    },
     { title: 'Address', dataIndex: 'address', key: 'address', ellipsis: true },
     { title: 'Status', dataIndex: 'isActive', key: 'status', width: 100, render: (_: unknown, r: Branch) => <Badge status={r.isActive ? RoomStatus.Available : RoomStatus.Maintenance} /> },
   ];
@@ -108,9 +145,28 @@ export default function BranchesPage() {
       <Drawer open={drawer} onClose={() => setDrawer(false)} title={edit ? 'Edit Branch' : 'New Branch'} size="sm"
         footer={<div className="flex justify-end gap-3"><Button variant="secondary" onClick={() => setDrawer(false)}>Cancel</Button><Button loading={saving} onClick={save}>{edit ? 'Save' : 'Create'}</Button></div>}>
         <div className="space-y-4">
-          <Input size="lg" placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          <Input size="lg" placeholder="Code" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} />
-          <Input size="lg" placeholder="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+          <div>
+            <label className="block text-xs font-bold text-outline mb-1 uppercase tracking-wider">Branch Name *</label>
+            <Input size="lg" placeholder="e.g. City Den Wuse" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-outline mb-1 uppercase tracking-wider">Branch Code *</label>
+            <Input size="lg" placeholder="e.g. CDW" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-outline mb-1 uppercase tracking-wider">City *</label>
+              <Input size="lg" placeholder="e.g. ABUJA" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value.toUpperCase() })} />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-outline mb-1 uppercase tracking-wider">State *</label>
+              <Input size="lg" placeholder="e.g. FCT" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value.toUpperCase() })} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-outline mb-1 uppercase tracking-wider">Physical Address *</label>
+            <Input size="lg" placeholder="e.g. Plot 1234, Wuse II" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+          </div>
         </div>
       </Drawer>
     </div>

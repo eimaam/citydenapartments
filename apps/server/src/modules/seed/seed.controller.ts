@@ -39,6 +39,15 @@ export class SeedController {
     return this.seedService.seedStaff();
   }
 
+  @Post('restaurant')
+  @Public()
+  seedRestaurant() {
+    if (process.env.NODE_ENV === 'production') {
+      return { message: 'Seed endpoint is disabled in production.' };
+    }
+    return this.seedService.seedRestaurant();
+  }
+
   @Post('prod')
   @Public()
   seedProd() {

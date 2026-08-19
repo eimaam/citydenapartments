@@ -29,6 +29,10 @@ import { AuditLogModule } from './modules/audit-log/audit-log.module';
 import { EmailModule } from './modules/email/email.module';
 import { LaundryModule } from './modules/laundry/laundry.module';
 import { RevenueLogsModule } from './modules/revenue-logs/revenue-logs.module';
+import { RestaurantMenuModule } from './modules/restaurant-menu/restaurant-menu.module';
+import { RestaurantDeliveryModule } from './modules/restaurant-delivery/restaurant-delivery.module';
+import { RestaurantOrdersModule } from './modules/restaurant-orders/restaurant-orders.module';
+import { TelegramBotModule } from './modules/telegram-bot/telegram-bot.module';
 import mongoose from 'mongoose';
 
 if (AppConfig.NODE_ENV === 'development') {
@@ -80,6 +84,10 @@ if (AppConfig.NODE_ENV === 'development') {
     EmailModule,
     LaundryModule,
     RevenueLogsModule,
+    RestaurantMenuModule,
+    RestaurantDeliveryModule,
+    RestaurantOrdersModule,
+    TelegramBotModule,
   ],
   
   providers: [

@@ -20,6 +20,10 @@ import {
   BookUser,
   Shirt,
   DollarSign,
+  UtensilsCrossed,
+  Truck,
+  Sparkles,
+  BarChart3,
 } from 'lucide-react';
 import type { UserRoleType } from '../../lib/types';
 import { cn } from '../../lib/utils';
@@ -64,6 +68,12 @@ const menuConfig: MenuConfig = {
       { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
       { label: 'Revenue Logs', icon: DollarSign, path: '/revenue-logs' },
     ]},
+    { heading: 'Restaurant & Menu', items: [
+      { label: 'Menu Catalog', icon: UtensilsCrossed, path: '/restaurant/menu' },
+      { label: 'Delivery Zones', icon: Truck, path: '/restaurant/delivery-zones' },
+      { label: 'Banners & Offers', icon: Sparkles, path: '/restaurant/banners' },
+      { label: 'Restaurant Analytics', icon: BarChart3, path: '/restaurant/analytics' },
+    ]},
     { heading: 'Services', items: [
       { label: 'Laundry Price List', icon: Shirt, path: '/laundry-items' },
     ]},
@@ -92,6 +102,12 @@ const menuConfig: MenuConfig = {
     { heading: 'Reservations', items: [
       { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
       { label: 'Calendar', icon: CalendarFold, path: '/bookings/calendar' },
+    ]},
+    { heading: 'Restaurant & Menu', items: [
+      { label: 'Menu Catalog', icon: UtensilsCrossed, path: '/restaurant/menu' },
+      { label: 'Delivery Zones', icon: Truck, path: '/restaurant/delivery-zones' },
+      { label: 'Banners & Offers', icon: Sparkles, path: '/restaurant/banners' },
+      { label: 'Restaurant Analytics', icon: BarChart3, path: '/restaurant/analytics' },
     ]},
     { heading: 'Logistics', items: [
       { label: 'Inventory', icon: Package, path: '/inventory' },

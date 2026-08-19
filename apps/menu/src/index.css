@@ -1,0 +1,44 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@source "../../../packages/shared/src";
+
+@theme {
+  --color-surface: #fbf9f9;
+  --color-surface-dim: #dbdad9;
+  --color-surface-bright: #fbf9f9;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f5f3f3;
+  --color-surface-container: #efeded;
+  --color-surface-container-high: #e9e8e7;
+  --color-surface-container-highest: #e4e2e2;
+  --color-on-surface: #1b1c1c;
+  --color-on-surface-variant: #4d4635;
+
+  --color-primary: #d4af37;
+  --color-primary-dark: #b89628;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #fff4d1;
+  --color-on-primary-container: #554300;
+
+  --color-border: #e8e4db;
+  --color-border-subtle: #f2efe9;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  background-color: var(--color-surface);
+  color: var(--color-on-surface);
+}
+
+/* Hide scrollbar for category tabs slider */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

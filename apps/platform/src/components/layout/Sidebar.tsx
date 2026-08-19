@@ -20,6 +20,8 @@ import {
   Receipt,
   Shirt,
   DollarSign,
+  UtensilsCrossed,
+  Store,
 } from 'lucide-react';
 import type { UserRoleType } from '../../lib/types';
 import { cn } from '../../lib/utils';
@@ -100,6 +102,7 @@ const menuConfig: MenuConfig = {
     ]},
     { heading: 'Services', items: [
       { label: 'Laundry', icon: Shirt, path: '/laundry' },
+      { label: 'Restaurant Orders', icon: UtensilsCrossed, path: '/restaurant-orders' },
     ]},
     { heading: 'Reservations', items: [
       { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
@@ -107,6 +110,8 @@ const menuConfig: MenuConfig = {
       { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
     ]},
     { heading: 'F&B', items: [
+      { label: 'Restaurant Orders', icon: UtensilsCrossed, path: '/restaurant-orders' },
+      { label: 'Dish Availability', icon: Store, path: '/restaurant-menu-availability' },
       { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
     ]},
     { heading: 'People', items: [
@@ -126,6 +131,7 @@ const menuConfig: MenuConfig = {
       { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
     ]},
     { heading: 'Services', items: [
+      { label: 'Restaurant Orders', icon: UtensilsCrossed, path: '/restaurant-orders' },
       { label: 'Laundry', icon: Shirt, path: '/laundry' },
     ]},
     { heading: 'Settings', items: [
@@ -180,6 +186,7 @@ const menuConfig: MenuConfig = {
       { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
     ]},
     { heading: 'Services', items: [
+      { label: 'Restaurant Orders', icon: UtensilsCrossed, path: '/restaurant-orders' },
       { label: 'Laundry', icon: Shirt, path: '/laundry' },
     ]},
   ],
@@ -187,7 +194,9 @@ const menuConfig: MenuConfig = {
     { heading: 'Overview', items: [
       { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
     ]},
-    { heading: 'F&B', items: [
+    { heading: 'F&B Operations', items: [
+      { label: 'Live Orders', icon: UtensilsCrossed, path: '/restaurant-orders' },
+      { label: 'Dish Availability', icon: Store, path: '/restaurant-menu-availability' },
       { label: 'Breakfast', icon: Coffee, path: '/breakfast' },
     ]},
   ],

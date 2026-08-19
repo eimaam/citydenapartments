@@ -12,6 +12,8 @@ import BookingsPage from './features/bookings/pages/BookingsPage';
 import CalendarPage from './features/bookings/pages/CalendarPage';
 import RoomsPage from './features/rooms/pages/RoomsPage';
 import BreakfastPage from './features/breakfast/pages/BreakfastPage';
+import RestaurantOrdersPage from './features/restaurant-orders/pages/RestaurantOrdersPage';
+import MenuAvailabilityPage from './features/restaurant-orders/pages/MenuAvailabilityPage';
 import StaffPage from './features/staff/pages/StaffPage';
 import InventoryPage from './features/inventory/pages/InventoryPage';
 import TransactionsPage from './features/inventory/pages/TransactionsPage';
@@ -28,7 +30,7 @@ export default function App() {
   return (
     <AuthProvider>
       <ToastProvider>
-        <ForcePasswordModal />
+        {/* <ForcePasswordModal /> */}
         <Routes>
           <Route element={<GuestGuard />}>
             <Route path="/login" element={<LoginPage />} />
@@ -49,6 +51,11 @@ export default function App() {
 
               <Route element={<RoleGuard roles={[UserRole.KitchenStaff, UserRole.FacilityManager]} />}>
                 <Route path="breakfast" element={<BreakfastPage />} />
+              </Route>
+
+              <Route element={<RoleGuard roles={[UserRole.KitchenStaff, UserRole.Reception, UserRole.FrontOfficeManager, UserRole.FacilityManager, UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT]} />}>
+                <Route path="restaurant-orders" element={<RestaurantOrdersPage />} />
+                <Route path="restaurant-menu-availability" element={<MenuAvailabilityPage />} />
               </Route>
 
               <Route element={<RoleGuard roles={[UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT]} />}>

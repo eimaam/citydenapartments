@@ -342,8 +342,9 @@ function AccountantDashboard() {
             ))}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="gap-2">
             <span className="text-xs text-outline font-medium">Custom Range:</span>
+            <div className="flex items-center gap-2">
             <Input type="date" size="sm" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="!w-36 text-xs" />
             <span className="text-xs text-outline">—</span>
             <Input type="date" size="sm" value={toDate} onChange={(e) => setToDate(e.target.value)} className="!w-36 text-xs" />
@@ -354,6 +355,7 @@ function AccountantDashboard() {
             >
               Apply Filter
             </button>
+            </div>
           </div>
         </div>
       </div>
