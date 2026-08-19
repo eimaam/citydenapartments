@@ -27,18 +27,18 @@ export class RestaurantDeliveryController {
   @Roles(UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.IT)
   async createLocation(@Body() body: any, @ActiveUser() user: any) {
     const branchId = body.branchId || user.activeBranchId;
-    return this.deliveryService.createLocation(branchId, body);
+    return this.deliveryService.createLocation(branchId, body, user);
   }
 
   @Patch('locations/:id')
   @Roles(UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.IT)
-  async updateLocation(@Param('id') id: string, @Body() body: any) {
-    return this.deliveryService.updateLocation(id, body);
+  async updateLocation(@Param('id') id: string, @Body() body: any, @ActiveUser() user: any) {
+    return this.deliveryService.updateLocation(id, body, user);
   }
 
   @Delete('locations/:id')
   @Roles(UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.IT)
-  async deleteLocation(@Param('id') id: string) {
-    return this.deliveryService.deleteLocation(id);
+  async deleteLocation(@Param('id') id: string, @ActiveUser() user: any) {
+    return this.deliveryService.deleteLocation(id, user);
   }
 }

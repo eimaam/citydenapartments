@@ -6,6 +6,7 @@ import { MenuItem } from '../restaurant-menu/schemas/menu-item.schema';
 import { DeliveryLocation } from '../restaurant-delivery/schemas/delivery-location.schema';
 import { Branch } from '../branches/branch.schema';
 import { TelegramBotService } from '../telegram-bot/telegram-bot.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
 import {
   RestaurantOrderStatus,
   RestaurantPaymentStatus,
@@ -29,14 +30,20 @@ export class RestaurantOrdersService {
     @InjectModel(DeliveryLocation.name) private locationModel: Model<DeliveryLocation>,
     @InjectModel(Branch.name) private branchModel: Model<Branch>,
     private readonly telegramBotService: TelegramBotService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
-  // ── Unique Order Number Generator ──────────────────────────────
-  private async generateOrderNumber(branchCode = 'CDA'): Promise<string> {
-    const year = new Date().getFullYear();
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+  // ── Unique Readable Order Number Generator ─────────────────────
+  private async generateOrderNumber(branchCode = 'ABJ'): Promise<string> {
+    const code = (branchCode || 'ABJ').toUpperCase();
+    const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+    let suffix = '';
+    for (let i = 0; i < 4; i++) {
+      suffix += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
     const count = await this.orderModel.countDocuments();
-    return `${branchCode}-ORD-${year}-${(count + 1).toString().padStart(4, '0')}-${randomSuffix}`;
+    const seq = (count + 1).toString().slice(-3).padStart(3, '0');
+    return `CD-${code}-${seq}${suffix}`;
   }
 
   // ── Place Order (Public Guest) ──────────────────────────────────
@@ -65,6 +72,18 @@ export class RestaurantOrdersService {
     if (!dto.branchId) throw new BadRequestException('Branch is required');
     if (!dto.items || dto.items.length === 0) throw new BadRequestException('Order must contain at least one item');
     if (!dto.customer?.name || !dto.customer?.phone) throw new BadRequestException('Customer name and phone number are required');
+
+    // Phone number sanitization: strictly 11 digits starting with 0, convert to +234...
+    let rawPhone = dto.customer.phone.trim().replace(/[\s-]/g, '');
+    if (rawPhone.startsWith('0') && rawPhone.length === 11) {
+      dto.customer.phone = `+234${rawPhone.slice(1)}`;
+    } else if (rawPhone.startsWith('234') && rawPhone.length === 13) {
+      dto.customer.phone = `+${rawPhone}`;
+    } else if (rawPhone.startsWith('+234') && rawPhone.length === 14) {
+      dto.customer.phone = rawPhone;
+    } else {
+      throw new BadRequestException('Phone number must be strictly 11 digits starting with 0 (e.g. 08012345678)');
+    }
 
     const branch = await this.branchModel.findById(dto.branchId).lean();
     if (!branch) throw new NotFoundException('Branch not found');
@@ -219,8 +238,21 @@ export class RestaurantOrdersService {
 
   // ── Track Orders by Phone Number (Public) ───────────────────────
   async trackOrdersByPhone(phone: string) {
+    const raw = phone.trim().replace(/[\s-]/g, '');
+    const variants = [raw];
+    if (raw.startsWith('0')) {
+      variants.push(`+234${raw.slice(1)}`);
+      variants.push(`234${raw.slice(1)}`);
+    } else if (raw.startsWith('+234')) {
+      variants.push(`0${raw.slice(4)}`);
+      variants.push(raw.slice(1));
+    } else if (raw.startsWith('234')) {
+      variants.push(`0${raw.slice(3)}`);
+      variants.push(`+${raw}`);
+    }
+
     return this.orderModel
-      .find({ 'customer.phone': phone.trim() })
+      .find({ 'customer.phone': { $in: variants } })
       .populate('branchId', 'name code address')
       .sort({ createdAt: -1 })
       .limit(10)
@@ -309,10 +341,12 @@ export class RestaurantOrdersService {
     status: RestaurantOrderStatusType,
     actorName: string,
     notes?: string,
+    user?: any,
   ) {
     const order = await this.orderModel.findById(id).populate('branchId', 'name code');
     if (!order) throw new NotFoundException('Order not found');
 
+    const previousStatus = order.orderStatus;
     order.orderStatus = status;
     order.timeline.push({
       status,
@@ -327,6 +361,29 @@ export class RestaurantOrdersService {
     }
 
     const saved = await order.save();
+
+    this.logger.log(
+      `[AUDIT] 📋 Order #${saved.orderNumber} status changed from "${previousStatus.toUpperCase()}" ➔ "${status.toUpperCase()}" by ${actorName}`
+    );
+
+    if (user?._id || user?.sub) {
+      await this.auditLogService.log({
+        entityType: 'RestaurantOrder',
+        entityId: id,
+        action: 'RESTAURANT_ORDER_STATUS_CHANGED',
+        description: `Order #${saved.orderNumber} status changed from ${previousStatus.toUpperCase()} to ${status.toUpperCase()} by ${actorName}`,
+        performedBy: user._id || user.sub,
+        branchId: order.branchId ? (order.branchId as any)._id?.toString() : undefined,
+        details: {
+          orderNumber: saved.orderNumber,
+          previousStatus,
+          newStatus: status,
+          notes,
+          customer: saved.customer,
+          totalAmount: saved.totalAmount,
+        },
+      });
+    }
 
     // Update Telegram notification thread
     if (order.telegramMessageId) {
@@ -343,10 +400,12 @@ export class RestaurantOrdersService {
     paymentStatus: RestaurantPaymentStatusType,
     paymentMethod?: RestaurantPaymentMethodType,
     actorName?: string,
+    user?: any,
   ) {
     const order = await this.orderModel.findById(id);
     if (!order) throw new NotFoundException('Order not found');
 
+    const previousPaymentStatus = order.paymentStatus;
     order.paymentStatus = paymentStatus;
     if (paymentMethod) order.paymentMethod = paymentMethod;
 
@@ -357,7 +416,31 @@ export class RestaurantOrdersService {
       notes: `Payment status changed to ${paymentStatus} (${paymentMethod || order.paymentMethod})`,
     });
 
-    return order.save();
+    const saved = await order.save();
+
+    this.logger.log(
+      `[AUDIT] 💳 Order #${saved.orderNumber} payment status changed from "${previousPaymentStatus.toUpperCase()}" ➔ "${paymentStatus.toUpperCase()}" by ${actorName || 'Staff'}`
+    );
+
+    if (user?._id || user?.sub) {
+      await this.auditLogService.log({
+        entityType: 'RestaurantOrder',
+        entityId: id,
+        action: 'RESTAURANT_ORDER_PAYMENT_UPDATED',
+        description: `Order #${saved.orderNumber} payment marked as ${paymentStatus.toUpperCase()} (${paymentMethod || saved.paymentMethod}) by ${actorName || 'Staff'}`,
+        performedBy: user._id || user.sub,
+        branchId: saved.branchId?.toString(),
+        details: {
+          orderNumber: saved.orderNumber,
+          previousPaymentStatus,
+          newPaymentStatus: paymentStatus,
+          paymentMethod: paymentMethod || saved.paymentMethod,
+          totalAmount: saved.totalAmount,
+        },
+      });
+    }
+
+    return saved;
   }
 
   // ── Restaurant Analytics ────────────────────────────────────────

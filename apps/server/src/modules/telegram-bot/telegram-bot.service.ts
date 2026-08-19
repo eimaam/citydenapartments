@@ -47,8 +47,17 @@ export class TelegramBotService implements OnModuleInit {
     }
   }
 
+  private getTargetChatId(): string | undefined {
+    return (
+      AppConfig.TELEGRAM_STAFF_CHAT_ID ||
+      (AppConfig as any).TELEGRAM_CHAT_ID ||
+      process.env.TELEGRAM_CHAT_ID ||
+      process.env.TELEGRAM_STAFF_CHAT_ID
+    );
+  }
+
   async sendOrderAlert(order: any, branchName: string): Promise<number | undefined> {
-    const chatId = AppConfig.TELEGRAM_STAFF_CHAT_ID;
+    const chatId = this.getTargetChatId();
     if (!this.bot || !chatId) {
       this.logger.log(`[TELEGRAM MOCK ALERT] New Order #${order.orderNumber} placed for ${branchName}. Total: ₦${order.totalAmount?.toLocaleString()}`);
       return undefined;
@@ -123,7 +132,7 @@ ${itemsList}
   }
 
   async updateOrderNotification(messageId: number, order: any, branchName: string, updatedByText: string) {
-    const chatId = AppConfig.TELEGRAM_STAFF_CHAT_ID;
+    const chatId = this.getTargetChatId();
     if (!this.bot || !chatId || !messageId) return;
 
     try {

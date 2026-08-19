@@ -5,6 +5,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { MenuCategory } from './schemas/menu-category.schema';
 import { MenuItem } from './schemas/menu-item.schema';
 import { RestaurantBanner } from './schemas/restaurant-banner.schema';
+import { AuditLogService } from '../audit-log/audit-log.service';
 import { AppConfig } from '../../config/app.config';
 
 @Injectable()
@@ -16,6 +17,7 @@ export class RestaurantMenuService {
     @InjectModel(MenuCategory.name) private categoryModel: Model<MenuCategory>,
     @InjectModel(MenuItem.name) private menuItemModel: Model<MenuItem>,
     @InjectModel(RestaurantBanner.name) private bannerModel: Model<RestaurantBanner>,
+    private readonly auditLogService: AuditLogService,
   ) {
     this.s3 = new S3Client({
       region: 'auto',
@@ -74,7 +76,7 @@ export class RestaurantMenuService {
     }));
   }
 
-  async createCategory(branchId: string, dto: { name: string; description?: string; icon?: string; sortOrder?: number }) {
+  async createCategory(branchId: string, dto: { name: string; description?: string; icon?: string; sortOrder?: number }, user?: any) {
     if (!Types.ObjectId.isValid(branchId)) throw new BadRequestException('Invalid branch ID');
     const slug = dto.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     const existing = await this.categoryModel.findOne({ branchId: new Types.ObjectId(branchId), slug });
@@ -85,26 +87,82 @@ export class RestaurantMenuService {
       slug,
       branchId: new Types.ObjectId(branchId),
     });
-    return category.save();
+    const saved = await category.save();
+
+    const actor = user?.name || user?.email || 'Admin';
+    this.logger.log(`[AUDIT] Menu Category "${saved.name}" created by ${actor}`);
+
+    if (user?._id || user?.sub) {
+      await this.auditLogService.log({
+        entityType: 'MenuCategory',
+        entityId: saved._id.toString(),
+        action: 'MENU_CATEGORY_CREATED',
+        description: `Menu Category "${saved.name}" was created by ${actor}`,
+        performedBy: user._id || user.sub,
+        branchId,
+        details: { name: saved.name, slug: saved.slug, icon: saved.icon },
+      });
+    }
+
+    return saved;
   }
 
-  async updateCategory(id: string, dto: any) {
+  async updateCategory(id: string, dto: any, user?: any) {
     if (!Types.ObjectId.isValid(id)) throw new BadRequestException('Invalid category ID');
     if (dto.name) {
       dto.slug = dto.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     }
+    const existing = await this.categoryModel.findById(id).lean();
+    if (!existing) throw new NotFoundException('Category not found');
+
     const updated = await this.categoryModel.findByIdAndUpdate(id, dto, { new: true });
-    if (!updated) throw new NotFoundException('Category not found');
+
+    const actor = user?.name || user?.email || 'Admin';
+    this.logger.log(`[AUDIT] Menu Category "${updated?.name}" updated by ${actor}`);
+
+    if (user?._id || user?.sub) {
+      await this.auditLogService.log({
+        entityType: 'MenuCategory',
+        entityId: id,
+        action: 'MENU_CATEGORY_UPDATED',
+        description: `Menu Category "${updated?.name}" was updated by ${actor}`,
+        performedBy: user._id || user.sub,
+        branchId: existing.branchId?.toString(),
+        details: { before: existing, after: updated },
+      });
+    }
+
     return updated;
   }
 
-  async deleteCategory(id: string) {
+  async deleteCategory(id: string, user?: any) {
     if (!Types.ObjectId.isValid(id)) throw new BadRequestException('Invalid category ID');
+    const existing = await this.categoryModel.findById(id).lean();
+    if (!existing) throw new NotFoundException('Category not found');
+
     const itemsCount = await this.menuItemModel.countDocuments({ categoryId: new Types.ObjectId(id) });
     if (itemsCount > 0) {
       throw new BadRequestException(`Cannot delete category because it contains ${itemsCount} menu items. Reassign or delete items first.`);
     }
-    return this.categoryModel.findByIdAndDelete(id);
+
+    const deleted = await this.categoryModel.findByIdAndDelete(id);
+
+    const actor = user?.name || user?.email || 'Admin';
+    this.logger.log(`[AUDIT] Menu Category "${existing.name}" deleted by ${actor}`);
+
+    if (user?._id || user?.sub) {
+      await this.auditLogService.log({
+        entityType: 'MenuCategory',
+        entityId: id,
+        action: 'MENU_CATEGORY_DELETED',
+        description: `Menu Category "${existing.name}" was deleted by ${actor}`,
+        performedBy: user._id || user.sub,
+        branchId: existing.branchId?.toString(),
+        details: { name: existing.name },
+      });
+    }
+
+    return deleted;
   }
 
   // ── Menu Items ──────────────────────────────────────────────────
@@ -178,32 +236,137 @@ export class RestaurantMenuService {
     return item;
   }
 
-  async createMenuItem(branchId: string, dto: any) {
+  async createMenuItem(branchId: string, dto: any, user?: any) {
     const item = new this.menuItemModel({
       ...dto,
       branchId: new Types.ObjectId(branchId),
       categoryId: new Types.ObjectId(dto.categoryId),
     });
-    return item.save();
+    const saved = await item.save();
+
+    const actor = user?.name || user?.email || 'Admin';
+    this.logger.log(`[AUDIT] Menu Item "${saved.name}" (₦${saved.basePrice?.toLocaleString()}) created by ${actor}`);
+
+    if (user?._id || user?.sub) {
+      await this.auditLogService.log({
+        entityType: 'MenuItem',
+        entityId: saved._id.toString(),
+        action: 'MENU_ITEM_CREATED',
+        description: `Dish "${saved.name}" (₦${saved.basePrice?.toLocaleString()}) was created by ${actor}`,
+        performedBy: user._id || user.sub,
+        branchId,
+        details: {
+          name: saved.name,
+          basePrice: saved.basePrice,
+          hasSizes: saved.hasSizes,
+          sizes: saved.sizes,
+          isChefSpecial: saved.isChefSpecial,
+        },
+      });
+    }
+
+    return saved;
   }
 
-  async updateMenuItem(id: string, dto: any) {
+  async updateMenuItem(id: string, dto: any, user?: any) {
     if (dto.categoryId) dto.categoryId = new Types.ObjectId(dto.categoryId);
-    const updated = await this.menuItemModel.findByIdAndUpdate(id, dto, { new: true }).populate('categoryId', 'name slug icon');
+    const existing = await this.menuItemModel.findById(id).lean();
+    if (!existing) throw new NotFoundException('Menu item not found');
+
+    const updated = await this.menuItemModel
+      .findByIdAndUpdate(id, dto, { new: true })
+      .populate('categoryId', 'name slug icon');
     if (!updated) throw new NotFoundException('Menu item not found');
+
+    const actor = user?.name || user?.email || 'Staff';
+    const isPriceChanged = dto.basePrice !== undefined && Number(dto.basePrice) !== existing.basePrice;
+
+    if (isPriceChanged) {
+      this.logger.log(
+        `[AUDIT] 💰 Price change for "${updated.name}": ₦${existing.basePrice.toLocaleString()} ➔ ₦${updated.basePrice.toLocaleString()} by ${actor}`
+      );
+    } else {
+      this.logger.log(`[AUDIT] Menu item "${updated.name}" updated by ${actor}`);
+    }
+
+    if (user?._id || user?.sub) {
+      await this.auditLogService.log({
+        entityType: 'MenuItem',
+        entityId: id,
+        action: isPriceChanged ? 'MENU_ITEM_PRICE_CHANGED' : 'MENU_ITEM_UPDATED',
+        description: isPriceChanged
+          ? `Price for "${updated.name}" changed from ₦${existing.basePrice.toLocaleString()} to ₦${updated.basePrice.toLocaleString()} by ${actor}`
+          : `Menu item "${updated.name}" was updated by ${actor}`,
+        performedBy: user._id || user.sub,
+        branchId: existing.branchId?.toString(),
+        details: {
+          before: {
+            basePrice: existing.basePrice,
+            hasSizes: existing.hasSizes,
+            sizes: existing.sizes,
+            optionGroups: existing.optionGroups,
+            isAvailable: existing.isAvailable,
+          },
+          after: {
+            basePrice: updated.basePrice,
+            hasSizes: updated.hasSizes,
+            sizes: updated.sizes,
+            optionGroups: updated.optionGroups,
+            isAvailable: updated.isAvailable,
+          },
+        },
+      });
+    }
+
     return updated;
   }
 
-  async toggleAvailability(id: string) {
+  async toggleAvailability(id: string, user?: any) {
     const item = await this.menuItemModel.findById(id);
     if (!item) throw new NotFoundException('Menu item not found');
     item.isAvailable = !item.isAvailable;
-    return item.save();
+    const saved = await item.save();
+
+    const actor = user?.name || user?.email || 'Staff';
+    const statusText = saved.isAvailable ? 'IN STOCK' : 'OUT OF STOCK';
+    this.logger.log(`[AUDIT] 📦 Dish "${saved.name}" stock status changed to ${statusText} by ${actor}`);
+
+    if (user?._id || user?.sub) {
+      await this.auditLogService.log({
+        entityType: 'MenuItem',
+        entityId: id,
+        action: 'MENU_ITEM_AVAILABILITY_TOGGLED',
+        description: `Dish "${saved.name}" marked as ${statusText} by ${actor}`,
+        performedBy: user._id || user.sub,
+        branchId: item.branchId?.toString(),
+        details: { isAvailable: saved.isAvailable, name: saved.name },
+      });
+    }
+
+    return saved;
   }
 
-  async deleteMenuItem(id: string) {
+  async deleteMenuItem(id: string, user?: any) {
+    const existing = await this.menuItemModel.findById(id).lean();
+    if (!existing) throw new NotFoundException('Menu item not found');
+
     const deleted = await this.menuItemModel.findByIdAndDelete(id);
-    if (!deleted) throw new NotFoundException('Menu item not found');
+
+    const actor = user?.name || user?.email || 'Admin';
+    this.logger.log(`[AUDIT] 🗑️ Menu item "${existing.name}" deleted by ${actor}`);
+
+    if (user?._id || user?.sub) {
+      await this.auditLogService.log({
+        entityType: 'MenuItem',
+        entityId: id,
+        action: 'MENU_ITEM_DELETED',
+        description: `Menu item "${existing.name}" (₦${existing.basePrice?.toLocaleString()}) was deleted by ${actor}`,
+        performedBy: user._id || user.sub,
+        branchId: existing.branchId?.toString(),
+        details: { name: existing.name, basePrice: existing.basePrice },
+      });
+    }
+
     return { success: true, message: 'Menu item deleted successfully' };
   }
 
@@ -218,26 +381,77 @@ export class RestaurantMenuService {
     return this.bannerModel.find(filter).sort({ sortOrder: 1, createdAt: -1 }).lean();
   }
 
-  async createBanner(dto: any) {
+  async createBanner(dto: any, user?: any) {
     const banner = new this.bannerModel({
       ...dto,
       branchId: dto.branchId ? new Types.ObjectId(dto.branchId) : null,
     });
-    return banner.save();
+    const saved = await banner.save();
+
+    const actor = user?.name || user?.email || 'Admin';
+    this.logger.log(`[AUDIT] 🖼️ Promotional Banner "${saved.title}" created by ${actor}`);
+
+    if (user?._id || user?.sub) {
+      await this.auditLogService.log({
+        entityType: 'RestaurantBanner',
+        entityId: saved._id.toString(),
+        action: 'RESTAURANT_BANNER_CREATED',
+        description: `Banner "${saved.title}" created by ${actor}`,
+        performedBy: user._id || user.sub,
+        branchId: dto.branchId,
+        details: { title: saved.title, bannerType: saved.bannerType },
+      });
+    }
+
+    return saved;
   }
 
-  async updateBanner(id: string, dto: any) {
+  async updateBanner(id: string, dto: any, user?: any) {
     if (dto.branchId !== undefined) {
       dto.branchId = dto.branchId ? new Types.ObjectId(dto.branchId) : null;
     }
     const updated = await this.bannerModel.findByIdAndUpdate(id, dto, { new: true });
     if (!updated) throw new NotFoundException('Banner not found');
+
+    const actor = user?.name || user?.email || 'Admin';
+    this.logger.log(`[AUDIT] 🖼️ Promotional Banner "${updated.title}" updated by ${actor}`);
+
+    if (user?._id || user?.sub) {
+      await this.auditLogService.log({
+        entityType: 'RestaurantBanner',
+        entityId: id,
+        action: 'RESTAURANT_BANNER_UPDATED',
+        description: `Banner "${updated.title}" updated by ${actor}`,
+        performedBy: user._id || user.sub,
+        branchId: updated.branchId?.toString(),
+        details: { title: updated.title, isActive: updated.isActive },
+      });
+    }
+
     return updated;
   }
 
-  async deleteBanner(id: string) {
+  async deleteBanner(id: string, user?: any) {
+    const existing = await this.bannerModel.findById(id).lean();
+    if (!existing) throw new NotFoundException('Banner not found');
+
     const deleted = await this.bannerModel.findByIdAndDelete(id);
-    if (!deleted) throw new NotFoundException('Banner not found');
+
+    const actor = user?.name || user?.email || 'Admin';
+    this.logger.log(`[AUDIT] 🗑️ Promotional Banner "${existing.title}" deleted by ${actor}`);
+
+    if (user?._id || user?.sub) {
+      await this.auditLogService.log({
+        entityType: 'RestaurantBanner',
+        entityId: id,
+        action: 'RESTAURANT_BANNER_DELETED',
+        description: `Banner "${existing.title}" deleted by ${actor}`,
+        performedBy: user._id || user.sub,
+        branchId: existing.branchId?.toString(),
+        details: { title: existing.title },
+      });
+    }
+
     return { success: true };
   }
 }

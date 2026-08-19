@@ -57,7 +57,8 @@ export const AppConfigValidationSchema = Joi.object({
   RESEND_API_KEY: Joi.string().allow('').optional(),
   PLATFORM_DOMAIN: Joi.string().default('https://citydenapartments.com'),
   TELEGRAM_BOT_TOKEN: Joi.string().allow('').optional(),
-  TELEGRAM_STAFF_CHAT_ID: Joi.string().allow('').optional(),
+  TELEGRAM_STAFF_CHAT_ID: Joi.string().allow('').optional().default(process.env.TELEGRAM_CHAT_ID || process.env.TELEGRAM_STAFF_CHAT_ID || ''),
+  TELEGRAM_CHAT_ID: Joi.string().allow('').optional(),
   TELEGRAM_ENABLED: Joi.boolean().default(true),
 });
 

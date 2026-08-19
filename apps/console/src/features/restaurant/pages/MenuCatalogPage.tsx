@@ -643,7 +643,7 @@ export default function MenuCatalogPage() {
           {/* Dish Image Uploader */}
           <div>
             <label className="text-[10px] font-bold text-outline uppercase tracking-wider mb-1 block">
-              Dish Photos (Cloudflare R2)
+              Dish Photos 
             </label>
             <div className="flex items-center gap-3">
               <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 rounded-md bg-surface-container border border-outline-variant text-xs font-semibold text-on-surface hover:border-primary transition-all">

@@ -7,6 +7,7 @@ import {
   Clock,
   UtensilsCrossed,
   RefreshCw,
+  ChevronUp,
 } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { menuPublicApi } from '../lib/api';
@@ -28,6 +29,15 @@ export function MenuCatalogView({ onGoToCart }: { onGoToCart: () => void }) {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedItemForCustomization, setSelectedItemForCustomization] = useState<MenuItemResponse | null>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Fetch Categories & Banners
   useEffect(() => {
@@ -343,6 +353,18 @@ export function MenuCatalogView({ onGoToCart }: { onGoToCart: () => void }) {
           addItem(dish, qty, size, opts, notes);
         }}
       />
+
+      {/* Floating Scroll To Top Button */}
+      {showScrollTop && (
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="fixed bottom-20 right-4 z-30 w-10 h-10 rounded-full bg-surface-hover/90 backdrop-blur-md text-foreground border border-border shadow-lg flex items-center justify-center cursor-pointer hover:bg-primary hover:text-white transition-all active:scale-95"
+          aria-label="Scroll to top"
+        >
+          <ChevronUp size={18} />
+        </button>
+      )}
     </div>
   );
 }

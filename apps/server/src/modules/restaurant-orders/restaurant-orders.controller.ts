@@ -108,7 +108,7 @@ export class RestaurantOrdersController {
     @ActiveUser() user: any,
   ) {
     const actorName = `${user.name || user.email || 'Staff'} (${user.role})`;
-    return this.ordersService.updateOrderStatus(id, status, actorName, notes);
+    return this.ordersService.updateOrderStatus(id, status, actorName, notes, user);
   }
 
   @Patch(':id/payment-status')
@@ -128,6 +128,6 @@ export class RestaurantOrdersController {
     @ActiveUser() user: any,
   ) {
     const actorName = `${user.name || user.email || 'Staff'} (${user.role})`;
-    return this.ordersService.updatePaymentStatus(id, paymentStatus, paymentMethod, actorName);
+    return this.ordersService.updatePaymentStatus(id, paymentStatus, paymentMethod, actorName, user);
   }
 }

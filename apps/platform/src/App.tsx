@@ -30,7 +30,7 @@ export default function App() {
   return (
     <AuthProvider>
       <ToastProvider>
-        <ForcePasswordModal />
+        {/* <ForcePasswordModal /> */}
         <Routes>
           <Route element={<GuestGuard />}>
             <Route path="/login" element={<LoginPage />} />

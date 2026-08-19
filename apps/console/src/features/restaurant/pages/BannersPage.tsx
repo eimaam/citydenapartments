@@ -67,7 +67,7 @@ export default function BannersPage() {
     try {
       const res = await restaurantAdminApi.uploadImage(files[0]);
       setForm((prev) => ({ ...prev, imageUrl: res.url }));
-      toast('success', 'Banner image uploaded to Cloudflare R2.');
+      toast('success', 'Banner image uploaded successfully.');
     } catch (err: any) {
       toast('error', err.response?.data?.message || err.message || 'Failed to upload image.');
     } finally {
@@ -313,7 +313,7 @@ export default function BannersPage() {
           {/* Banner Photo Upload */}
           <div>
             <label className="text-[10px] font-bold text-outline uppercase tracking-wider mb-1 block">
-              Banner Graphic (Cloudflare R2) *
+              Banner Graphic *
             </label>
             {form.imageUrl ? (
               <div className="relative w-full h-32 rounded-lg overflow-hidden border border-outline-variant mb-2 group">

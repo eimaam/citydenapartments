@@ -91,8 +91,9 @@ export function CartCheckoutView({
       setErrorMessage('Please enter your full name');
       return;
     }
-    if (!customerPhone.trim()) {
-      setErrorMessage('Please enter your phone number');
+    const cleanedPhone = customerPhone.trim().replace(/[\s-+]/g, '');
+    if (!/^0\d{10}$/.test(cleanedPhone)) {
+      setErrorMessage('Phone number must be strictly 11 digits starting with 0 (e.g. 08012345678)');
       return;
     }
 
@@ -117,13 +118,13 @@ export function CartCheckoutView({
     try {
       // Save name & phone for future orders
       localStorage.setItem('cda_guest_name', customerName.trim());
-      localStorage.setItem('cda_guest_phone', customerPhone.trim());
+      localStorage.setItem('cda_guest_phone', cleanedPhone);
 
       const payload = {
         branchId: activeBranch._id,
         customer: {
           name: customerName.trim(),
-          phone: customerPhone.trim(),
+          phone: cleanedPhone,
         },
         isGuestLodged,
         roomNumber: isGuestLodged ? roomNumber.trim() : undefined,
@@ -384,14 +385,18 @@ export function CartCheckoutView({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-foreground mb-1">Phone Number *</label>
+              <label className="block text-xs font-semibold text-foreground mb-1">
+                Phone Number * <span className="text-[10px] text-muted-foreground font-normal">(11 digits, starts with 0)</span>
+              </label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={15} />
                 <input
                   type="tel"
-                  placeholder="e.g. 0803 123 4567"
+                  inputMode="numeric"
+                  maxLength={11}
+                  placeholder="08012345678"
                   value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
                   className="w-full pl-9 pr-3 py-2 bg-surface-hover text-foreground placeholder:text-muted-foreground rounded-xl border border-border text-xs font-medium focus:outline-none focus:border-primary"
                 />
               </div>

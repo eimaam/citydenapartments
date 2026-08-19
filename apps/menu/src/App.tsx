@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CartProvider, useCart } from './contexts/CartContext';
 import { MenuHeader } from './components/layout/MenuHeader';
 import { MobileBottomNav } from './components/layout/MobileBottomNav';
@@ -14,6 +14,11 @@ function MenuAppContent() {
   const { activeBranch } = useCart();
   const [currentTab, setCurrentTab] = useState<MenuTab>('menu');
   const [lastPlacedOrder, setLastPlacedOrder] = useState<RestaurantOrderResponse | null>(null);
+
+  // Automatically scroll to top whenever tab or view changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentTab]);
 
   // If no active branch selected, show branch landing first
   if (!activeBranch) {

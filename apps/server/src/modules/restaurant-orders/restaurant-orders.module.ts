@@ -5,6 +5,7 @@ import { MenuItem, MenuItemSchema } from '../restaurant-menu/schemas/menu-item.s
 import { DeliveryLocation, DeliveryLocationSchema } from '../restaurant-delivery/schemas/delivery-location.schema';
 import { Branch, BranchSchema } from '../branches/branch.schema';
 import { TelegramBotModule } from '../telegram-bot/telegram-bot.module';
+import { AuditLogModule } from '../audit-log/audit-log.module';
 import { RestaurantOrdersService } from './restaurant-orders.service';
 import { RestaurantOrdersController } from './restaurant-orders.controller';
 import { PublicRestaurantOrdersController } from './public-restaurant-orders.controller';
@@ -18,6 +19,7 @@ import { PublicRestaurantOrdersController } from './public-restaurant-orders.con
       { name: Branch.name, schema: BranchSchema },
     ]),
     TelegramBotModule,
+    AuditLogModule,
   ],
   controllers: [RestaurantOrdersController, PublicRestaurantOrdersController],
   providers: [RestaurantOrdersService],
