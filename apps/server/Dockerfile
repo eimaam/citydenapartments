@@ -3,12 +3,14 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
 FROM base AS builder
+ENV NODE_ENV=development
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/server/package.json apps/server/
 COPY packages/shared/package.json packages/shared/
 COPY packages/email/package.json packages/email/
 
-RUN pnpm install --frozen-lockfile --filter @citydenapartments/server --filter @citydenapartments/shared --filter @citydenapartments/email
+RUN pnpm install --frozen-lockfile --filter @citydenapartments/server --filter @citydenapartments/shared --filter @citydenapartments/email --prod=false
+
 
 COPY apps/server/ apps/server/
 COPY packages/shared/ packages/shared/
