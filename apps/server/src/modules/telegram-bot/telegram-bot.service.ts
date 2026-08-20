@@ -117,13 +117,16 @@ export class TelegramBotService implements OnModuleInit {
           await ctx.editMessageReplyMarkup(newKeyboard.reply_markup).catch(() => {});
 
           // Send update thread notification
-          const branchName = (order.branchId as any)?.name || 'City Den';
-          await this.updateOrderNotification(
-            ctx.callbackQuery.message?.message_id || order.telegramMessageId,
-            savedOrder,
-            branchName,
-            `Telegram (${actorName})`,
-          );
+          const targetMessageId = ctx.callbackQuery?.message?.message_id || order.telegramMessageId;
+          if (targetMessageId) {
+            const branchName = (order.branchId as any)?.name || 'City Den';
+            await this.updateOrderNotification(
+              targetMessageId,
+              savedOrder,
+              branchName,
+              `Telegram (${actorName})`,
+            );
+          }
         } catch (error: any) {
           this.logger.error(`Error processing Telegram button click: ${error.message}`);
           await ctx.answerCbQuery(`❌ Error: ${error.message || 'Could not update order'}`).catch(() => {});
@@ -260,7 +263,7 @@ ${itemsList}
     }
   }
 
-  async updateOrderNotification(messageId: number, order: any, branchName: string, updatedByText: string) {
+  async updateOrderNotification(messageId: number | undefined, order: any, branchName: string, updatedByText: string) {
     const chatId = this.getTargetChatId();
     if (!this.bot || !chatId || !messageId) return;
 
