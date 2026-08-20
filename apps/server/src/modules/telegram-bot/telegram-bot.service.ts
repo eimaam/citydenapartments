@@ -1,8 +1,16 @@
-import { Injectable, Logger, OnModuleInit, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { Telegraf, Markup } from 'telegraf';
 import { AppConfig } from '../../config/app.config';
-import { RestaurantOrderStatus, RestaurantDeliveryType, RestaurantOrderStatusType } from '@citydenapartments/shared';
-import { RestaurantOrdersService } from '../restaurant-orders/restaurant-orders.service';
+import {
+  RestaurantOrderStatus,
+  RestaurantPaymentStatus,
+  RestaurantDeliveryType,
+  RestaurantOrderStatusType,
+} from '@citydenapartments/shared';
+import { RestaurantOrder } from '../restaurant-orders/schemas/restaurant-order.schema';
+import { AuditLogService } from '../audit-log/audit-log.service';
 
 @Injectable()
 export class TelegramBotService implements OnModuleInit {
@@ -11,8 +19,8 @@ export class TelegramBotService implements OnModuleInit {
   private isReady = false;
 
   constructor(
-    @Inject(forwardRef(() => RestaurantOrdersService))
-    private readonly restaurantOrdersService: RestaurantOrdersService,
+    @InjectModel(RestaurantOrder.name) private orderModel: Model<RestaurantOrder>,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   async onModuleInit() {
@@ -29,11 +37,15 @@ export class TelegramBotService implements OnModuleInit {
     try {
       this.bot = new Telegraf(token);
 
+      this.bot.catch((err: any) => {
+        this.logger.error(`Telegraf bot runtime error: ${err.message || err}`);
+      });
+
       // Handle Telegram Bot commands
       this.bot.command('start', (ctx) => {
         const chatId = ctx.chat.id;
         ctx.reply(
-          `👋 Welcome to City Den Restaurant Bot!\n\nThis Chat ID is: <code>${chatId}</code>\n --> Set that up to receive real-time order alerts.`,
+          `👋 Welcome to City Den Restaurant Bot!\n\nThis Chat ID is: <code>${chatId}</code>\nSet this in your environment as TELEGRAM_STAFF_CHAT_ID to receive real-time order alerts.`,
           {
             parse_mode: 'HTML',
           },
@@ -59,18 +71,59 @@ export class TelegramBotService implements OnModuleInit {
           const readableStatus = targetStatus.replace(/_/g, ' ').toUpperCase();
           await ctx.answerCbQuery(`⚡ Status: ${readableStatus}`);
 
-          const updatedOrder = await this.restaurantOrdersService.updateOrderStatus(
-            orderId,
-            targetStatus,
-            `Telegram (${actorName})`,
-            `Status updated via Telegram bot action button by ${actorName}`,
+          const order = await this.orderModel.findById(orderId).populate('branchId', 'name code');
+          if (!order) {
+            await ctx.answerCbQuery('❌ Order not found').catch(() => {});
+            return;
+          }
+
+          const previousStatus = order.orderStatus;
+          order.orderStatus = targetStatus;
+          order.timeline.push({
+            status: targetStatus,
+            timestamp: new Date(),
+            updatedBy: `Telegram (${actorName})`,
+            notes: `Status updated via Telegram bot action button by ${actorName}`,
+          });
+
+          if (targetStatus === RestaurantOrderStatus.Completed && order.paymentStatus === RestaurantPaymentStatus.Pending) {
+            order.paymentStatus = RestaurantPaymentStatus.Settled;
+          }
+
+          const savedOrder = await order.save();
+
+          this.logger.log(
+            `[AUDIT] 📋 Order #${savedOrder.orderNumber} status changed from "${previousStatus.toUpperCase()}" ➔ "${targetStatus.toUpperCase()}" via Telegram by ${actorName}`
           );
+
+          await this.auditLogService.log({
+            entityType: 'RestaurantOrder',
+            entityId: orderId,
+            action: 'RESTAURANT_ORDER_STATUS_CHANGED',
+            description: `Order #${savedOrder.orderNumber} status changed from ${previousStatus.toUpperCase()} to ${targetStatus.toUpperCase()} via Telegram by ${actorName}`,
+            performedBy: `telegram:${fromUser.id}`,
+            branchId: order.branchId ? (order.branchId as any)._id?.toString() : undefined,
+            details: {
+              orderNumber: savedOrder.orderNumber,
+              previousStatus,
+              newStatus: targetStatus,
+              actorName,
+              telegramUserId: fromUser.id,
+            },
+          });
 
           // Update inline keyboard on the clicked message
           const newKeyboard = this.getOrderKeyboard(orderId, targetStatus);
           await ctx.editMessageReplyMarkup(newKeyboard.reply_markup).catch(() => {});
 
-          this.logger.log(`Order #${updatedOrder.orderNumber} updated to "${targetStatus}" via Telegram button by ${actorName}`);
+          // Send update thread notification
+          const branchName = (order.branchId as any)?.name || 'City Den';
+          await this.updateOrderNotification(
+            ctx.callbackQuery.message?.message_id || order.telegramMessageId,
+            savedOrder,
+            branchName,
+            `Telegram (${actorName})`,
+          );
         } catch (error: any) {
           this.logger.error(`Error processing Telegram button click: ${error.message}`);
           await ctx.answerCbQuery(`❌ Error: ${error.message || 'Could not update order'}`).catch(() => {});

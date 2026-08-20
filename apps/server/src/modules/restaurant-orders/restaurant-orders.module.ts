@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { RestaurantOrder, RestaurantOrderSchema } from './schemas/restaurant-order.schema';
 import { MenuItem, MenuItemSchema } from '../restaurant-menu/schemas/menu-item.schema';
@@ -18,7 +18,7 @@ import { PublicRestaurantOrdersController } from './public-restaurant-orders.con
       { name: DeliveryLocation.name, schema: DeliveryLocationSchema },
       { name: Branch.name, schema: BranchSchema },
     ]),
-    forwardRef(() => TelegramBotModule),
+    TelegramBotModule,
     AuditLogModule,
   ],
   controllers: [RestaurantOrdersController, PublicRestaurantOrdersController],
