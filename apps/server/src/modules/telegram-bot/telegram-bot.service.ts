@@ -1,13 +1,19 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Inject, forwardRef } from '@nestjs/common';
 import { Telegraf, Markup } from 'telegraf';
 import { AppConfig } from '../../config/app.config';
-import { RestaurantOrderStatus, RestaurantDeliveryType } from '@citydenapartments/shared';
+import { RestaurantOrderStatus, RestaurantDeliveryType, RestaurantOrderStatusType } from '@citydenapartments/shared';
+import { RestaurantOrdersService } from '../restaurant-orders/restaurant-orders.service';
 
 @Injectable()
 export class TelegramBotService implements OnModuleInit {
   private readonly logger = new Logger(TelegramBotService.name);
   private bot: Telegraf | null = null;
   private isReady = false;
+
+  constructor(
+    @Inject(forwardRef(() => RestaurantOrdersService))
+    private readonly restaurantOrdersService: RestaurantOrdersService,
+  ) {}
 
   async onModuleInit() {
     this.initializeBot();
@@ -26,13 +32,57 @@ export class TelegramBotService implements OnModuleInit {
       // Handle Telegram Bot commands
       this.bot.command('start', (ctx) => {
         const chatId = ctx.chat.id;
-        ctx.reply(`👋 Welcome to City Den Restaurant Bot!\n\nThis Chat ID is: <code>${chatId}</code>\nSet this in your environment as TELEGRAM_STAFF_CHAT_ID to receive real-time order alerts.`, {
-          parse_mode: 'HTML',
-        });
+        ctx.reply(
+          `👋 Welcome to City Den Restaurant Bot!\n\nThis Chat ID is: <code>${chatId}</code>\n --> Set that up to receive real-time order alerts.`,
+          {
+            parse_mode: 'HTML',
+          },
+        );
       });
 
       this.bot.command('chatid', (ctx) => {
         ctx.reply(`Your Telegram Chat ID is: <code>${ctx.chat.id}</code>`, { parse_mode: 'HTML' });
+      });
+
+      // Handle inline button callbacks for order status updates
+      this.bot.action(/^status:(.+):(.+)$/, async (ctx) => {
+        try {
+          const match = ctx.match;
+          const orderId = match[1];
+          const targetStatus = match[2] as RestaurantOrderStatusType;
+          const fromUser = ctx.from;
+          const actorName = fromUser.username
+            ? `@${fromUser.username}`
+            : `${fromUser.first_name || ''} ${fromUser.last_name || ''}`.trim() || 'Telegram Staff';
+
+          // Acknowledge immediately to dismiss the Telegram client loading spinner
+          const readableStatus = targetStatus.replace(/_/g, ' ').toUpperCase();
+          await ctx.answerCbQuery(`⚡ Status: ${readableStatus}`);
+
+          const updatedOrder = await this.restaurantOrdersService.updateOrderStatus(
+            orderId,
+            targetStatus,
+            `Telegram (${actorName})`,
+            `Status updated via Telegram bot action button by ${actorName}`,
+          );
+
+          // Update inline keyboard on the clicked message
+          const newKeyboard = this.getOrderKeyboard(orderId, targetStatus);
+          await ctx.editMessageReplyMarkup(newKeyboard.reply_markup).catch(() => {});
+
+          this.logger.log(`Order #${updatedOrder.orderNumber} updated to "${targetStatus}" via Telegram button by ${actorName}`);
+        } catch (error: any) {
+          this.logger.error(`Error processing Telegram button click: ${error.message}`);
+          await ctx.answerCbQuery(`❌ Error: ${error.message || 'Could not update order'}`).catch(() => {});
+        }
+      });
+
+      // Fallback callback query handler to ensure no callback is left unanswered
+      this.bot.on('callback_query', async (ctx, next) => {
+        try {
+          await ctx.answerCbQuery().catch(() => {});
+        } catch {}
+        return next();
       });
 
       // Launch bot asynchronously in background
@@ -54,6 +104,40 @@ export class TelegramBotService implements OnModuleInit {
       process.env.TELEGRAM_CHAT_ID ||
       process.env.TELEGRAM_STAFF_CHAT_ID
     );
+  }
+
+  private getOrderKeyboard(orderId: string, status?: string) {
+    if (status === RestaurantOrderStatus.Completed || status === RestaurantOrderStatus.Cancelled) {
+      return Markup.inlineKeyboard([]);
+    }
+
+    if (status === RestaurantOrderStatus.Preparing) {
+      return Markup.inlineKeyboard([
+        [
+          Markup.button.callback('🛵 Dispatched', `status:${orderId}:${RestaurantOrderStatus.OutForDelivery}`),
+          Markup.button.callback('✅ Completed', `status:${orderId}:${RestaurantOrderStatus.Completed}`),
+        ],
+      ]);
+    }
+
+    if (status === RestaurantOrderStatus.OutForDelivery) {
+      return Markup.inlineKeyboard([
+        [
+          Markup.button.callback('✅ Completed', `status:${orderId}:${RestaurantOrderStatus.Completed}`),
+        ],
+      ]);
+    }
+
+    // Default for Received / Confirmed or initial state
+    return Markup.inlineKeyboard([
+      [
+        Markup.button.callback('👨‍🍳 Start Preparing', `status:${orderId}:${RestaurantOrderStatus.Preparing}`),
+        Markup.button.callback('🛵 Dispatched', `status:${orderId}:${RestaurantOrderStatus.OutForDelivery}`),
+      ],
+      [
+        Markup.button.callback('✅ Completed', `status:${orderId}:${RestaurantOrderStatus.Completed}`),
+      ],
+    ]);
   }
 
   async sendOrderAlert(order: any, branchName: string): Promise<number | undefined> {
@@ -109,15 +193,7 @@ ${itemsList}
 ⏳ <b>Status:</b> <b>${order.orderStatus?.toUpperCase()}</b>
 `;
 
-      const keyboard = Markup.inlineKeyboard([
-        [
-          Markup.button.callback('👨‍🍳 Start Preparing', `status:${order._id}:preparing`),
-          Markup.button.callback('🛵 Dispatched', `status:${order._id}:out_for_delivery`),
-        ],
-        [
-          Markup.button.callback('✅ Completed', `status:${order._id}:completed`),
-        ],
-      ]);
+      const keyboard = this.getOrderKeyboard(order._id.toString(), order.orderStatus);
 
       const sentMsg = await this.bot.telegram.sendMessage(chatId, message, {
         parse_mode: 'HTML',
@@ -152,8 +228,15 @@ ${itemsList}
         parse_mode: 'HTML',
         reply_parameters: { message_id: messageId },
       });
+
+      // Update original message's action buttons to reflect the new status
+      const updatedKeyboard = this.getOrderKeyboard(order._id.toString(), order.orderStatus);
+      await this.bot.telegram
+        .editMessageReplyMarkup(chatId, messageId, undefined, updatedKeyboard.reply_markup)
+        .catch(() => {});
     } catch (err: any) {
       this.logger.error(`Failed to update Telegram message: ${err.message}`);
     }
   }
 }
+
