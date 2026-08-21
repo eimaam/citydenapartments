@@ -689,20 +689,20 @@ export default function MenuCatalogPage() {
                   Portion Sizes (Optional)
                 </span>
                 <p className="text-[11px] text-outline">
-                  e.g. Regular, Large, or Family Pack with distinct prices
+                  Configure portion options (e.g. Regular, Large, 500ml) with their specific prices
                 </p>
               </div>
               <Button
                 size="sm"
                 variant="secondary"
-                icon={<Plus size={12} />}
+                icon={<Plus size={13} />}
                 onClick={() =>
                   setItemForm({
                     ...itemForm,
                     hasSizes: true,
                     sizes: [
                       ...itemForm.sizes,
-                      { name: '', price: itemForm.basePrice, isDefault: itemForm.sizes.length === 0 },
+                      { name: '', price: itemForm.basePrice || 0, isDefault: itemForm.sizes.length === 0 },
                     ],
                   })
                 }
@@ -711,43 +711,63 @@ export default function MenuCatalogPage() {
               </Button>
             </div>
 
-            {itemForm.sizes.map((sz, idx) => (
-              <div key={idx} className="flex items-center gap-2">
-                <Input
-                  size="sm"
-                  placeholder="Size name (e.g. 6 Pieces, Large)"
-                  value={sz.name}
-                  onChange={(e) => {
-                    const next = [...itemForm.sizes];
-                    next[idx].name = e.target.value;
-                    setItemForm({ ...itemForm, sizes: next });
-                  }}
-                  className="flex-1"
-                />
-                <Input
-                  size="sm"
-                  type="number"
-                  placeholder="Price (₦)"
-                  value={sz.price}
-                  onChange={(e) => {
-                    const next = [...itemForm.sizes];
-                    next[idx].price = Number(e.target.value);
-                    setItemForm({ ...itemForm, sizes: next });
-                  }}
-                  className="w-28"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const next = itemForm.sizes.filter((_, i) => i !== idx);
-                    setItemForm({ ...itemForm, sizes: next, hasSizes: next.length > 0 });
-                  }}
-                  className="p-1.5 text-outline hover:text-red-500 transition-colors"
-                >
-                  <X size={14} />
-                </button>
+            {itemForm.sizes.length > 0 && (
+              <div className="space-y-2 pt-1">
+                <div className="grid grid-cols-12 gap-3 px-1 text-[10px] font-bold text-outline uppercase tracking-wider">
+                  <div className="col-span-7">Portion / Size Name</div>
+                  <div className="col-span-4">Price (₦)</div>
+                  <div className="col-span-1 text-center"></div>
+                </div>
+
+                {itemForm.sizes.map((sz, idx) => (
+                  <div
+                    key={idx}
+                    className="grid grid-cols-12 gap-3 items-center bg-surface-container-lowest p-2.5 rounded-lg border border-outline-variant/60 shadow-xs"
+                  >
+                    <div className="col-span-7 min-w-0">
+                      <Input
+                        size="md"
+                        placeholder="e.g. 6 Pieces, Large Bowl, 1L"
+                        value={sz.name}
+                        onChange={(e) => {
+                          const next = [...itemForm.sizes];
+                          next[idx].name = e.target.value;
+                          setItemForm({ ...itemForm, sizes: next });
+                        }}
+                        className="!w-full"
+                      />
+                    </div>
+                    <div className="col-span-4 min-w-0">
+                      <Input
+                        size="md"
+                        type="number"
+                        placeholder="Price (₦)"
+                        value={sz.price === 0 ? '' : sz.price}
+                        onChange={(e) => {
+                          const next = [...itemForm.sizes];
+                          next[idx].price = Number(e.target.value);
+                          setItemForm({ ...itemForm, sizes: next });
+                        }}
+                        className="!w-full font-mono font-semibold"
+                      />
+                    </div>
+                    <div className="col-span-1 flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = itemForm.sizes.filter((_, i) => i !== idx);
+                          setItemForm({ ...itemForm, sizes: next, hasSizes: next.length > 0 });
+                        }}
+                        className="p-1.5 text-outline hover:text-error hover:bg-error/10 rounded transition-all cursor-pointer"
+                        title="Remove size"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
 
           {/* Modifier Option Groups Builder */}
@@ -758,13 +778,13 @@ export default function MenuCatalogPage() {
                   Modifier Option Groups (Deep Choices)
                 </span>
                 <p className="text-[11px] text-outline">
-                  e.g. Choice of Soup for Masa (Miyan Kuka, Egusi, Vegetable)
+                  Customization choices (e.g. Choice of Protein, Soup Choice, Extra Topping)
                 </p>
               </div>
               <Button
                 size="sm"
                 variant="secondary"
-                icon={<Plus size={12} />}
+                icon={<Plus size={13} />}
                 onClick={() =>
                   setItemForm({
                     ...itemForm,
@@ -787,83 +807,110 @@ export default function MenuCatalogPage() {
             </div>
 
             {itemForm.optionGroups.map((group, gIdx) => (
-              <div key={gIdx} className="p-3 bg-surface-container-lowest rounded-md border border-outline-variant space-y-2">
-                <div className="flex items-center gap-2">
-                  <Input
-                    size="sm"
-                    placeholder="Group Title (e.g. Choose Your Soup)"
-                    value={group.name}
-                    onChange={(e) => {
-                      const next = [...itemForm.optionGroups];
-                      next[gIdx].name = e.target.value;
-                      setItemForm({ ...itemForm, optionGroups: next });
-                    }}
-                    className="flex-1"
-                  />
-                  <Select
-                    size="sm"
-                    value={group.selectionType}
-                    onChange={(v: any) => {
-                      const next = [...itemForm.optionGroups];
-                      next[gIdx].selectionType = v;
-                      setItemForm({ ...itemForm, optionGroups: next });
-                    }}
-                    className="w-36"
-                  >
-                    <Option value={OptionSelectionType.SingleSelect}>Single Choice</Option>
-                    <Option value={OptionSelectionType.MultiSelect}>Multi Choice</Option>
-                  </Select>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const next = itemForm.optionGroups.filter((_, i) => i !== gIdx);
-                      setItemForm({ ...itemForm, optionGroups: next });
-                    }}
-                    className="p-1 text-outline hover:text-red-500"
-                  >
-                    <X size={14} />
-                  </button>
+              <div key={gIdx} className="p-3.5 bg-surface-container-lowest rounded-lg border border-outline-variant/80 space-y-3 shadow-xs">
+                <div className="grid grid-cols-12 gap-3 items-end">
+                  <div className="col-span-7 min-w-0">
+                    <label className="text-[10px] font-bold text-outline uppercase tracking-wider mb-1 block">
+                      Group Title *
+                    </label>
+                    <Input
+                      size="md"
+                      placeholder="e.g. Choose Your Protein, Soup Selection"
+                      value={group.name}
+                      onChange={(e) => {
+                        const next = [...itemForm.optionGroups];
+                        next[gIdx].name = e.target.value;
+                        setItemForm({ ...itemForm, optionGroups: next });
+                      }}
+                      className="!w-full"
+                    />
+                  </div>
+                  <div className="col-span-4 min-w-0">
+                    <label className="text-[10px] font-bold text-outline uppercase tracking-wider mb-1 block">
+                      Selection Type
+                    </label>
+                    <Select
+                      size="md"
+                      value={group.selectionType}
+                      onChange={(v: any) => {
+                        const next = [...itemForm.optionGroups];
+                        next[gIdx].selectionType = v;
+                        setItemForm({ ...itemForm, optionGroups: next });
+                      }}
+                      className="w-full"
+                    >
+                      <Option value={OptionSelectionType.SingleSelect}>Single Choice</Option>
+                      <Option value={OptionSelectionType.MultiSelect}>Multi Choice</Option>
+                    </Select>
+                  </div>
+                  <div className="col-span-1 flex justify-center pb-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = itemForm.optionGroups.filter((_, i) => i !== gIdx);
+                        setItemForm({ ...itemForm, optionGroups: next });
+                      }}
+                      className="p-1.5 text-outline hover:text-error hover:bg-error/10 rounded transition-all cursor-pointer"
+                      title="Delete Option Group"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
                 </div>
 
-                <div className="space-y-1.5 pl-2 border-l-2 border-primary/30 mt-2">
+                <div className="space-y-2 pl-3 border-l-2 border-primary/40 pt-1">
+                  <div className="grid grid-cols-12 gap-3 px-1 text-[10px] font-bold text-outline uppercase tracking-wider">
+                    <div className="col-span-7">Option Item Name</div>
+                    <div className="col-span-4">Extra Price (+₦)</div>
+                    <div className="col-span-1"></div>
+                  </div>
+
                   {group.options.map((opt, oIdx) => (
-                    <div key={oIdx} className="flex items-center gap-2">
-                      <Input
-                        size="sm"
-                        placeholder="Option name (e.g. Miyan Kuka)"
-                        value={opt.name}
-                        onChange={(e) => {
-                          const next = [...itemForm.optionGroups];
-                          next[gIdx].options[oIdx].name = e.target.value;
-                          setItemForm({ ...itemForm, optionGroups: next });
-                        }}
-                        className="flex-1"
-                      />
-                      <Input
-                        size="sm"
-                        type="number"
-                        placeholder="+₦ Extra Price"
-                        value={opt.extraPrice}
-                        onChange={(e) => {
-                          const next = [...itemForm.optionGroups];
-                          next[gIdx].options[oIdx].extraPrice = Number(e.target.value);
-                          setItemForm({ ...itemForm, optionGroups: next });
-                        }}
-                        className="w-28"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const next = [...itemForm.optionGroups];
-                          next[gIdx].options = next[gIdx].options.filter((_, i) => i !== oIdx);
-                          setItemForm({ ...itemForm, optionGroups: next });
-                        }}
-                        className="p-1 text-outline hover:text-red-500"
-                      >
-                        <X size={12} />
-                      </button>
+                    <div key={oIdx} className="grid grid-cols-12 gap-3 items-center bg-surface-container/40 p-2 rounded border border-outline-variant/40">
+                      <div className="col-span-7 min-w-0">
+                        <Input
+                          size="sm"
+                          placeholder="e.g. Fried Fish, Steamed Veggies"
+                          value={opt.name}
+                          onChange={(e) => {
+                            const next = [...itemForm.optionGroups];
+                            next[gIdx].options[oIdx].name = e.target.value;
+                            setItemForm({ ...itemForm, optionGroups: next });
+                          }}
+                          className="!w-full"
+                        />
+                      </div>
+                      <div className="col-span-4 min-w-0">
+                        <Input
+                          size="sm"
+                          type="number"
+                          placeholder="+₦ 0"
+                          value={opt.extraPrice === 0 ? '' : opt.extraPrice}
+                          onChange={(e) => {
+                            const next = [...itemForm.optionGroups];
+                            next[gIdx].options[oIdx].extraPrice = Number(e.target.value);
+                            setItemForm({ ...itemForm, optionGroups: next });
+                          }}
+                          className="!w-full font-mono font-medium"
+                        />
+                      </div>
+                      <div className="col-span-1 flex justify-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = [...itemForm.optionGroups];
+                            next[gIdx].options = next[gIdx].options.filter((_, i) => i !== oIdx);
+                            setItemForm({ ...itemForm, optionGroups: next });
+                          }}
+                          className="p-1 text-outline hover:text-error hover:bg-error/10 rounded transition-all cursor-pointer"
+                          title="Remove option item"
+                        >
+                          <X size={13} />
+                        </button>
+                      </div>
                     </div>
                   ))}
+
                   <button
                     type="button"
                     onClick={() => {
@@ -871,9 +918,9 @@ export default function MenuCatalogPage() {
                       next[gIdx].options.push({ name: '', extraPrice: 0, isAvailable: true });
                       setItemForm({ ...itemForm, optionGroups: next });
                     }}
-                    className="text-[11px] font-bold text-primary hover:underline cursor-pointer pt-1 block"
+                    className="text-xs font-bold text-primary hover:underline cursor-pointer pt-1 inline-flex items-center gap-1"
                   >
-                    + Add Option Item
+                    <Plus size={13} /> Add Option Item
                   </button>
                 </div>
               </div>

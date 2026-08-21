@@ -286,7 +286,7 @@ export function Sidebar({
                 {!collapsed ? (
                   <button
                     onClick={() => toggleGroup(group.heading)}
-                    className="flex items-center gap-1 w-full px-3 mb-1 text-[10px] font-bold tracking-[0.15em] uppercase text-white/20 hover:text-white/40 transition-colors cursor-pointer bg-transparent border-none"
+                    className="flex items-center gap-1 w-full px-3 mb-1 text-[10px] font-semibold md:font-bold tracking-[0.15em] uppercase text-white/20 hover:text-white/40 transition-colors cursor-pointer bg-transparent border-none"
                   >
                     <ChevronDown
                       size={12}
@@ -329,7 +329,7 @@ export function Sidebar({
                         </span>
                       )}
                       {!collapsed && item.path === '/inventory/spoilage' && pendingSpoilageCount > 0 && (
-                        <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500 text-white">
+                        <span className="ml-auto text-[10px] font-semibold md:font-bold px-1.5 py-0.5 rounded-full bg-amber-500 text-white">
                           {pendingSpoilageCount > 99 ? '99+' : pendingSpoilageCount}
                         </span>
                       )}
@@ -412,7 +412,7 @@ export function Sidebar({
       <aside
         className={cn(
           'hidden lg:block h-screen sticky top-0 flex-shrink-0 transition-all duration-300 ease-out',
-          collapsed ? 'w-16' : 'w-[200px]',
+          collapsed ? 'w-16' : 'w-[230px]',
         )}
       >
         {sidebarContent}
