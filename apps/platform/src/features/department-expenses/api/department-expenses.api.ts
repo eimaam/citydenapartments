@@ -1,9 +1,13 @@
 import { api } from '../../../lib/api';
+import type { ExpenseHeadTypeType } from '@citydenapartments/shared';
 
 export interface DepartmentExpenseEntry {
   _id: string;
   branchId: string;
   departmentId: { _id: string; name: string };
+  headType?: ExpenseHeadTypeType;
+  expenseHead?: string;
+  expenseHeadId?: { _id: string; name: string; type: ExpenseHeadTypeType } | string;
   amount: number;
   description: string;
   fromDate: string;
@@ -30,6 +34,9 @@ export interface PaginatedExpenses {
 
 export interface CreateExpensePayload {
   departmentId: string;
+  headType: ExpenseHeadTypeType;
+  expenseHead: string;
+  expenseHeadId?: string;
   amount: number;
   description: string;
   fromDate: string;
@@ -37,6 +44,10 @@ export interface CreateExpensePayload {
 }
 
 export interface UpdateExpensePayload {
+  departmentId?: string;
+  headType?: ExpenseHeadTypeType;
+  expenseHead?: string;
+  expenseHeadId?: string;
   amount?: number;
   description?: string;
   fromDate?: string;
@@ -44,9 +55,21 @@ export interface UpdateExpensePayload {
 }
 
 export const expensesApi = {
-  list: (params: { departmentId?: string; page?: number; limit?: number }) => {
+  list: (params: {
+    departmentId?: string;
+    headType?: string;
+    expenseHead?: string;
+    fromDate?: string;
+    toDate?: string;
+    page?: number;
+    limit?: number;
+  }) => {
     const qs = new URLSearchParams();
     if (params.departmentId) qs.set('departmentId', params.departmentId);
+    if (params.headType) qs.set('headType', params.headType);
+    if (params.expenseHead) qs.set('expenseHead', params.expenseHead);
+    if (params.fromDate) qs.set('fromDate', params.fromDate);
+    if (params.toDate) qs.set('toDate', params.toDate);
     if (params.page) qs.set('page', String(params.page));
     if (params.limit) qs.set('limit', String(params.limit));
     const s = qs.toString();

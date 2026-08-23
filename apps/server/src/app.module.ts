@@ -24,6 +24,7 @@ import { EmployeesModule } from './modules/employees/employees.module';
 import { DiscountCodesModule } from './modules/discount-codes/discount-codes.module';
 import { DepartmentsModule } from './modules/departments/departments.module';
 import { DepartmentExpensesModule } from './modules/department-expenses/department-expenses.module';
+import { ExpenseHeadsModule } from './modules/expense-heads/expense-heads.module';
 import { PublicModule } from './modules/public/public.module';
 import { AuditLogModule } from './modules/audit-log/audit-log.module';
 import { EmailModule } from './modules/email/email.module';
@@ -77,6 +78,7 @@ if (AppConfig.NODE_ENV === 'development') {
     EmployeesModule,
     DiscountCodesModule,
     DepartmentsModule,
+    ExpenseHeadsModule,
     DepartmentExpensesModule,
     RedisModule,
     PublicModule,

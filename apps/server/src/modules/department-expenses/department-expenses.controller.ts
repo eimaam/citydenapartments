@@ -24,6 +24,8 @@ export class DepartmentExpensesController {
   @Roles(UserRoleEnum.ACCOUNTANT, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.FACILITY_MANAGER)
   findAll(
     @Query('departmentId') departmentId: string,
+    @Query('headType') headType: string,
+    @Query('expenseHead') expenseHead: string,
     @Query('fromDate') fromDate: string,
     @Query('toDate') toDate: string,
     @Query('page') page: string,
@@ -33,6 +35,8 @@ export class DepartmentExpensesController {
     return this.expensesService.findAll({
       branchId: user.activeBranchId,
       departmentId,
+      headType,
+      expenseHead,
       fromDate,
       toDate,
       page: page ? parseInt(page, 10) : 1,
@@ -44,6 +48,12 @@ export class DepartmentExpensesController {
   @Roles(UserRoleEnum.ACCOUNTANT, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.FACILITY_MANAGER)
   getGroups(@ActiveUser() user: any) {
     return this.expensesService.getGroupedTotals(user.activeBranchId);
+  }
+
+  @Get('heads-summary')
+  @Roles(UserRoleEnum.ACCOUNTANT, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.GROUP_GM, UserRoleEnum.IT, UserRoleEnum.FACILITY_MANAGER)
+  getHeadsSummary(@ActiveUser() user: any) {
+    return this.expensesService.getGroupedByHead(user.activeBranchId);
   }
 
   @Get(':id')

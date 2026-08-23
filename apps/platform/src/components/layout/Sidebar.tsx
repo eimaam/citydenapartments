@@ -54,6 +54,7 @@ const menuConfig: MenuConfig = {
       { label: 'Inventory Book', icon: BookOpen, path: '/inventory/book' },
     ]},
     { heading: 'Settings', items: [
+      { label: 'Expense Heads', icon: Tags, path: '/expense-heads' },
       { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
     ]},
     { heading: 'People', items: [
@@ -70,6 +71,7 @@ const menuConfig: MenuConfig = {
       { label: 'Inventory Book', icon: BookOpen, path: '/inventory/book' },
     ]},
     { heading: 'Settings', items: [
+      { label: 'Expense Heads', icon: Tags, path: '/expense-heads' },
       { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
     ]},
     { heading: 'People', items: [
@@ -82,6 +84,9 @@ const menuConfig: MenuConfig = {
     ]},
     { heading: 'Services', items: [
       { label: 'Laundry', icon: Shirt, path: '/laundry' },
+    ]},
+    { heading: 'Settings', items: [
+      { label: 'Expense Heads', icon: Tags, path: '/expense-heads' },
     ]},
     { heading: 'People', items: [
       { label: 'Customers', icon: BookUser, path: '/customers' },
@@ -118,6 +123,7 @@ const menuConfig: MenuConfig = {
       { label: 'Customers', icon: BookUser, path: '/customers' },
     ]},
     { heading: 'Settings', items: [
+      { label: 'Expense Heads', icon: Tags, path: '/expense-heads' },
       { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
     ]},
   ],
@@ -154,6 +160,9 @@ const menuConfig: MenuConfig = {
       { label: 'Transactions', icon: CalendarCheck, path: '/inventory/transactions' },
       { label: 'Write-Offs', icon: AlertTriangle, path: '/inventory/spoilage' },
       { label: 'Inventory Book', icon: BookOpen, path: '/inventory/book' },
+    ]},
+    { heading: 'Settings', items: [
+      { label: 'Expense Heads', icon: Tags, path: '/expense-heads' },
     ]},
   ],
   StoreManager: [

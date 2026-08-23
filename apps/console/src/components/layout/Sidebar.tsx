@@ -84,6 +84,7 @@ const menuConfig: MenuConfig = {
     ]},
     { heading: 'Settings', items: [
       { label: 'Departments', icon: Building2, path: '/departments' },
+      { label: 'Expense Heads', icon: Tags, path: '/expense-heads' },
       { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
       { label: 'Roles', icon: Shield, path: '/roles' },
     ]},
@@ -128,6 +129,7 @@ const menuConfig: MenuConfig = {
     ]},
     { heading: 'Settings', items: [
       { label: 'Departments', icon: Building2, path: '/departments' },
+      { label: 'Expense Heads', icon: Tags, path: '/expense-heads' },
       { label: 'Discount Codes', icon: Tags, path: '/discount-codes' },
       { label: 'Roles', icon: Shield, path: '/roles' },
     ]},
@@ -150,6 +152,7 @@ const menuConfig: MenuConfig = {
     ]},
     { heading: 'Settings', items: [
       { label: 'Departments', icon: Building2, path: '/departments' },
+      { label: 'Expense Heads', icon: Tags, path: '/expense-heads' },
       { label: 'Roles', icon: Shield, path: '/roles' },
     ]},
     { heading: 'Monitoring', items: [
@@ -187,6 +190,9 @@ const menuConfig: MenuConfig = {
     { heading: 'Monitoring', items: [
       { label: 'Department Expenses', icon: Receipt, path: '/department-expenses' },
       { label: 'Revenue Logs', icon: DollarSign, path: '/revenue-logs' },
+    ]},
+    { heading: 'Settings', items: [
+      { label: 'Expense Heads', icon: Tags, path: '/expense-heads' },
     ]},
   ],
   StoreManager: [],

@@ -19,6 +19,9 @@ export class DepartmentExpensesService {
     const expense = await this.expenseModel.create({
       branchId,
       departmentId: dto.departmentId,
+      headType: dto.headType,
+      expenseHead: dto.expenseHead,
+      expenseHeadId: dto.expenseHeadId ? new Types.ObjectId(dto.expenseHeadId) : undefined,
       amount: dto.amount,
       description: dto.description,
       fromDate: new Date(dto.fromDate),
@@ -26,33 +29,37 @@ export class DepartmentExpensesService {
       loggedBy: userId,
     });
 
-    this.logger.log(`Department expense logged — ${expense._id} (${dto.description})`);
+    this.logger.log(`Department expense logged — ${expense._id} (${dto.description}) [Head: ${dto.expenseHead || 'N/A'}]`);
     await this.auditLog.log({
       entityType: 'department_expense',
       entityId: expense._id.toString(),
       action: 'create',
-      description: `Expense logged: ${dto.description} (₦${dto.amount}) for department ${dto.departmentId}`,
+      description: `Expense logged: ${dto.description} (₦${dto.amount}) for department ${dto.departmentId} [${dto.headType}: ${dto.expenseHead}]`,
       performedBy: userId,
       branchId,
       details: { ...dto, _id: expense._id },
       persistForever: true,
     });
 
-    return expense.populate(['departmentId', 'loggedBy']);
+    return expense.populate(['departmentId', 'loggedBy', 'expenseHeadId']);
   }
 
   async findAll(query: {
     branchId: string;
     departmentId?: string;
+    headType?: string;
+    expenseHead?: string;
     fromDate?: string;
     toDate?: string;
     page?: number;
     limit?: number;
   }) {
-    const { branchId, departmentId, fromDate, toDate, page = 1, limit = 50 } = query;
+    const { branchId, departmentId, headType, expenseHead, fromDate, toDate, page = 1, limit = 50 } = query;
     const filter: Record<string, any> = { branchId };
 
     if (departmentId) filter.departmentId = new Types.ObjectId(departmentId);
+    if (headType) filter.headType = headType;
+    if (expenseHead) filter.expenseHead = expenseHead;
     if (fromDate || toDate) {
       filter.fromDate = {};
       if (fromDate) filter.fromDate.$gte = new Date(fromDate);
@@ -64,6 +71,7 @@ export class DepartmentExpensesService {
       this.expenseModel
         .find(filter)
         .populate('departmentId', 'name')
+        .populate('expenseHeadId', 'name type')
         .populate('loggedBy', 'name email')
         .populate('updatedBy', 'name email')
         .sort({ fromDate: -1 })
@@ -80,6 +88,7 @@ export class DepartmentExpensesService {
     const expense = await this.expenseModel
       .findById(id)
       .populate('departmentId', 'name')
+      .populate('expenseHeadId', 'name type')
       .populate('loggedBy', 'name email')
       .populate('updatedBy', 'name email')
       .lean();
@@ -91,13 +100,20 @@ export class DepartmentExpensesService {
     const current = await this.expenseModel.findById(id).lean();
     if (!current) throw new NotFoundException('Department expense not found.');
 
+    const updatePayload: any = {
+      ...dto,
+      ...(dto.expenseHeadId && { expenseHeadId: new Types.ObjectId(dto.expenseHeadId) }),
+      updatedBy: userId,
+    };
+
     const updated = await this.expenseModel
       .findByIdAndUpdate(
         id,
-        { ...dto, updatedBy: userId },
+        updatePayload,
         { new: true },
       )
       .populate('departmentId', 'name')
+      .populate('expenseHeadId', 'name type')
       .populate('loggedBy', 'name email')
       .populate('updatedBy', 'name email')
       .lean();
@@ -157,6 +173,32 @@ export class DepartmentExpensesService {
         },
       },
       { $sort: { departmentName: 1 } },
+    ]);
+  }
+
+  async getGroupedByHead(branchId: string) {
+    return this.expenseModel.aggregate([
+      { $match: { branchId: new Types.ObjectId(branchId) } },
+      {
+        $group: {
+          _id: {
+            headType: '$headType',
+            expenseHead: '$expenseHead',
+          },
+          totalAmount: { $sum: '$amount' },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          headType: '$_id.headType',
+          expenseHead: '$_id.expenseHead',
+          totalAmount: 1,
+          count: 1,
+        },
+      },
+      { $sort: { headType: 1, totalAmount: -1 } },
     ]);
   }
 }

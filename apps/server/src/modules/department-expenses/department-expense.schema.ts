@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
+import { ExpenseHeadType } from '@citydenapartments/shared';
 
 @Schema({ timestamps: true })
 export class DepartmentExpense extends Document {
@@ -8,6 +9,15 @@ export class DepartmentExpense extends Document {
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Department', required: true, index: true })
   departmentId: MongooseSchema.Types.ObjectId;
+
+  @Prop({ type: String, enum: Object.values(ExpenseHeadType), index: true })
+  headType?: string;
+
+  @Prop({ trim: true, index: true })
+  expenseHead?: string;
+
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'ExpenseHead', index: true })
+  expenseHeadId?: MongooseSchema.Types.ObjectId;
 
   @Prop({ required: true, min: 0 })
   amount: number;
@@ -25,8 +35,9 @@ export class DepartmentExpense extends Document {
   loggedBy: MongooseSchema.Types.ObjectId;
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User' })
-  updatedBy: MongooseSchema.Types.ObjectId;
+  updatedBy?: MongooseSchema.Types.ObjectId;
 }
 
 export const DepartmentExpenseSchema = SchemaFactory.createForClass(DepartmentExpense);
 DepartmentExpenseSchema.index({ branchId: 1, departmentId: 1, fromDate: -1 });
+DepartmentExpenseSchema.index({ branchId: 1, headType: 1, expenseHead: 1, fromDate: -1 });

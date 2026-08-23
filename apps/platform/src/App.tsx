@@ -24,6 +24,7 @@ import CustomerDetailPage from './features/customers/pages/CustomerDetailPage';
 import LaundryPage from './features/laundry/pages/LaundryPage';
 import DiscountCodesPage from './features/discount-codes/pages/DiscountCodesPage';
 import DepartmentExpensesPage from './features/department-expenses/pages/DepartmentExpensesPage';
+import ExpenseHeadsPage from './features/expense-heads/pages/ExpenseHeadsPage';
 import RevenueLogsPage from './features/revenue-logs/pages/RevenueLogsPage';
 
 export default function App() {
@@ -84,6 +85,10 @@ export default function App() {
 
               <Route element={<RoleGuard roles={[UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FrontOfficeManager, UserRole.FacilityManager]} />}>
                 <Route path="discount-codes" element={<DiscountCodesPage />} />
+              </Route>
+
+              <Route element={<RoleGuard roles={[UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.Accountant, UserRole.FacilityManager]} />}>
+                <Route path="expense-heads" element={<ExpenseHeadsPage />} />
               </Route>
 
               <Route element={<RoleGuard roles={[UserRole.Accountant, UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager]} />}>

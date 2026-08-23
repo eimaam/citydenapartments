@@ -542,3 +542,81 @@ export interface RestaurantOrderResponse {
   updatedAt: string;
 }
 
+// ── Expense Heads (Revenue & Expenditure Heads) ───────────────────
+export const ExpenseHeadType = {
+  RevenueHead: 'revenue_head',
+  ExpenditureHead: 'expenditure_head',
+} as const;
+export type ExpenseHeadTypeType = (typeof ExpenseHeadType)[keyof typeof ExpenseHeadType];
+
+export const DEFAULT_REVENUE_HEADS = [
+  'Accommodation',
+  'Kitchen',
+  'Bar',
+  'Laundry',
+  'Function',
+  'Hall',
+] as const;
+
+export const DEFAULT_EXPENDITURE_HEADS = [
+  'Salary',
+  'Stationary',
+  'Commission',
+  'Health Insurance',
+  'Staff Meal',
+  'Security',
+  'Advert',
+  'Service Charge',
+  'Diesel',
+  'Electricity',
+  'Maintenance',
+  'Provision for Repairs',
+  'Complimentary',
+  'Kitchen Expenses',
+  'House Keeping Expenses',
+  'Bar Expenses',
+  'Communication',
+  'Local Transportation',
+  'Rent',
+] as const;
+
+export type DefaultRevenueHead = (typeof DEFAULT_REVENUE_HEADS)[number];
+export type DefaultExpenditureHead = (typeof DEFAULT_EXPENDITURE_HEADS)[number];
+
+export interface ExpenseHeadResponse {
+  _id: string;
+  name: string;
+  type: ExpenseHeadTypeType;
+  description?: string;
+  branchId?: string | null;
+  isActive: boolean;
+  isDefault: boolean;
+  createdBy?: { _id: string; name?: string; email?: string } | string;
+  updatedBy?: { _id: string; name?: string; email?: string } | string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateExpenseHeadPayload {
+  name: string;
+  type: ExpenseHeadTypeType;
+  description?: string;
+  branchId?: string | null;
+  isActive?: boolean;
+}
+
+export interface UpdateExpenseHeadPayload {
+  name?: string;
+  type?: ExpenseHeadTypeType;
+  description?: string;
+  branchId?: string | null;
+  isActive?: boolean;
+}
+
+export interface ExpenseHeadGroupSummary {
+  revenueHeads: ExpenseHeadResponse[];
+  expenditureHeads: ExpenseHeadResponse[];
+  totalActive: number;
+  totalInactive: number;
+}
+

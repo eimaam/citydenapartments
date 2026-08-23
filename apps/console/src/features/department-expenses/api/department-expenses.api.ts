@@ -1,9 +1,13 @@
 import { api } from '../../../lib/api';
+import type { ExpenseHeadTypeType } from '@citydenapartments/shared';
 
 export interface DepartmentExpenseEntry {
   _id: string;
   branchId: string;
   departmentId: { _id: string; name: string };
+  headType?: ExpenseHeadTypeType;
+  expenseHead?: string;
+  expenseHeadId?: { _id: string; name: string; type: ExpenseHeadTypeType } | string;
   amount: number;
   description: string;
   fromDate: string;
@@ -21,6 +25,13 @@ export interface ExpenseGroup {
   count: number;
 }
 
+export interface ExpenseHeadSummaryGroup {
+  headType: ExpenseHeadTypeType;
+  expenseHead: string;
+  totalAmount: number;
+  count: number;
+}
+
 export interface PaginatedExpenses {
   items: DepartmentExpenseEntry[];
   total: number;
@@ -30,6 +41,9 @@ export interface PaginatedExpenses {
 
 export interface CreateExpensePayload {
   departmentId: string;
+  headType: ExpenseHeadTypeType;
+  expenseHead: string;
+  expenseHeadId?: string;
   amount: number;
   description: string;
   fromDate: string;
@@ -38,6 +52,9 @@ export interface CreateExpensePayload {
 
 export interface UpdateExpensePayload {
   departmentId?: string;
+  headType?: ExpenseHeadTypeType;
+  expenseHead?: string;
+  expenseHeadId?: string;
   amount?: number;
   description?: string;
   fromDate?: string;
@@ -47,6 +64,8 @@ export interface UpdateExpensePayload {
 export const expensesApi = {
   list: (params: {
     departmentId?: string;
+    headType?: string;
+    expenseHead?: string;
     fromDate?: string;
     toDate?: string;
     page?: number;
@@ -54,6 +73,8 @@ export const expensesApi = {
   }) => {
     const qs = new URLSearchParams();
     if (params.departmentId) qs.set('departmentId', params.departmentId);
+    if (params.headType) qs.set('headType', params.headType);
+    if (params.expenseHead) qs.set('expenseHead', params.expenseHead);
     if (params.fromDate) qs.set('fromDate', params.fromDate);
     if (params.toDate) qs.set('toDate', params.toDate);
     if (params.page) qs.set('page', String(params.page));
@@ -62,6 +83,7 @@ export const expensesApi = {
     return api.get<PaginatedExpenses>(`/department-expenses${s ? `?${s}` : ''}`);
   },
   getGroups: () => api.get<ExpenseGroup[]>('/department-expenses/groups'),
+  getHeadGroups: () => api.get<ExpenseHeadSummaryGroup[]>('/department-expenses/heads-summary'),
   get: (id: string) => api.get<DepartmentExpenseEntry>(`/department-expenses/${id}`),
   create: (data: CreateExpensePayload) => api.post<DepartmentExpenseEntry>('/department-expenses', data),
   update: (id: string, data: UpdateExpensePayload) => api.patch<DepartmentExpenseEntry>(`/department-expenses/${id}`, data),
