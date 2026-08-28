@@ -83,6 +83,7 @@ const menuConfig: MenuConfig = {
       { label: 'Inventory Book', icon: BookOpen, path: '/inventory/book' },
     ]},
     { heading: 'Services', items: [
+      { label: 'Dish Availability', icon: Store, path: '/restaurant-menu-availability' },
       { label: 'Laundry', icon: Shirt, path: '/laundry' },
     ]},
     { heading: 'Settings', items: [
@@ -138,6 +139,7 @@ const menuConfig: MenuConfig = {
     ]},
     { heading: 'Services', items: [
       { label: 'Restaurant Orders', icon: UtensilsCrossed, path: '/restaurant-orders' },
+      { label: 'Dish Availability', icon: Store, path: '/restaurant-menu-availability' },
       { label: 'Laundry', icon: Shirt, path: '/laundry' },
     ]},
     { heading: 'Settings', items: [

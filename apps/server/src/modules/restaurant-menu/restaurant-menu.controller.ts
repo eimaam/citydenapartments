@@ -30,6 +30,7 @@ export class RestaurantMenuController {
     UserRole.KitchenStaff,
     UserRole.Reception,
     UserRole.IT,
+    UserRole.FrontOfficeManager,
   )
   @UseInterceptors(FileInterceptor('file', {
     limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
@@ -52,20 +53,20 @@ export class RestaurantMenuController {
   }
 
   @Post('categories')
-  @Roles(UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.KitchenStaff, UserRole.IT)
+  @Roles(UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.KitchenStaff, UserRole.IT, UserRole.FrontOfficeManager)
   async createCategory(@Body() body: any, @ActiveUser() user: any) {
     const branchId = body.branchId || user.activeBranchId;
     return this.menuService.createCategory(branchId, body, user);
   }
 
   @Patch('categories/:id')
-  @Roles(UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.KitchenStaff, UserRole.IT)
+  @Roles(UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.KitchenStaff, UserRole.IT, UserRole.FrontOfficeManager)
   async updateCategory(@Param('id') id: string, @Body() body: any, @ActiveUser() user: any) {
     return this.menuService.updateCategory(id, body, user);
   }
 
   @Delete('categories/:id')
-  @Roles(UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.IT)
+  @Roles(UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.IT, UserRole.FrontOfficeManager)
   async deleteCategory(@Param('id') id: string, @ActiveUser() user: any) {
     return this.menuService.deleteCategory(id, user);
   }
@@ -102,26 +103,26 @@ export class RestaurantMenuController {
   }
 
   @Post('items')
-  @Roles(UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.KitchenStaff, UserRole.IT)
+  @Roles(UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.KitchenStaff, UserRole.IT, UserRole.FrontOfficeManager)
   async createMenuItem(@Body() body: any, @ActiveUser() user: any) {
     const branchId = body.branchId || user.activeBranchId;
     return this.menuService.createMenuItem(branchId, body, user);
   }
 
   @Patch('items/:id')
-  @Roles(UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.KitchenStaff, UserRole.IT)
+  @Roles(UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.KitchenStaff, UserRole.IT, UserRole.FrontOfficeManager)
   async updateMenuItem(@Param('id') id: string, @Body() body: any, @ActiveUser() user: any) {
     return this.menuService.updateMenuItem(id, body, user);
   }
 
   @Patch('items/:id/toggle-availability')
-  @Roles(UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.KitchenStaff, UserRole.Reception, UserRole.IT)
+  @Roles(UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.KitchenStaff, UserRole.Reception, UserRole.IT, UserRole.FrontOfficeManager)
   async toggleAvailability(@Param('id') id: string, @ActiveUser() user: any) {
     return this.menuService.toggleAvailability(id, user);
   }
 
   @Delete('items/:id')
-  @Roles(UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.IT)
+  @Roles(UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.IT, UserRole.FrontOfficeManager)
   async deleteMenuItem(@Param('id') id: string, @ActiveUser() user: any) {
     return this.menuService.deleteMenuItem(id, user);
   }
@@ -133,19 +134,19 @@ export class RestaurantMenuController {
   }
 
   @Post('banners')
-  @Roles(UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.IT)
+  @Roles(UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.IT, UserRole.FrontOfficeManager)
   async createBanner(@Body() body: any, @ActiveUser() user: any) {
     return this.menuService.createBanner(body, user);
   }
 
   @Patch('banners/:id')
-  @Roles(UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.IT)
+  @Roles(UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.IT, UserRole.FrontOfficeManager)
   async updateBanner(@Param('id') id: string, @Body() body: any, @ActiveUser() user: any) {
     return this.menuService.updateBanner(id, body, user);
   }
 
   @Delete('banners/:id')
-  @Roles(UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.IT)
+  @Roles(UserRole.SuperAdmin, UserRole.GroupGM, UserRole.FacilityManager, UserRole.IT, UserRole.FrontOfficeManager)
   async deleteBanner(@Param('id') id: string, @ActiveUser() user: any) {
     return this.menuService.deleteBanner(id, user);
   }

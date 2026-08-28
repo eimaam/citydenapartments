@@ -145,6 +145,12 @@ const menuConfig: MenuConfig = {
       { label: 'Room Types', icon: Tags, path: '/room-types' },
       { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
     ]},
+    { heading: 'Restaurant & Menu', items: [
+      { label: 'Menu Catalog', icon: UtensilsCrossed, path: '/restaurant/menu' },
+      { label: 'Delivery Zones', icon: Truck, path: '/restaurant/delivery-zones' },
+      { label: 'Banners & Offers', icon: Sparkles, path: '/restaurant/banners' },
+      { label: 'Restaurant Analytics', icon: BarChart3, path: '/restaurant/analytics' },
+    ]},
     { heading: 'People', items: [
       { label: 'Users', icon: Users, path: '/users' },
       { label: 'Customers', icon: BookUser, path: '/customers' },
@@ -174,6 +180,12 @@ const menuConfig: MenuConfig = {
       { label: 'Bookings', icon: CalendarCheck, path: '/bookings' },
       { label: 'Calendar', icon: CalendarFold, path: '/bookings/calendar' },
       { label: 'Rooms', icon: DoorOpen, path: '/rooms' },
+    ]},
+    { heading: 'Restaurant & Menu', items: [
+      { label: 'Menu Catalog', icon: UtensilsCrossed, path: '/restaurant/menu' },
+      { label: 'Delivery Zones', icon: Truck, path: '/restaurant/delivery-zones' },
+      { label: 'Banners & Offers', icon: Sparkles, path: '/restaurant/banners' },
+      { label: 'Restaurant Analytics', icon: BarChart3, path: '/restaurant/analytics' },
     ]},
     { heading: 'People', items: [
       { label: 'Customers', icon: BookUser, path: '/customers' },

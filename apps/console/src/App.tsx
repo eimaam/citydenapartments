@@ -78,10 +78,10 @@ const routeRoles: Record<string, UserRoleType[]> = {
   '/department-expenses': [UserRole.Accountant, UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/revenue-logs': [UserRole.Accountant, UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
   '/laundry-items': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
-  '/restaurant/menu': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.FacilityManager],
-  '/restaurant/delivery-zones': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
-  '/restaurant/banners': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT],
-  '/restaurant/analytics': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.Accountant],
+  '/restaurant/menu': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.FacilityManager, UserRole.FrontOfficeManager],
+  '/restaurant/delivery-zones': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.FrontOfficeManager],
+  '/restaurant/banners': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.FrontOfficeManager],
+  '/restaurant/analytics': [UserRole.SuperAdmin, UserRole.GroupGM, UserRole.IT, UserRole.Accountant, UserRole.FrontOfficeManager],
 };
 
 export default function App() {
