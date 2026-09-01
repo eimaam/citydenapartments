@@ -26,6 +26,7 @@ export class RestaurantMenuService {
         accessKeyId: AppConfig.R2_ACCESS_KEY_ID,
         secretAccessKey: AppConfig.R2_SECRET_ACCESS_KEY,
       },
+      forcePathStyle: true,
     });
   }
 

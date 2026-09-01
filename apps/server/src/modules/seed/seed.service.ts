@@ -55,39 +55,75 @@ const occupations = ['Civil Servant', 'Business Owner', 'Teacher', 'Engineer', '
 const paymentMethods: Array<'cash' | 'pos_card' | 'bank_transfer'> = ['cash', 'pos_card', 'bank_transfer'];
 const bookingSources: Array<'walk_in' | 'phone' | 'online'> = ['walk_in', 'phone', 'online'];
 
-// R2 bucket URLs for Abuja room images────────────────────────
+// R2 bucket URLs for room images────────────────────────
 const BUCKET = 'https://bucket.citydenapartments.com';
 
-const img = (slug: string, room: string, n: number, ext: string) =>
-  `${BUCKET}/abj/room-types/${slug}/${room}%20(${n}).${ext}`;
+const enc = (path: string) => path.split('/').map(encodeURIComponent).join('/');
+const r2Url = (key: string) => `${BUCKET}/${enc(key)}`;
 
-const range = (room: string, slug: string, count: number, ext = 'JPG') =>
-  Array.from({ length: count }, (_, i) => img(slug, room, i + 1, ext));
-
-// Room → image URLs (Abuja only)
+// Room → image URLs (Abuja)
 const abjRoomImages: Record<string, string[]> = {
-  // Business Suite (A101 — 11 images, first is .jpg rest .JPG)
+  // Business Suite (A101 — 11 images: 1 is .jpg, 2-11 are .JPG)
   'A101': [
-    img('business-suite', 'A101', 1, 'jpg'),
-    ...range('A101', 'business-suite', 10, 'JPG'),
+    r2Url('abj/room-types/business-suite/A101 (1).jpg'),
+    ...Array.from({ length: 10 }, (_, i) => r2Url(`abj/room-types/business-suite/A101 (${i + 2}).JPG`)),
   ],
   // Deluxe Suite (A105 — 18 images, A204 — 6 images)
-  'A105': range('A105', 'deluxe-suite', 18),
-  'A204': range('A204', 'deluxe-suite', 6),
+  'A105': Array.from({ length: 18 }, (_, i) => r2Url(`abj/room-types/deluxe-suite/A105 (${i + 1}).JPG`)),
+  'A204': Array.from({ length: 6 }, (_, i) => r2Url(`abj/room-types/deluxe-suite/A204 (${i + 1}).JPG`)),
   // Executive Suite (A001, A002, A003)
-  'A001': range('A001', 'executive-suite', 5),
-  'A002': range('A002', 'executive-suite', 5),
-  'A003': range('A003', 'executive-suite', 5),
+  'A001': Array.from({ length: 15 }, (_, i) => r2Url(`abj/room-types/executive-suite/A001&A002 (${i + 1}).JPG`)),
+  'A002': Array.from({ length: 16 }, (_, i) => r2Url(`abj/room-types/executive-suite/A001&A002 (${i + 16}).JPG`)),
+  'A003': Array.from({ length: 8 }, (_, i) => r2Url(`abj/room-types/executive-suite/A003 (${i + 1}).JPG`)),
   // Presidential Suite (A102, A103, A104)
-  'A102': range('A102', 'presidential-suite', 5),
-  'A103': range('A103', 'presidential-suite', 5),
-  'A104': range('A104', 'presidential-suite', 5),
+  'A102': [
+    ...Array.from({ length: 4 }, (_, i) => r2Url(`abj/room-types/presidential-suite/A102 (${i + 1}).jpg`)),
+    ...Array.from({ length: 14 }, (_, i) => r2Url(`abj/room-types/presidential-suite/A102 (${i + 5}).JPG`)),
+  ],
+  'A103': Array.from({ length: 13 }, (_, i) => r2Url(`abj/room-types/presidential-suite/A103 (${i + 1}).JPG`)),
+  'A104': [
+    r2Url('abj/room-types/presidential-suite/A104 (1).jpg'),
+    ...Array.from({ length: 12 }, (_, i) => r2Url(`abj/room-types/presidential-suite/A104 (${i + 2}).JPG`)),
+  ],
+  // Penthouse Suite
+  'B202': [
+    r2Url('abj/room-types/penthouse-suite/WhatsApp Image 2026-07-21 at 1.38.19 PM (1).jpeg'),
+    r2Url('abj/room-types/penthouse-suite/WhatsApp Image 2026-07-21 at 1.38.19 PM.jpeg'),
+    r2Url('abj/room-types/penthouse-suite/WhatsApp Image 2026-07-21 at 1.38.20 PM (1).jpeg'),
+    r2Url('abj/room-types/penthouse-suite/WhatsApp Image 2026-07-21 at 1.38.20 PM (2).jpeg'),
+    r2Url('abj/room-types/penthouse-suite/WhatsApp Image 2026-07-21 at 1.38.20 PM (3).jpeg'),
+    r2Url('abj/room-types/penthouse-suite/WhatsApp Image 2026-07-21 at 1.38.20 PM.jpeg'),
+    r2Url('abj/room-types/penthouse-suite/WhatsApp Image 2026-07-21 at 1.38.21 PM.jpeg'),
+  ],
+  // Royal Suite
+  'B101': [
+    r2Url('abj/room-types/royal-suite/Business_A101 (1).jpg'),
+    r2Url('abj/room-types/royal-suite/Business_A101 (5).JPG'),
+    r2Url('abj/room-types/royal-suite/Business_A101 (7).JPG'),
+    r2Url('abj/room-types/royal-suite/Business_A101 (8).JPG'),
+    r2Url('abj/room-types/royal-suite/Business_A101 (9).JPG'),
+  ],
+  // King Suite
+  'B104': [
+    r2Url('abj/room-types/king-suite/A202 (32King.JPG'),
+    r2Url('abj/room-types/king-suite/A203 King.JPG'),
+  ],
+  'B203': [
+    r2Url('abj/room-types/king-suite/A202 (32King.JPG'),
+    r2Url('abj/room-types/king-suite/A203 King.JPG'),
+  ],
 };
 
-// Room type → all images for that type (aggregated across rooms)
+// Room type → all images for that type (Abuja)
 const abjRTImages: Record<string, string[]> = {
+  'King Suite': [
+    r2Url('abj/room-types/king-suite/A202 (32King.JPG'),
+    r2Url('abj/room-types/king-suite/A203 King.JPG'),
+  ],
   'Deluxe Suite':      [...abjRoomImages['A105'], ...abjRoomImages['A204']],
   'Executive Suite':   [...abjRoomImages['A001'], ...abjRoomImages['A002'], ...abjRoomImages['A003']],
+  'Penthouse Suite':   abjRoomImages['B202'],
+  'Royal Suite':       abjRoomImages['B101'],
   'Business Suite':    abjRoomImages['A101'],
   'Presidential Suite': [...abjRoomImages['A102'], ...abjRoomImages['A103'], ...abjRoomImages['A104']],
 };
@@ -95,50 +131,164 @@ const abjRTImages: Record<string, string[]> = {
 // ── Kaduna image URLs ────────────────────────────────────────────
 const kadRTImages: Record<string, string[]> = {
   'Luxury Standard': [
-    `${BUCKET}/kaduna/room-types/luxury-standard/WhatsApp%20Image%202026-05-13%20at%2011.09.41%20AM.jpeg`,
-    `${BUCKET}/kaduna/room-types/luxury-standard/WhatsApp%20Image%202026-05-13%20at%2011.09.43%20AM.jpeg`,
-    `${BUCKET}/kaduna/room-types/luxury-standard/WhatsApp%20Image%202026-05-13%20at%2011.09.43%20AM%20(1).jpeg`,
-    `${BUCKET}/kaduna/room-types/luxury-standard/WhatsApp%20Image%202026-05-13%20at%2011.09.43%20AM%20(2).jpeg`,
-    `${BUCKET}/kaduna/room-types/luxury-standard/WhatsApp%20Image%202026-05-13%20at%2011.09.43%20AM%20(3).jpeg`,
-    `${BUCKET}/kaduna/room-types/luxury-standard/WhatsApp%20Image%202026-05-13%20at%2011.09.43%20AM%20(4).jpeg`,
-    `${BUCKET}/kaduna/room-types/luxury-standard/WhatsApp%20Image%202026-05-13%20at%2011.09.43%20AM%20(5).jpeg`,
-    `${BUCKET}/kaduna/room-types/luxury-standard/WhatsApp%20Image%202026-05-13%20at%2011.09.43%20AM%20(6).jpeg`,
-    `${BUCKET}/kaduna/room-types/luxury-standard/WhatsApp%20Image%202026-05-13%20at%2011.11.42%20AM.jpeg`,
-    `${BUCKET}/kaduna/room-types/luxury-standard/WhatsApp%20Image%202026-05-13%20at%2011.11.43%20AM%20(1).jpeg`,
+    r2Url('kaduna/room-types/luxury-standard/WhatsApp Image 2026-05-13 at 11.09.41 AM.jpeg'),
+    r2Url('kaduna/room-types/luxury-standard/WhatsApp Image 2026-05-13 at 11.09.43 AM.jpeg'),
+    r2Url('kaduna/room-types/luxury-standard/WhatsApp Image 2026-05-13 at 11.09.43 AM (1).jpeg'),
+    r2Url('kaduna/room-types/luxury-standard/WhatsApp Image 2026-05-13 at 11.09.43 AM (2).jpeg'),
+    r2Url('kaduna/room-types/luxury-standard/WhatsApp Image 2026-05-13 at 11.09.43 AM (3).jpeg'),
+    r2Url('kaduna/room-types/luxury-standard/WhatsApp Image 2026-05-13 at 11.09.43 AM (4).jpeg'),
+    r2Url('kaduna/room-types/luxury-standard/WhatsApp Image 2026-05-13 at 11.09.43 AM (5).jpeg'),
+    r2Url('kaduna/room-types/luxury-standard/WhatsApp Image 2026-05-13 at 11.09.43 AM (6).jpeg'),
+    r2Url('kaduna/room-types/luxury-standard/WhatsApp Image 2026-05-13 at 11.11.42 AM.jpeg'),
+    r2Url('kaduna/room-types/luxury-standard/WhatsApp Image 2026-05-13 at 11.11.43 AM (1).jpeg'),
   ],
   'Super Luxury': [
-    `${BUCKET}/kaduna/room-types/super-luxury/WhatsApp%20Image%202026-05-13%20at%2011.16.10%20AM.jpeg`,
-    `${BUCKET}/kaduna/room-types/super-luxury/WhatsApp%20Image%202026-05-13%20at%2011.16.10%20AM%20(1).jpeg`,
-    `${BUCKET}/kaduna/room-types/super-luxury/WhatsApp%20Image%202026-05-13%20at%2011.16.10%20AM%20(2).jpeg`,
-    `${BUCKET}/kaduna/room-types/super-luxury/WhatsApp%20Image%202026-05-13%20at%2011.16.10%20AM%20(3).jpeg`,
-    `${BUCKET}/kaduna/room-types/super-luxury/WhatsApp%20Image%202026-05-13%20at%2011.16.11%20AM.jpeg`,
-    `${BUCKET}/kaduna/room-types/super-luxury/WhatsApp%20Image%202026-05-13%20at%2011.16.11%20AM%20(1).jpeg`,
-    `${BUCKET}/kaduna/room-types/super-luxury/WhatsApp%20Image%202026-05-13%20at%2011.16.11%20AM%20(2).jpeg`,
-    `${BUCKET}/kaduna/room-types/super-luxury/WhatsApp%20Image%202026-05-13%20at%2011.16.11%20AM%20(3).jpeg`,
+    r2Url('kaduna/room-types/super-luxury/WhatsApp Image 2026-05-13 at 11.16.10 AM.jpeg'),
+    r2Url('kaduna/room-types/super-luxury/WhatsApp Image 2026-05-13 at 11.16.10 AM (1).jpeg'),
+    r2Url('kaduna/room-types/super-luxury/WhatsApp Image 2026-05-13 at 11.16.10 AM (2).jpeg'),
+    r2Url('kaduna/room-types/super-luxury/WhatsApp Image 2026-05-13 at 11.16.10 AM (3).jpeg'),
+    r2Url('kaduna/room-types/super-luxury/WhatsApp Image 2026-05-13 at 11.16.11 AM.jpeg'),
+    r2Url('kaduna/room-types/super-luxury/WhatsApp Image 2026-05-13 at 11.16.11 AM (1).jpeg'),
+    r2Url('kaduna/room-types/super-luxury/WhatsApp Image 2026-05-13 at 11.16.11 AM (2).jpeg'),
+    r2Url('kaduna/room-types/super-luxury/WhatsApp Image 2026-05-13 at 11.16.11 AM (3).jpeg'),
   ],
   'Executive Luxury': [
-    `${BUCKET}/kaduna/room-types/executive-luxury/WhatsApp%20Image%202026-05-13%20at%2011.17.57%20AM.jpeg`,
-    `${BUCKET}/kaduna/room-types/executive-luxury/WhatsApp%20Image%202026-05-13%20at%2011.17.57%20AM%20(1).jpeg`,
-    `${BUCKET}/kaduna/room-types/executive-luxury/WhatsApp%20Image%202026-05-13%20at%2011.17.57%20AM%20(2).jpeg`,
-    `${BUCKET}/kaduna/room-types/executive-luxury/WhatsApp%20Image%202026-05-13%20at%2011.17.57%20AM%20(3).jpeg`,
-    `${BUCKET}/kaduna/room-types/executive-luxury/WhatsApp%20Image%202026-05-13%20at%2011.17.58%20AM.jpeg`,
-    `${BUCKET}/kaduna/room-types/executive-luxury/WhatsApp%20Image%202026-05-13%20at%2011.17.58%20AM%20(1).jpeg`,
-    `${BUCKET}/kaduna/room-types/executive-luxury/WhatsApp%20Image%202026-05-13%20at%2011.17.58%20AM%20(2).jpeg`,
+    r2Url('kaduna/room-types/executive-luxury/WhatsApp Image 2026-05-13 at 11.17.57 AM.jpeg'),
+    r2Url('kaduna/room-types/executive-luxury/WhatsApp Image 2026-05-13 at 11.17.57 AM (1).jpeg'),
+    r2Url('kaduna/room-types/executive-luxury/WhatsApp Image 2026-05-13 at 11.17.57 AM (2).jpeg'),
+    r2Url('kaduna/room-types/executive-luxury/WhatsApp Image 2026-05-13 at 11.17.57 AM (3).jpeg'),
+    r2Url('kaduna/room-types/executive-luxury/WhatsApp Image 2026-05-13 at 11.17.58 AM.jpeg'),
+    r2Url('kaduna/room-types/executive-luxury/WhatsApp Image 2026-05-13 at 11.17.58 AM (1).jpeg'),
+    r2Url('kaduna/room-types/executive-luxury/WhatsApp Image 2026-05-13 at 11.17.58 AM (2).jpeg'),
   ],
   'Super Deluxe Suite': [
-    `${BUCKET}/kaduna/room-types/super-deluxe-suite/WhatsApp%20Image%202026-05-13%20at%2011.21.03%20AM.jpeg`,
-    `${BUCKET}/kaduna/room-types/super-deluxe-suite/WhatsApp%20Image%202026-05-13%20at%2011.21.03%20AM%20(1).jpeg`,
-    `${BUCKET}/kaduna/room-types/super-deluxe-suite/WhatsApp%20Image%202026-05-13%20at%2011.21.03%20AM%20-%20Copy.jpeg`,
-    `${BUCKET}/kaduna/room-types/super-deluxe-suite/WhatsApp%20Image%202026-05-13%20at%2011.21.03%20AM%20(1)%20-%20Copy.jpeg`,
-    `${BUCKET}/kaduna/room-types/super-deluxe-suite/WhatsApp%20Image%202026-05-13%20at%2011.21.04%20AM%20-%20Copy.jpeg`,
+    r2Url('kaduna/room-types/super-deluxe-suite/WhatsApp Image 2026-05-13 at 11.21.03 AM.jpeg'),
+    r2Url('kaduna/room-types/super-deluxe-suite/WhatsApp Image 2026-05-13 at 11.21.03 AM (1).jpeg'),
+    r2Url('kaduna/room-types/super-deluxe-suite/WhatsApp Image 2026-05-13 at 11.21.03 AM - Copy.jpeg'),
+    r2Url('kaduna/room-types/super-deluxe-suite/WhatsApp Image 2026-05-13 at 11.21.03 AM (1) - Copy.jpeg'),
+    r2Url('kaduna/room-types/super-deluxe-suite/WhatsApp Image 2026-05-13 at 11.21.04 AM - Copy.jpeg'),
   ],
   'Executive Suite': [
-    `${BUCKET}/kaduna/room-types/executive-suite/3f02b5dd-b297-40a6-8426-b6f0553c32de.JPG`,
-    `${BUCKET}/kaduna/room-types/executive-suite/428e56f6-199f-48a0-87af-f03c89d67051.JPG`,
-    `${BUCKET}/kaduna/room-types/executive-suite/600fffad-ac61-45dd-9435-cdf58acb9472.JPG`,
-    `${BUCKET}/kaduna/room-types/executive-suite/6b26d6d1-e719-4dfc-8fa5-2e32b1a4b0e8.JPG`,
-    `${BUCKET}/kaduna/room-types/executive-suite/73da6b6f-6619-4052-9384-2b32fb285eac.JPG`,
-    `${BUCKET}/kaduna/room-types/executive-suite/88ec2349-4ae6-41cc-85bb-d6c46ae0e149.JPG`,
+    r2Url('kaduna/room-types/executive-suite/3f02b5dd-b297-40a6-8426-b6f0553c32de.JPG'),
+    r2Url('kaduna/room-types/executive-suite/428e56f6-199f-48a0-87af-f03c89d67051.JPG'),
+    r2Url('kaduna/room-types/executive-suite/600fffad-ac61-45dd-9435-cdf58acb9472.JPG'),
+    r2Url('kaduna/room-types/executive-suite/6b26d6d1-e719-4dfc-8fa5-2e32b1a4b0e8.JPG'),
+    r2Url('kaduna/room-types/executive-suite/73da6b6f-6619-4052-9384-2b32fb285eac.JPG'),
+    r2Url('kaduna/room-types/executive-suite/88ec2349-4ae6-41cc-85bb-d6c46ae0e149.JPG'),
+  ],
+};
+
+// ── Maiduguri image URLs (from R2 bucket) ─────────────────────────
+const maiRTImages: Record<string, string[]> = {
+  'Executive Suite': [
+    r2Url('maiduguri/room-types/executive-suite/IMG_2368 - Copy.png'),
+    r2Url('maiduguri/room-types/executive-suite/IMG_2369 - Copy.png'),
+    r2Url('maiduguri/room-types/executive-suite/IMG_2370 - Copy.png'),
+    r2Url('maiduguri/room-types/executive-suite/IMG_2371 - Copy.png'),
+    r2Url('maiduguri/room-types/executive-suite/IMG_2373.png'),
+    r2Url('maiduguri/room-types/executive-suite/IMG_2374.png'),
+    r2Url('maiduguri/room-types/executive-suite/IMG_2375.png'),
+    r2Url('maiduguri/room-types/executive-suite/IMG_2376.png'),
+    r2Url('maiduguri/room-types/executive-suite/IMG_2377.png'),
+    r2Url('maiduguri/room-types/executive-suite/IMG_2378.png'),
+    r2Url('maiduguri/room-types/executive-suite/IMG_2379.png'),
+    r2Url('maiduguri/room-types/executive-suite/IMG_2380.png'),
+    r2Url('maiduguri/room-types/executive-suite/IMG_2381.png'),
+    r2Url('maiduguri/room-types/executive-suite/IMG_2382.png'),
+    r2Url('maiduguri/room-types/executive-suite/IMG_2383(1).png'),
+    r2Url('maiduguri/room-types/executive-suite/IMG_2383.png'),
+    r2Url('maiduguri/room-types/executive-suite/IMG_2384.png'),
+  ],
+  'VIP Suite': [
+    r2Url('maiduguri/room-types/vip-suites/IMG_2383.png'),
+    r2Url('maiduguri/room-types/vip-suites/IMG_2384.png'),
+    r2Url('maiduguri/room-types/vip-suites/IMG_2387.png'),
+    r2Url('maiduguri/room-types/vip-suites/IMG_2388.png'),
+    r2Url('maiduguri/room-types/vip-suites/IMG_2389.png'),
+    r2Url('maiduguri/room-types/vip-suites/IMG_2392.png'),
+    r2Url('maiduguri/room-types/vip-suites/IMG_2393.png'),
+    r2Url('maiduguri/room-types/vip-suites/IMG_2394.png'),
+    r2Url('maiduguri/room-types/vip-suites/IMG_2397.png'),
+    r2Url('maiduguri/room-types/vip-suites/IMG_2398.png'),
+    r2Url('maiduguri/room-types/vip-suites/IMG_2401.png'),
+    r2Url('maiduguri/room-types/vip-suites/IMG_2402.png'),
+    r2Url('maiduguri/room-types/vip-suites/IMG_2403.png'),
+    r2Url('maiduguri/room-types/vip-suites/IMG_2404.png'),
+    r2Url('maiduguri/room-types/vip-suites/IMG_2405.png'),
+    r2Url('maiduguri/room-types/vip-suites/IMG_2407.png'),
+  ],
+  'Luxury Double': [
+    r2Url('maiduguri/room-types/luxury-doubles/IMG_2379.png'),
+    r2Url('maiduguri/room-types/luxury-doubles/IMG_2380.png'),
+    r2Url('maiduguri/room-types/luxury-doubles/IMG_2389.png'),
+    r2Url('maiduguri/room-types/luxury-doubles/IMG_2392.png'),
+    r2Url('maiduguri/room-types/luxury-doubles/IMG_2393.png'),
+    r2Url('maiduguri/room-types/luxury-doubles/IMG_2394.png'),
+    r2Url('maiduguri/room-types/luxury-doubles/IMG_2403.png'),
+    r2Url('maiduguri/room-types/luxury-doubles/IMG_2404.png'),
+    r2Url('maiduguri/room-types/luxury-doubles/IMG_2405.png'),
+    r2Url('maiduguri/room-types/luxury-doubles/IMG_2407.png'),
+    r2Url('maiduguri/room-types/luxury-doubles/IMG_2408.png'),
+    r2Url('maiduguri/room-types/luxury-doubles/IMG_2409.png'),
+    r2Url('maiduguri/room-types/luxury-doubles/IMG_2483(1).png'),
+    r2Url('maiduguri/room-types/luxury-doubles/IMG_2483.png'),
+    r2Url('maiduguri/room-types/luxury-doubles/IMG_2488(1).png'),
+    r2Url('maiduguri/room-types/luxury-doubles/IMG_2488.png'),
+    r2Url('maiduguri/room-types/luxury-doubles/IMG_2489.png'),
+    r2Url('maiduguri/room-types/luxury-doubles/IMG_2490.png'),
+    r2Url('maiduguri/room-types/luxury-doubles/IMG_2491.png'),
+    r2Url('maiduguri/room-types/luxury-doubles/IMG_2492.png'),
+  ],
+  'Classic Suite': [
+    r2Url('maiduguri/room-types/classic-suite/IMG_2479(1).png'),
+    r2Url('maiduguri/room-types/classic-suite/IMG_2479.png'),
+    r2Url('maiduguri/room-types/classic-suite/IMG_2480(1).png'),
+    r2Url('maiduguri/room-types/classic-suite/IMG_2480.png'),
+    r2Url('maiduguri/room-types/classic-suite/IMG_2481.png'),
+    r2Url('maiduguri/room-types/classic-suite/IMG_2482.png'),
+    r2Url('maiduguri/room-types/classic-suite/IMG_2483(1).png'),
+    r2Url('maiduguri/room-types/classic-suite/IMG_2483.png'),
+    r2Url('maiduguri/room-types/classic-suite/IMG_2488(1).png'),
+    r2Url('maiduguri/room-types/classic-suite/IMG_2488.png'),
+    r2Url('maiduguri/room-types/classic-suite/IMG_2489.png'),
+    r2Url('maiduguri/room-types/classic-suite/IMG_2490.png'),
+    r2Url('maiduguri/room-types/classic-suite/IMG_2491.png'),
+    r2Url('maiduguri/room-types/classic-suite/IMG_2492.png'),
+  ],
+  'Diplomatic Suite': [
+    r2Url('maiduguri/room-types/diplomatic-suite/IMG_2373.png'),
+    r2Url('maiduguri/room-types/diplomatic-suite/IMG_2374.png'),
+    r2Url('maiduguri/room-types/diplomatic-suite/IMG_2379.png'),
+    r2Url('maiduguri/room-types/diplomatic-suite/IMG_2458.png'),
+    r2Url('maiduguri/room-types/diplomatic-suite/IMG_2460.png'),
+    r2Url('maiduguri/room-types/diplomatic-suite/IMG_2461.png'),
+    r2Url('maiduguri/room-types/diplomatic-suite/IMG_2474.png'),
+    r2Url('maiduguri/room-types/diplomatic-suite/IMG_2475.png'),
+    r2Url('maiduguri/room-types/diplomatic-suite/IMG_2478.png'),
+    r2Url('maiduguri/room-types/diplomatic-suite/IMG_2479(1).png'),
+    r2Url('maiduguri/room-types/diplomatic-suite/IMG_2479.png'),
+  ],
+  'Charlet Suite': [
+    r2Url('maiduguri/room-types/charlet-suite/IMG_2368.png'),
+    r2Url('maiduguri/room-types/charlet-suite/IMG_2369.png'),
+    r2Url('maiduguri/room-types/charlet-suite/IMG_2370.png'),
+    r2Url('maiduguri/room-types/charlet-suite/IMG_2371.png'),
+    r2Url('maiduguri/room-types/charlet-suite/IMG_2372.png'),
+    r2Url('maiduguri/room-types/charlet-suite/IMG_2379.png'),
+    r2Url('maiduguri/room-types/charlet-suite/IMG_2380.png'),
+    r2Url('maiduguri/room-types/charlet-suite/IMG_2389.png'),
+    r2Url('maiduguri/room-types/charlet-suite/IMG_2392.png'),
+    r2Url('maiduguri/room-types/charlet-suite/IMG_2393.png'),
+    r2Url('maiduguri/room-types/charlet-suite/IMG_2411.png'),
+    r2Url('maiduguri/room-types/charlet-suite/IMG_2412.png'),
+    r2Url('maiduguri/room-types/charlet-suite/IMG_2439(1).png'),
+    r2Url('maiduguri/room-types/charlet-suite/IMG_2439.png'),
+    r2Url('maiduguri/room-types/charlet-suite/IMG_2442(1).png'),
+    r2Url('maiduguri/room-types/charlet-suite/IMG_2442.png'),
+    r2Url('maiduguri/room-types/charlet-suite/IMG_2443(1).png'),
+    r2Url('maiduguri/room-types/charlet-suite/IMG_2443.png'),
+    r2Url('maiduguri/room-types/charlet-suite/IMG_2444(1).png'),
+    r2Url('maiduguri/room-types/charlet-suite/IMG_2444.png'),
   ],
 };
 
@@ -312,11 +462,11 @@ export class SeedService  {
 
     // room types
     const abujaRT = await this.roomTypeModel.create([
-      { branchId: branches[0]._id, name: 'King Suite', description: 'An intimate layout with sculpted light, tactile finishes, and a calm palette for effortless daily rhythm.', basePrice: 60000, minPriceAllowed: 50000, amenities: ['King Bed', 'AC', 'WiFi', 'TV'], images: [], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[0]._id, name: 'King Suite', description: 'An intimate layout with sculpted light, tactile finishes, and a calm palette for effortless daily rhythm.', basePrice: 60000, minPriceAllowed: 50000, amenities: ['King Bed', 'AC', 'WiFi', 'TV'], images: abjRTImages['King Suite'], createdBy: admin._id, updatedBy: admin._id },
       { branchId: branches[0]._id, name: 'Deluxe Suite', description: 'Enhanced comfort featuring premium materials and a spacious layout designed for extended relaxation.', basePrice: 70000, minPriceAllowed: 60000, amenities: ['Queen Bed', 'AC', 'WiFi'], images: abjRTImages['Deluxe Suite'], createdBy: admin._id, updatedBy: admin._id },
       { branchId: branches[0]._id, name: 'Executive Suite', description: 'Sophisticated design meets functional luxury, perfect for the modern traveler seeking a refined work-life balance.', basePrice: 80000, minPriceAllowed: 70000, amenities: ['King Bed', 'AC', 'WiFi', 'Work Desk', 'TV'], images: abjRTImages['Executive Suite'], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[0]._id, name: 'Penthouse Suite', description: 'Unrivaled views and expansive living spaces defined by high ceilings and bespoke interior craftsmanship.', basePrice: 120000, minPriceAllowed: 100000, amenities: ['King Bed', 'Living Room', 'AC', 'WiFi', 'TV'], images: [], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[0]._id, name: 'Royal Suite', description: 'Palatial living with grand architectural details and curated art pieces for a truly majestic experience.', basePrice: 150000, minPriceAllowed: 130000, amenities: ['King Bed', 'Living Room', 'Kitchenette', 'AC', 'WiFi', 'TV'], images: [], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[0]._id, name: 'Penthouse Suite', description: 'Unrivaled views and expansive living spaces defined by high ceilings and bespoke interior craftsmanship.', basePrice: 120000, minPriceAllowed: 100000, amenities: ['King Bed', 'Living Room', 'AC', 'WiFi', 'TV'], images: abjRTImages['Penthouse Suite'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[0]._id, name: 'Royal Suite', description: 'Palatial living with grand architectural details and curated art pieces for a truly majestic experience.', basePrice: 150000, minPriceAllowed: 130000, amenities: ['King Bed', 'Living Room', 'Kitchenette', 'AC', 'WiFi', 'TV'], images: abjRTImages['Royal Suite'], createdBy: admin._id, updatedBy: admin._id },
       { branchId: branches[0]._id, name: 'Business Suite', description: 'An efficient yet elegant environment equipped with cutting-edge technology and a streamlined aesthetic.', basePrice: 160000, minPriceAllowed: 140000, amenities: ['King Bed', 'Living Room', 'Work Desk', 'AC', 'WiFi', 'TV'], images: abjRTImages['Business Suite'], createdBy: admin._id, updatedBy: admin._id },
       { branchId: branches[0]._id, name: 'Presidential Suite', description: 'The pinnacle of luxury, offering ultimate privacy, 360-degree views, and personalized world-class service.', basePrice: 400000, minPriceAllowed: 350000, amenities: ['King Bed', 'Living Room', 'Dining', 'Jacuzzi', 'AC', 'WiFi', 'TV'], images: abjRTImages['Presidential Suite'], createdBy: admin._id, updatedBy: admin._id },
     ]);
@@ -328,12 +478,12 @@ export class SeedService  {
       { branchId: branches[1]._id, name: 'Executive Suite', description: 'The pinnacle of Kaduna residence, offering unrivaled space and executive-level amenities.', basePrice: 193500, minPriceAllowed: 154800, amenities: ['King Bed', 'Living Room', 'Work Desk', 'AC', 'WiFi', 'TV'], images: kadRTImages['Executive Suite'], createdBy: admin._id, updatedBy: admin._id },
     ]);
     const maiRT = await this.roomTypeModel.create([
-      { branchId: branches[2]._id, name: 'Executive Suite', description: 'Premium executive accommodation with king-size bed and luxury amenities.', basePrice: 80000, minPriceAllowed: 70000, amenities: ['King Bed', 'AC', 'WiFi', 'Smart TV', 'Mini Bar'], images: [], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[2]._id, name: 'VIP Suite', description: 'Exclusive VIP accommodation with premium furnishings and personalized service.', basePrice: 150000, minPriceAllowed: 130000, amenities: ['King Bed', 'AC', 'WiFi', 'Smart TV', 'Mini Bar', 'Jacuzzi'], images: [], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[2]._id, name: 'Luxury Double', description: 'Spacious double room with modern amenities for a comfortable stay.', basePrice: 60000, minPriceAllowed: 50000, amenities: ['Queen Bed', 'AC', 'WiFi', 'Smart TV'], images: [], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[2]._id, name: 'Classic Suite', description: 'Classic suite with elegant furnishings and essential amenities.', basePrice: 70000, minPriceAllowed: 60000, amenities: ['Queen Bed', 'AC', 'WiFi'], images: [], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[2]._id, name: 'Diplomatic Suite', description: 'Diplomatic-grade suite with premium amenities and spacious living area.', basePrice: 120000, minPriceAllowed: 100000, amenities: ['King Bed', 'AC', 'WiFi', 'Smart TV', 'Mini Bar', 'Sitting Area'], images: [], createdBy: admin._id, updatedBy: admin._id },
-      { branchId: branches[2]._id, name: 'Charlet Suite', description: 'Charming suite with unique character and cozy atmosphere.', basePrice: 100000, minPriceAllowed: 85000, amenities: ['King Bed', 'AC', 'WiFi', 'Smart TV', 'Mini Bar'], images: [], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[2]._id, name: 'Executive Suite', description: 'Premium executive accommodation with king-size bed and luxury amenities.', basePrice: 80000, minPriceAllowed: 70000, amenities: ['King Bed', 'AC', 'WiFi', 'Smart TV', 'Mini Bar'], images: maiRTImages['Executive Suite'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[2]._id, name: 'VIP Suite', description: 'Exclusive VIP accommodation with premium furnishings and personalized service.', basePrice: 150000, minPriceAllowed: 130000, amenities: ['King Bed', 'AC', 'WiFi', 'Smart TV', 'Mini Bar', 'Jacuzzi'], images: maiRTImages['VIP Suite'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[2]._id, name: 'Luxury Double', description: 'Spacious double room with modern amenities for a comfortable stay.', basePrice: 60000, minPriceAllowed: 50000, amenities: ['Queen Bed', 'AC', 'WiFi', 'Smart TV'], images: maiRTImages['Luxury Double'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[2]._id, name: 'Classic Suite', description: 'Classic suite with elegant furnishings and essential amenities.', basePrice: 70000, minPriceAllowed: 60000, amenities: ['Queen Bed', 'AC', 'WiFi'], images: maiRTImages['Classic Suite'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[2]._id, name: 'Diplomatic Suite', description: 'Diplomatic-grade suite with premium amenities and spacious living area.', basePrice: 120000, minPriceAllowed: 100000, amenities: ['King Bed', 'AC', 'WiFi', 'Smart TV', 'Mini Bar', 'Sitting Area'], images: maiRTImages['Diplomatic Suite'], createdBy: admin._id, updatedBy: admin._id },
+      { branchId: branches[2]._id, name: 'Charlet Suite', description: 'Charming suite with unique character and cozy atmosphere.', basePrice: 100000, minPriceAllowed: 85000, amenities: ['King Bed', 'AC', 'WiFi', 'Smart TV', 'Mini Bar'], images: maiRTImages['Charlet Suite'], createdBy: admin._id, updatedBy: admin._id },
     ]);
 
     this.logger.log(`Seed — room types created: ${abujaRT.length} Abuja + ${kadunaRT.length} Kaduna + ${maiRT.length} Maiduguri`);
@@ -788,7 +938,14 @@ export class SeedService  {
         accessKeyId: AppConfig.R2_ACCESS_KEY_ID,
         secretAccessKey: AppConfig.R2_SECRET_ACCESS_KEY,
       },
+      forcePathStyle: true,
     });
+
+    const branchPrefixMap: Record<string, string> = {
+      ABJ: 'abj',
+      KAD: 'kaduna',
+      MAI: 'maiduguri',
+    };
 
     const branches = await this.branchModel.find({ isActive: true }).lean();
     const updated: string[] = [];
@@ -796,8 +953,9 @@ export class SeedService  {
     const errors: string[] = [];
 
     for (const branch of branches) {
-      const branchCode = (branch as any).code?.toLowerCase();
-      if (!branchCode) continue;
+      const code = (branch as any).code?.toUpperCase();
+      const branchFolder = branchPrefixMap[code] || (branch as any).name?.toLowerCase();
+      if (!branchFolder) continue;
 
       const roomTypes = await this.roomTypeModel.find({ branchId: branch._id, isActive: true }).lean();
 
@@ -807,33 +965,58 @@ export class SeedService  {
           .replace(/\s+/g, '-')
           .replace(/[^a-z0-9-]/g, '');
 
-        const prefix = `${branchCode}/room-types/${slug}/`;
+        let prefix = `${branchFolder}/room-types/${slug}/`;
 
         try {
-          const command = new ListObjectsV2Command({
+          let command = new ListObjectsV2Command({
             Bucket: AppConfig.R2_BUCKET_NAME,
             Prefix: prefix,
           });
 
-          const response = await s3.send(command);
-          const objects = (response.Contents || [])
+          let response = await s3.send(command);
+          let objects = (response.Contents || [])
             .filter((obj) => obj.Key && obj.Key !== prefix && !obj.Key.endsWith('/'))
             .sort((a, b) => ((b.LastModified?.getTime() || 0) - (a.LastModified?.getTime() || 0)));
 
+          // If not found, try plural/singular variant (e.g. luxury-doubles vs luxury-double)
           if (objects.length === 0) {
-            skipped.push(`${branchCode}/${slug} — no images found`);
-            this.logger.warn(`  ⚠ ${branchCode}/${slug} — no images in bucket`);
+            const altSlug = slug.endsWith('s') ? slug.slice(0, -1) : `${slug}s`;
+            const altPrefix = `${branchFolder}/room-types/${altSlug}/`;
+            command = new ListObjectsV2Command({
+              Bucket: AppConfig.R2_BUCKET_NAME,
+              Prefix: altPrefix,
+            });
+            response = await s3.send(command);
+            objects = (response.Contents || [])
+              .filter((obj) => obj.Key && obj.Key !== altPrefix && !obj.Key.endsWith('/'))
+              .sort((a, b) => ((b.LastModified?.getTime() || 0) - (a.LastModified?.getTime() || 0)));
+          }
+
+          let imageUrls = objects.map((obj) => `${AppConfig.R2_PUBLIC_URL}/${obj.Key!.split('/').map(encodeURIComponent).join('/')}`);
+
+          if (imageUrls.length === 0) {
+            // Check if predefined static mappings exist
+            if (code === 'MAI' && maiRTImages[(rt as any).name]) {
+              imageUrls = maiRTImages[(rt as any).name];
+            } else if (code === 'ABJ' && abjRTImages[(rt as any).name]) {
+              imageUrls = abjRTImages[(rt as any).name];
+            } else if (code === 'KAD' && kadRTImages[(rt as any).name]) {
+              imageUrls = kadRTImages[(rt as any).name];
+            }
+          }
+
+          if (imageUrls.length === 0) {
+            skipped.push(`${branchFolder}/${slug} — no images found`);
+            this.logger.warn(`  ⚠ ${branchFolder}/${slug} — no images in bucket or fallback`);
             continue;
           }
 
-          const imageUrls = objects.map((obj) => `${AppConfig.R2_PUBLIC_URL}/${obj.Key}`);
-
           await this.roomTypeModel.findByIdAndUpdate(rt._id, { images: imageUrls });
 
-          updated.push(`${branchCode}/${slug} — ${imageUrls.length} images`);
-          this.logger.log(`  ✓ ${branchCode}/${slug} — ${imageUrls.length} images synced`);
+          updated.push(`${branchFolder}/${slug} — ${imageUrls.length} images`);
+          this.logger.log(`  ✓ ${branchFolder}/${slug} — ${imageUrls.length} images synced`);
         } catch (err) {
-          const msg = `${branchCode}/${slug} — ${(err as Error).message}`;
+          const msg = `${branchFolder}/${slug} — ${(err as Error).message}`;
           errors.push(msg);
           this.logger.error(`  ✗ ${msg}`);
         }
@@ -846,11 +1029,12 @@ export class SeedService  {
     for (const room of allRooms) {
       const branch = branches.find((b) => b._id.toString() === (room as any).branchId.toString());
       if (!branch) continue;
-      const branchCode = (branch as any).code?.toLowerCase();
+      const code = (branch as any).code?.toUpperCase();
+      const branchFolder = branchPrefixMap[code] || (branch as any).name?.toLowerCase();
       const rt = await this.roomTypeModel.findById((room as any).roomTypeId).lean();
       if (!rt) continue;
       const slug = (rt as any).name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-      const prefix = `${branchCode}/room-types/${slug}/`;
+      const prefix = `${branchFolder}/room-types/${slug}/`;
 
       try {
         const command = new ListObjectsV2Command({
@@ -863,10 +1047,8 @@ export class SeedService  {
           .sort((a, b) => ((b.LastModified?.getTime() || 0) - (a.LastModified?.getTime() || 0)));
 
         if (objects.length > 0) {
-          const imageUrls = objects.map((obj) => `${AppConfig.R2_PUBLIC_URL}/${obj.Key}`);
+          const imageUrls = objects.map((obj) => `${AppConfig.R2_PUBLIC_URL}/${obj.Key!.split('/').map(encodeURIComponent).join('/')}`);
           const roomNumber = (room as any).roomNumber;
-          // Check if the filename contains the room number (seed convention)
-          // If so, only include matching images; otherwise use all
           const matching = roomNumber
             ? imageUrls.filter((url) => decodeURIComponent(url).includes(roomNumber))
             : imageUrls;

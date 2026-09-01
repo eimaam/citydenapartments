@@ -34,7 +34,7 @@ export const LandingPage = () => {
     <div className="flex flex-col">
       <SEOHead />
       <HeroSection 
-      image="https://pub-644677a999f742b39f8a60416322206c.r2.dev/abj/hero.jpeg"
+        image="https://bucket.citydenapartments.com/abj/hero.jpeg"
       />
       <LocationsSection />
       <PhilosophySection />

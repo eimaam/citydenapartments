@@ -35,14 +35,14 @@ export const MAP_EMBEDS = {
 } as const;
 
 export const HERO_IMAGES: Record<string, string> = {
-  abuja: 'https://pub-644677a999f742b39f8a60416322206c.r2.dev/abj/hero.jpeg',
+  abuja: 'https://bucket.citydenapartments.com/abj/hero.jpeg',
   kaduna: 'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&w=1920&q=80',
-  maiduguri: 'https://pub-644677a999f742b39f8a60416322206c.r2.dev/maiduguri/IMG_2453.HEIC',
+  maiduguri: 'https://bucket.citydenapartments.com/maiduguri/room-types/charlet-suite/IMG_2368.png',
 };
 
 export const FALLBACK_HERO = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1920&q=80';
 
-export const FALLBACK_SUITE_IMAGE = 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80';
+export const FALLBACK_SUITE_IMAGE = 'https://bucket.citydenapartments.com/gallery/hero.jpeg';
 
 interface Landmark {
   name: string;
