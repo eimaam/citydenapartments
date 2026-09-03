@@ -36,8 +36,8 @@ export const MAP_EMBEDS = {
 
 export const HERO_IMAGES: Record<string, string> = {
   abuja: 'https://bucket.citydenapartments.com/abj/hero.jpeg',
-  kaduna: 'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&w=1920&q=80',
-  maiduguri: 'https://bucket.citydenapartments.com/maiduguri/room-types/charlet-suite/IMG_2368.png',
+  kaduna: 'https://bucket.citydenapartments.com/kaduna/hero.jpeg',
+  maiduguri: 'https://bucket.citydenapartments.com/maiduguri/hero.png',
 };
 
 export const FALLBACK_HERO = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1920&q=80';

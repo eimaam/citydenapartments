@@ -18,23 +18,23 @@ export const locations: ILocationCard[] = [
     city: 'Abuja',
     tagline: 'FEDERAL CAPITAL TERRITORY',
     imageUrl:
-      'https://bucket.citydenapartments.com/abj/abuja-thumbnail.jpeg',
+      'https://bucket.citydenapartments.com/abj/hero.jpeg',
   },
   {
     id: 'kaduna',
     city: 'Kaduna',
     tagline: 'HERITAGE CITY',
     imageUrl:
-      'https://bucket.citydenapartments.com/kaduna/room-types/luxury-standard/WhatsApp%20Image%202026-05-13%20at%2011.09.41%20AM.jpeg',
+      'https://bucket.citydenapartments.com/kaduna/hero.jpeg',
   },
   {
     id: 'maiduguri',
     city: 'Maiduguri',
     tagline: 'BORNO STATE CAPITAL',
     imageUrl:
-      'https://images.unsplash.com/photo-1545324224-fa8b6a84d48a?auto=format&fit=crop&w=1200&q=80',
+      'https://bucket.citydenapartments.com/maiduguri/hero.png',
   },
-]
+];
 
 
 export const amenities: IAmenityItem[] = [
